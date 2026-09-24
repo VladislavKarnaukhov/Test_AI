@@ -6,10 +6,10 @@
 <!-- Yandex.Metrika counter -->
 <script>
 (function(m,e,t,r,i,k,a){
-  m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-  m[i].l=1*new Date();
-  for(var j=0;j<document.scripts.length;j++){if(document.scripts[j].src===r){return;}}
-  k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a);
+m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+m[i].l=1*new Date();
+for(var j=0;j<document.scripts.length;j++){if(document.scripts[j].src===r){return;}}
+k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a);
 })(window,document,'script','https://mc.yandex.ru/metrika/tag.js?id=112820979','ym');
 ym(112820979,'init',{ssr:true,webvisor:true,clickmap:true,ecommerce:'dataLayer',referrer:document.referrer,url:location.href,accurateTrackBounce:true,trackLinks:true});
 </script>
@@ -22,7 +22,7 @@ ym(112820979,'init',{ssr:true,webvisor:true,clickmap:true,ecommerce:'dataLayer',
 </style></head>
 <body>
 <noscript><div><img src="https://mc.yandex.ru/watch/112820979" style="position:absolute;left:-9999px" alt=""></div></noscript><header class="header wrap"><a class="logo" href="#"><i>✦</i>VitaScore</a><nav><a href="#how">Как это работает</a><a href="#plans">Тарифы</a></nav><button class="btn small open" data-plan="Start" data-metric="open_leadform_header">Получить скоринг</button></header>
-<main><section class="hero wrap"><div><p class="tag">Здоровье в цифрах, а не в догадках</p><h1>Поймите, что поддержит <em>ваш</em> организм</h1><p class="lead">VitaScore объединяет ответы о самочувствии и привычках в наглядный индекс здоровья — с бережными персональными следующими шагами.</p><div class="actions"><button class="btn open" data-plan="Start" data-metric="open_leadform_hero">Узнать свой индекс&nbsp; →</button><a class="line" href="#how">Как это устроено</a></div><p class="note">5 минут · без медицинских диагнозов · данные защищены</p></div>
+<main><section class="hero wrap"><div><p class="tag">Здоровье в цифрах, а не в догадках</p><h1>Поймите, что поддержит <em>ваш</em> организм</h1><p class="lead">VitaScore объединяет ответы о самочувствии и привычках в наглядный индекс здоровья — с бережными персональными следующими шагами.</p><div class="actions"><button class="btn open" data-plan="Start" data-metric="open_leadform_hero">Узнать свой индекс  →</button><a class="line" href="#how">Как это устроено</a></div><p class="note">5 минут · без медицинских диагнозов · данные защищены</p></div>
 <div class="card"><div class="cardtop"><span>Ваш VitaScore</span><span class="fresh">● обновлено сегодня</span></div><div class="score">82<span>/100</span></div><p class="caption">У вас устойчивый баланс. Сон — самая перспективная зона роста.</p><div class="bar"><b></b></div><div class="metrics"><div><span>СОН</span><b>67</b></div><div><span>ДВИЖЕНИЕ</span><b>88</b></div><div><span>СТРЕСС</span><b>79</b></div></div><div class="tip"><i>✦</i><div><b>Один шаг на неделю</b>Добавьте 20 минут без экрана перед сном.</div></div></div></section>
 <section class="strip"><div class="wrap"><p>Скоринг, созданный на принципах доказательного благополучия</p><div><span>СОН</span><span>ДВИЖЕНИЕ</span><span>ПИТАНИЕ</span><span>ВОССТАНОВЛЕНИЕ</span></div></div></section>
 <section class="section wrap" id="how"><p class="tag">Просто и по делу</p><h2>Пять минут, чтобы увидеть<br>здоровье целиком</h2><div class="steps"><article class="step"><strong>01</strong><h3>Расскажите о себе</h3><p>Короткая анкета о самочувствии, ритме жизни и целях.</p></article><article class="step"><strong>02</strong><h3>Получите свой индекс</h3><p>Понятная оценка по ключевым аспектам здоровья.</p></article><article class="step"><strong>03</strong><h3>Выберите один шаг</h3><p>Практичные рекомендации, которые легко вписать в жизнь.</p></article></div></section>
@@ -39,4 +39,18 @@ d.onclick=e=>{if(e.target===d){track('close_leadform_overlay');d.close()}};
 document.querySelectorAll('.answers button').forEach(b=>b.onclick=()=>{track(b.dataset.metric);document.querySelectorAll('.answers button').forEach(x=>x.classList.remove('on'));b.classList.add('on');document.querySelector('.result').textContent=b.dataset.s==3?'Отличная база для восстановления. Поддерживайте стабильное время отхода ко сну.':b.dataset.s==2?'Небольшой резерв есть: попробуйте добавить 20 минут отдыха перед сном.':'Организму может не хватать восстановления. Начните с более раннего завершения дня.'});
 d.querySelector('form').onsubmit=e=>{e.preventDefault();track('submit_leadform',{plan:s.textContent});d.querySelector('.msg').textContent='Спасибо! Мы подготовим ваш следующий шаг.'}
 </script>
+<script>
+const d=document.querySelector('dialog'),s=d.querySelector('h2 span');
+const track=(goal,params={})=>{if(typeof window.ym==='function')window.ym(112820979,'reachGoal',goal,params)};
+document.querySelectorAll('.open').forEach(b=>b.onclick=()=>{track(b.dataset.metric,{plan:b.dataset.plan});s.textContent=b.dataset.plan;d.showModal()});
+document.querySelector('.close').onclick=()=>{track('close_leadform');d.close()};
+d.onclick=e=>{if(e.target===d){track('close_leadform_overlay');d.close()}};
+document.querySelectorAll('.answers button').forEach(b=>b.onclick=()=>{track(b.dataset.metric);document.querySelectorAll('.answers button').forEach(x=>x.classList.remove('on'));b.classList.add('on');document.querySelector('.result').textContent=b.dataset.s==3?'Отличная база для восстановления. Поддерживайте стабильное время отхода ко сну.':b.dataset.s==2?'Небольшой резерв есть: попробуйте добавить 20 минут отдыха перед сном.':'Организму может не хватать восстановления. Начните с более раннего завершения дня.'});
+d.querySelector('form').onsubmit=e=>{e.preventDefault();track('submit_leadform',{plan:s.textContent});d.querySelector('.msg').textContent='Спасибо! Мы подготовим ваш следующий шаг.'}
+</script>
+
+<script
+  src="https://widget.aistudio.yandexcloud.net/scripts/widget-loader.js?channel-id=aac6slukc7jg9i5ojkv3"
+  async
+></script>
 </body></html>
