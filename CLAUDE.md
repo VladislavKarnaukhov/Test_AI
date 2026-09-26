@@ -7,12 +7,16 @@
 
 ## Ограничения
 - НЕ добавлять авторизацию, OAuth, сторонние API и новые внешние сервисы.
-- Яндекс.Метрику и виджет aistudio.yandexcloud оставить как есть.
+- Яндекс.Метрику и виджет aistudio.yandexcloud не менять, кроме одного: Метрика и собственный лог событий
+  включаются только после согласия на аналитические cookie (cookie vs_consent=all, см. app/consent.py).
+- Новые cookie, трекеры и поля с персональными данными — только вместе с обновлением app/templates/privacy.html
+  и POLICY_VERSION в app/consent.py.
 - Дизайн и тексты страницы не менять, кроме блока анкеты.
 
 ## Структура
 - app/scoring.py — только логика скоринга, без импорта Flask.
-- app/db.py — подключение к SQLite и создание таблиц.
+- app/db.py — подключение к SQLite, создание таблиц и миграции (_migrate).
+- app/consent.py — cookie согласия и версия политики.
 - app/routes.py — страницы и API.
 - app/templates/, app/static/css/, app/static/js/ — фронтенд.
 - tests/ — pytest.

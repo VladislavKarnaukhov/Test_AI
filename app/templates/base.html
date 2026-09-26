@@ -3,8 +3,10 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{% block title %}VitaScore — скоринг здоровья{% endblock %}</title>
-<!-- Yandex.Metrika counter -->
+<!-- Yandex.Metrika counter: загружается только после согласия на аналитические cookie -->
 <script>
+window.vsLoadMetrika=function(){
+if(window.vsMetrikaLoaded)return;window.vsMetrikaLoaded=true;
 (function(m,e,t,r,i,k,a){
 m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
 m[i].l=1*new Date();
@@ -12,6 +14,8 @@ for(var j=0;j<document.scripts.length;j++){if(document.scripts[j].src===r){retur
 k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a);
 })(window,document,'script','https://mc.yandex.ru/metrika/tag.js?id=112820979','ym');
 ym(112820979,'init',{ssr:true,webvisor:true,clickmap:true,ecommerce:'dataLayer',referrer:document.referrer,url:location.href,accurateTrackBounce:true,trackLinks:true});
+};
+if(/(?:^|;\s*)vs_consent=all(?:;|$)/.test(document.cookie))window.vsLoadMetrika();
 </script>
 <!-- /Yandex.Metrika counter -->
 <meta name="description" content="Понятный индекс здоровья и персональные рекомендации.">
@@ -20,8 +24,9 @@ ym(112820979,'init',{ssr:true,webvisor:true,clickmap:true,ecommerce:'dataLayer',
 <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-<noscript><div><img src="https://mc.yandex.ru/watch/112820979" style="position:absolute;left:-9999px" alt=""></div></noscript>
 {% block content %}{% endblock %}
+<footer><div class="wrap"><a class="logo" href="{{ '#' if request.endpoint == 'main.index' else url_for('main.index') }}"><i>✦</i>VitaScore</a><p>Ваши данные остаются вашими.</p><div class="legal"><a href="{{ url_for('main.privacy') }}">Политика обработки данных</a><button type="button" class="linkish" data-cookie-settings>Настройки cookie</button><small>VitaScore не заменяет консультацию врача.</small></div></div></footer>
+<div class="cookie-banner" role="region" aria-label="Согласие на cookie" hidden><p>Мы используем cookie. Необходимые нужны для работы сайта. Аналитические — Яндекс.Метрика и наша статистика посещений — помогают улучшать VitaScore, их мы включим только с вашего согласия. Подробнее — в <a href="{{ url_for('main.privacy') }}">политике обработки персональных данных</a>.</p><div class="cookie-actions"><button type="button" class="btn small" data-consent="all">Принять все</button><button type="button" class="btn small ghost" data-consent="necessary">Только необходимые</button></div></div>
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 
 <script

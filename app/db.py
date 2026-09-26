@@ -5,6 +5,8 @@ import sqlite3
 
 from flask import current_app, g, request, session
 
+from .consent import analytics_allowed
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -22,6 +24,7 @@ CREATE TABLE IF NOT EXISTS leads (
     visitor_id TEXT,
     email TEXT NOT NULL,
     plan TEXT NOT NULL,
+    policy_version TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE TABLE IF NOT EXISTS score_results (
@@ -30,6 +33,13 @@ CREATE TABLE IF NOT EXISTS score_results (
     answers TEXT NOT NULL,
     total INTEGER NOT NULL,
     breakdown TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS cookie_consents (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    visitor_id TEXT,
+    choice TEXT NOT NULL,
+    policy_version TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_events_visitor ON events(visitor_id);
@@ -63,10 +73,18 @@ def init_db(app):
     conn = _connect(path)
     try:
         conn.executescript(SCHEMA)
+        _migrate(conn)
         conn.commit()
     finally:
         conn.close()
     app.teardown_appcontext(close_db)
+
+
+def _migrate(conn):
+    # Колонки, добавленные после первого деплоя: CREATE TABLE IF NOT EXISTS их не создаст
+    lead_columns = {row["name"] for row in conn.execute("PRAGMA table_info(leads)")}
+    if "policy_version" not in lead_columns:
+        conn.execute("ALTER TABLE leads ADD COLUMN policy_version TEXT")
 
 
 def to_json(value):
@@ -74,6 +92,9 @@ def to_json(value):
 
 
 def log_event(name, payload=None, path=None, referrer=None):
+    """Пишет событие в лог, только если посетитель согласился на аналитические cookie."""
+    if not analytics_allowed():
+        return
     db = get_db()
     db.execute(
         "INSERT INTO events (visitor_id, name, path, referrer, payload, ip, user_agent)"

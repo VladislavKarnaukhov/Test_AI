@@ -16,6 +16,13 @@ def client(app):
 
 
 @pytest.fixture
+def consented(client):
+    """Посетитель, который нажал «Принять все»."""
+    client.set_cookie("vs_consent", "all")
+    return client
+
+
+@pytest.fixture
 def query(app):
     def run(sql, *args):
         conn = sqlite3.connect(app.config["DATABASE_PATH"])

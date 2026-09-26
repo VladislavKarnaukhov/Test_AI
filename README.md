@@ -11,9 +11,10 @@
 app/
   __init__.py      create_app(): конфиг, БД, анонимный visitor_id в cookie-сессии
   scoring.py       calculate_score() — логика скоринга, без Flask
+  consent.py       cookie согласия vs_consent и версия политики
   db.py            SQLite: get_db(), init_db(), log_event()
-  routes.py        GET /, POST /api/score, /api/lead, /api/event
-  templates/       base.html (head, Метрика, виджет), index.html (страница)
+  routes.py        GET /, /privacy; POST /api/score, /api/lead, /api/event, /api/consent
+  templates/       base.html (head, Метрика, баннер cookie, футер, виджет), index.html, privacy.html
   static/css/      style.css
   static/js/       main.js — анкета, форма e-mail, track() → Метрика + /api/event
 tests/             pytest: test_scoring.py, test_api.py
@@ -30,6 +31,18 @@ run.py             локальный запуск
 | Восстановление | `stress`: 1–5 (1 — спокойно) | 0.25 |
 
 Каждый ответ даёт 0–100 баллов по сфере, итог — взвешенная сумма. Таблицы баллов — в `app/scoring.py`.
+
+## Cookie и согласие
+
+- При первом визите показывается баннер: «Принять все» или «Только необходимые».
+- **Пока нет согласия на аналитику**, Яндекс.Метрика не загружается, `/api/event` ничего не пишет,
+  сервер не выдаёт `visitor_id` и не логирует события. Результаты анкеты сохраняются без привязки к посетителю.
+- Выбор хранится в cookie `vs_consent` (`all` / `necessary`) и записывается в таблицу `cookie_consents`
+  вместе с версией политики. Изменить выбор можно по ссылке «Настройки cookie» в футере.
+- Форма e-mail требует отметки согласия на обработку персональных данных. Сервер проверяет `consent: true`
+  и сохраняет версию политики в `leads.policy_version`.
+- Текст политики — `app/templates/privacy.html` (адрес `/privacy`). **Перед публикацией заполните реквизиты
+  оператора в начале файла.** При любой правке текста увеличьте `POLICY_VERSION` в `app/consent.py`.
 
 ## Запуск
 
@@ -56,13 +69,15 @@ pytest -q
 
 ## Данные в БД
 
-Таблицы: `events` (все просмотры, клики, переходы, события анкеты и диалога),
-`leads` (e-mail и тариф), `score_results` (ответы и баллы).
+Таблицы: `events` (просмотры, клики, переходы, события анкеты и диалога — только при согласии на аналитику),
+`leads` (e-mail, тариф, версия политики), `score_results` (ответы и баллы), `cookie_consents` (выбор в баннере cookie).
+Новые колонки в существующей базе добавляются автоматически при старте приложения.
 
 ```bash
 sqlite3 instance/vitascore.db "select name, path, created_at from events order by id desc limit 20;"
 sqlite3 instance/vitascore.db "select email, plan, created_at from leads;"
 sqlite3 instance/vitascore.db "select total, breakdown, created_at from score_results;"
+sqlite3 instance/vitascore.db "select choice, count(*) from cookie_consents group by choice;"
 ```
 
 ## Деплой

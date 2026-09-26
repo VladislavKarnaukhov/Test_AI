@@ -3,7 +3,13 @@ import uuid
 
 from flask import Flask, session
 
+from .consent import analytics_allowed
 from .db import init_db
+
+
+def assign_visitor_id():
+    session.permanent = True
+    session["visitor_id"] = uuid.uuid4().hex
 
 
 def create_app(config=None):
@@ -24,9 +30,9 @@ def create_app(config=None):
 
     @app.before_request
     def ensure_visitor_id():
-        if "visitor_id" not in session:
-            session.permanent = True
-            session["visitor_id"] = uuid.uuid4().hex
+        # Анонимный идентификатор — аналитическая cookie, выдаём только после согласия
+        if analytics_allowed() and "visitor_id" not in session:
+            assign_visitor_id()
 
     from .routes import bp
     app.register_blueprint(bp)
