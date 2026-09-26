@@ -20,6 +20,7 @@
 - app/routes.py — страницы и API.
 - app/templates/, app/static/css/, app/static/js/ — фронтенд.
 - tests/ — pytest.
+- index.html, 404.html в корне — только редирект со старого GitHub Pages на новый адрес, не часть приложения.
 
 ## Команды
 - Запуск: python run.py  (http://localhost:5000)

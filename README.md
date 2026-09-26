@@ -90,3 +90,7 @@ gunicorn "app:create_app()"
 ```
 
 Не забудьте задать `SECRET_KEY` и `DATABASE_PATH` на постоянном диске.
+
+Сайт работает на https://vladkarnaukhov.pythonanywhere.com/. Файлы `index.html` и `404.html` в корне
+репозитория — только редирект со старого адреса GitHub Pages (https://vladislavkarnaukhov.github.io/Test_AI/)
+на новый; к Flask-приложению они отношения не имеют.
