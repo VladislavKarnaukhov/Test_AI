@@ -76,6 +76,14 @@
     track('hashchange', { hash: location.hash, from: new URL(e.oldURL).hash });
   });
 
+  // ---------- «Удалить аккаунт» раскрывается, если на него ведёт ссылка из футера ----------
+  function openDeleteForm() {
+    const form = location.hash === '#delete' && document.getElementById('delete-form');
+    if (form) form.open = true;
+  }
+  openDeleteForm();
+  window.addEventListener('hashchange', openDeleteForm);
+
   // ---------- Уведомления ----------
   const flashes = document.querySelector('.flashes');
   if (flashes) setTimeout(function () { flashes.classList.add('gone'); }, 6000);
@@ -211,7 +219,7 @@
   function updateUserCard(r) {
     const card = document.querySelector('[data-user-card]');
     if (!card) return;
-    card.querySelector('[data-uc-total]').textContent = r.total;
+    card.querySelector('[data-uc-total]').firstChild.nodeValue = r.total;
     card.querySelector('[data-uc-summary]').textContent = r.summary;
     card.querySelector('[data-uc-bar]').style.width = r.total + '%';
     card.querySelector('[data-uc-date]').textContent = '● только что';
