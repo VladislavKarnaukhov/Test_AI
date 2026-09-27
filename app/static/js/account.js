@@ -2,6 +2,69 @@
 (function () {
   'use strict';
 
+  const track = typeof window.track === 'function' ? window.track : function () {};
+
+  // ---------- История: 4 последние оценки, остальные — под «Показать ещё» ----------
+  const extras = Array.prototype.slice.call(document.querySelectorAll('.timeline li.extra'));
+  const moreBtn = document.querySelector('[data-history-more]');
+  const collapseAllBtn = document.querySelector('[data-collapse-all]');
+  const entries = Array.prototype.slice.call(document.querySelectorAll('.entry'));
+  let historyExpanded = false;
+
+  function setHistoryExpanded(on) {
+    historyExpanded = on;
+    extras.forEach(function (li) {
+      li.hidden = !on;
+      if (!on) li.querySelector('details').open = false;
+    });
+    if (moreBtn) {
+      moreBtn.textContent = on ? 'Скрыть старые оценки' : moreBtn.dataset.moreLabel;
+      moreBtn.setAttribute('aria-expanded', String(on));
+    }
+    updateCollapseAll();
+  }
+
+  function updateCollapseAll() {
+    if (collapseAllBtn) collapseAllBtn.hidden = !entries.some(function (e) { return e.open; });
+  }
+
+  // показать скрытую оценку, если к ней перешли с графика
+  function revealEntry(entry) {
+    if (!historyExpanded && entry.closest('li.extra')) setHistoryExpanded(true);
+  }
+
+  if (moreBtn && extras.length) {
+    moreBtn.parentElement.hidden = false;
+    setHistoryExpanded(false);
+    moreBtn.addEventListener('click', function () {
+      setHistoryExpanded(!historyExpanded);
+      if (!historyExpanded) moreBtn.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      track('account_history_more', { expanded: historyExpanded });
+    });
+  }
+
+  if (collapseAllBtn) {
+    collapseAllBtn.addEventListener('click', function () {
+      entries.forEach(function (e) { e.open = false; });
+      updateCollapseAll();
+      document.getElementById('history').scrollIntoView({ block: 'start', behavior: 'smooth' });
+      track('account_history_collapse_all');
+    });
+  }
+
+  document.querySelectorAll('[data-entry-close]').forEach(function (btn) {
+    btn.hidden = false;
+    btn.addEventListener('click', function () {
+      const entry = btn.closest('.entry');
+      entry.open = false;
+      // если заголовок оценки ушёл вверх за экран — вернуть его в поле зрения
+      if (entry.getBoundingClientRect().top < 0) entry.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    });
+  });
+
+  entries.forEach(function (e) { e.addEventListener('toggle', updateCollapseAll); });
+  updateCollapseAll();
+
   const panel = document.querySelector('[data-dynamics]');
   const source = document.getElementById('history-data');
   if (!panel || !source) return;
@@ -10,7 +73,6 @@
   const svg = panel.querySelector('.chart');
   const tip = panel.querySelector('.chart-tip');
   const empty = panel.querySelector('.chart-empty');
-  const track = typeof window.track === 'function' ? window.track : function () {};
 
   const W = 640, H = 260, L = 34, R = 16, T = 16, B = 34;
   const IW = W - L - R, IH = H - T - B;
@@ -139,6 +201,7 @@
   function openEntry(id, scroll) {
     const entry = document.getElementById('entry-' + id);
     if (!entry) return;
+    revealEntry(entry);
     entry.open = true;
     select(id);
     if (scroll) {

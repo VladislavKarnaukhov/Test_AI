@@ -64,12 +64,15 @@
 
 <section class="panel" id="history">
   <div class="history-head">
-    <h2>История оценок</h2>
-    <p class="muted">{{ results | length }} {{ results | length | plural('оценка', 'оценки', 'оценок') }}. Нажмите на оценку, чтобы увидеть ответы, сферы и рекомендации.</p>
+    <div>
+      <h2>История оценок</h2>
+      <p class="muted">{{ results | length }} {{ results | length | plural('оценка', 'оценки', 'оценок') }}. Нажмите на оценку, чтобы увидеть ответы, сферы и рекомендации.</p>
+    </div>
+    <button type="button" class="linkish collapse-all" data-collapse-all hidden>Свернуть все</button>
   </div>
   <ol class="timeline">
   {% for r in results %}
-    <li>
+    <li{% if loop.index > 4 %} class="extra"{% endif %}>
       <details class="entry level-{{ r.level }}" id="entry-{{ r.id }}" data-id="{{ r.id }}"{% if loop.first %} open{% endif %}>
         <summary>
           <span class="ring" style="--p: {{ r.total }}"><b>{{ r.total }}</b></span>
@@ -95,11 +98,15 @@
             <h3>Рекомендации</h3>
             {% for group in r.groups[:2] %}<p class="rec-sphere">{{ group.sphere_name }} · {{ group.level_name }}</p><ul>{% for rec in group.recs %}<li><b>{{ rec.title }}</b> {{ rec.text }}</li>{% endfor %}</ul>{% endfor %}
           </div>
+          <button type="button" class="entry-close" data-entry-close hidden>Свернуть ↑</button>
         </div>
       </details>
     </li>
   {% endfor %}
   </ol>
+  {% if results | length > 4 %}{% set hidden_count = results | length - 4 %}
+  <div class="history-more" hidden><button type="button" class="more-btn" data-history-more aria-expanded="false" data-more-label="Показать ещё {{ hidden_count }} {{ hidden_count | plural('оценку', 'оценки', 'оценок') }}">Показать ещё {{ hidden_count }} {{ hidden_count | plural('оценку', 'оценки', 'оценок') }}</button></div>
+  {% endif %}
 </section>
 
 <section class="panel" id="recommendations">
