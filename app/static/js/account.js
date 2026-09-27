@@ -2,6 +2,10 @@
 (function () {
   'use strict';
 
+  // после ошибки в форме пароля или удаления открываем нужный блок
+  const anchored = location.hash && document.querySelector('details' + location.hash.replace(/[^#\w-]/g, ''));
+  if (anchored) anchored.open = true;
+
   const panel = document.querySelector('[data-dynamics]');
   const source = document.getElementById('history-data');
   if (!panel || !source) return;

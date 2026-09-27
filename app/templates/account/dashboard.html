@@ -117,43 +117,31 @@
 </section>
 {% endif %}
 
-<section class="panel" id="profile">
+<section class="settings" id="profile">
   <h2>Мои данные</h2>
-  <div class="profile-grid">
-    <form method="post" action="{{ url_for('account.update_profile') }}" class="stack">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <label>Имя<input type="text" name="name" value="{{ user.name }}" maxlength="60" required></label>
-      <label>E-mail<input type="email" value="{{ user.email }}" disabled></label>
-      <button class="btn small" type="submit">Сохранить</button>
-    </form>
-    <dl class="facts">
-      <dt>Оценок пройдено</dt><dd>{{ results | length }}</dd>
-      <dt>Заявки на тарифы</dt>
-      <dd>{% if leads %}<ul class="plain">{% for l in leads %}<li>{{ l.plan }} — {{ l.created_at | msk }}</li>{% endfor %}</ul>{% else %}пока нет — <a href="{{ url_for('main.index') }}#plans">посмотреть тарифы</a>{% endif %}</dd>
-    </dl>
-  </div>
-</section>
-
-<section class="panel" id="security">
-  <h2>Пароль</h2>
-  <form method="post" action="{{ url_for('account.change_password') }}" class="stack narrow">
+  <form method="post" action="{{ url_for('account.update_profile') }}" class="settings-row">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <label>Текущий пароль<input type="password" name="current_password" autocomplete="current-password" required></label>
-    <label>Новый пароль<input type="password" name="password" minlength="8" maxlength="128" autocomplete="new-password" required></label>
-    <label>Новый пароль ещё раз<input type="password" name="password_confirm" minlength="8" maxlength="128" autocomplete="new-password" required></label>
-    <button class="btn small" type="submit">Изменить пароль</button>
+    <label>Имя <input type="text" name="name" value="{{ user.name }}" maxlength="60" required></label>
+    <button class="linkish" type="submit">Сохранить</button>
+    <span class="settings-email">{{ user.email }}</span>
   </form>
-</section>
-
-<section class="panel" id="danger">
-  <h2>Удаление аккаунта</h2>
-  <details class="danger-zone">
-    <summary>Удалить аккаунт</summary>
-    <p>Будут удалены профиль, все оценки, заявки и статистика посещений этого браузера. Отменить нельзя.</p>
-    <form method="post" action="{{ url_for('account.delete_account') }}" class="stack narrow">
+  <details class="settings-item" id="password">
+    <summary>Сменить пароль</summary>
+    <form method="post" action="{{ url_for('account.change_password') }}" class="settings-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <label>Пароль для подтверждения<input type="password" name="password" autocomplete="current-password" required></label>
-      <button class="btn small danger" type="submit">Удалить навсегда</button>
+      <input type="password" name="current_password" placeholder="Текущий пароль" aria-label="Текущий пароль" autocomplete="current-password" required>
+      <input type="password" name="password" placeholder="Новый пароль" aria-label="Новый пароль" minlength="8" maxlength="128" autocomplete="new-password" required>
+      <input type="password" name="password_confirm" placeholder="Новый пароль ещё раз" aria-label="Новый пароль ещё раз" minlength="8" maxlength="128" autocomplete="new-password" required>
+      <button class="btn tiny" type="submit">Изменить</button>
+    </form>
+  </details>
+  <details class="settings-item settings-danger" id="delete">
+    <summary>Удалить аккаунт</summary>
+    <p>Будут удалены профиль, все оценки и заявки. Отменить нельзя.</p>
+    <form method="post" action="{{ url_for('account.delete_account') }}" class="settings-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="password" name="password" placeholder="Пароль для подтверждения" aria-label="Пароль для подтверждения" autocomplete="current-password" required>
+      <button class="btn tiny danger" type="submit">Удалить навсегда</button>
     </form>
   </details>
 </section>

@@ -251,3 +251,38 @@ def test_migration_adds_user_columns(tmp_path):
     cols = {r[1] for r in conn.execute("PRAGMA table_info(score_results)")}
     conn.close()
     assert {"user_id", "recommendations"} <= cols
+
+
+# ---------- Последний балл на главной ----------
+
+def test_home_shows_latest_score_for_logged_in_user(user_client):
+    user_client.post("/api/score", json=VALID)                                  # 66
+    user_client.post("/api/score", json={**VALID, "sleep": "7_8", "stress": "1"})  # 88
+    html = user_client.get("/").get_data(as_text=True)
+    assert "data-user-card" in html
+    assert '<span data-uc-total class="uc-total">88</span>' in html
+    assert "Полтарелки — овощи" in html          # первый совет по самой слабой сфере (питание)
+    assert ">82<span>/100</span>" not in html    # демо-карточка скрыта
+
+
+def test_home_shows_demo_card_for_guest_and_new_user(client):
+    html = client.get("/").get_data(as_text=True)
+    assert "data-user-card" not in html and ">82<span>/100</span>" in html
+    register(client)
+    html = client.get("/").get_data(as_text=True)
+    assert "data-user-card" not in html  # оценок ещё нет
+
+
+def test_home_does_not_show_other_users_score(user_client, app):
+    user_client.post("/api/score", json=VALID)
+    other = app.test_client()
+    register(other, email="boris@example.com", name="Борис")
+    assert "data-user-card" not in other.get("/").get_data(as_text=True)
+
+
+def test_profile_is_compact_without_leads_and_count(user_client):
+    user_client.post("/api/lead", json={"email": "anna@example.com", "plan": "Start", "consent": True})
+    html = user_client.get("/account").get_data(as_text=True)
+    profile = html.split('id="profile"')[1]
+    assert "Заявки на тарифы" not in profile and "Оценок пройдено" not in profile
+    assert 'id="password"' in profile and 'id="delete"' in profile
