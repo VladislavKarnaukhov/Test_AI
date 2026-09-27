@@ -48,6 +48,7 @@ def create_app(config=None):
                 "csrf_token": auth.csrf_token}
 
     app.add_template_filter(account.to_msk, "msk")
+    app.add_template_filter(account.plural, "plural")
     app.register_blueprint(routes.bp)
     app.register_blueprint(auth.bp)
     app.register_blueprint(account.bp)

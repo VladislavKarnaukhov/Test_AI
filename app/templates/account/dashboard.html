@@ -15,12 +15,12 @@
   </div>
 </div>
 
-<nav class="account-nav" aria-label="Разделы кабинета"><a href="#dynamics">Динамика</a><a href="#recommendations">Рекомендации</a><a href="#profile">Мои данные</a></nav>
+<nav class="account-nav" aria-label="Разделы кабинета"><a href="#dynamics">Динамика</a><a href="#history">История</a><a href="#recommendations">Рекомендации</a><a href="#profile">Мои данные</a></nav>
 
 {% if not latest %}
 <section class="panel empty">
   <h2>Здесь появится ваш VitaScore</h2>
-  <p>Пройдите короткую анкету — результат сохранится в кабинете, и вы сможете следить за динамикой.</p>
+  <p>Пройдите анкету, пока вы вошли в кабинет, — результат сохранится здесь, и вы сможете следить за динамикой.</p>
   <a class="btn" href="{{ url_for('main.index') }}#try">Пройти анкету</a>
 </section>
 {% else %}
@@ -30,62 +30,89 @@
     <div class="cardtop"><span>Последняя оценка</span><span class="fresh">● {{ latest.created_at | msk }}</span></div>
     <div class="score">{{ latest.total }}<span>/100</span></div>
     {% if latest.delta is not none %}<p class="delta {{ 'up' if latest.delta > 0 else 'down' if latest.delta < 0 else '' }}">{{ '%+d' % latest.delta if latest.delta else '±0' }} к прошлой оценке</p>{% endif %}
-    <p class="caption">{{ summary }}</p>
+    <p class="caption">{{ latest.summary }}</p>
     <div class="bar"><b style="width: {{ latest.total }}%"></b></div>
-    <div class="metrics">{% for key, name in sphere_names.items() %}<div class="{{ 'weakest' if groups and groups[0].sphere == key }}"><span>{{ name | upper }}</span><b>{{ latest.breakdown[key] }}</b></div>{% endfor %}</div>
+    <div class="metrics">{% for key, name in sphere_names.items() %}<div class="{{ 'weakest' if latest.groups[0].sphere == key }}"><span>{{ name | upper }}</span><b>{{ latest.breakdown[key] }}</b></div>{% endfor %}</div>
   </div>
 
-  <div class="panel chart-panel">
-    <h2>Динамика</h2>
-    {% if chart.count < 2 %}<p class="muted">Пока одна оценка. Проходите анкету раз в неделю — здесь появится график изменений.</p>{% endif %}
-    <svg class="chart" viewBox="0 0 {{ chart.width }} {{ chart.height }}" role="img" aria-label="График VitaScore по датам">
-      {% for line in chart.grid %}<line x1="{{ chart.left }}" x2="{{ chart.width - chart.right }}" y1="{{ line.y }}" y2="{{ line.y }}" class="grid"/><text x="{{ chart.left - 8 }}" y="{{ line.y + 4 }}" class="axis" text-anchor="end">{{ line.label }}</text>{% endfor %}
-      {% for label in chart.labels %}<text x="{{ label.x }}" y="{{ chart.height - 8 }}" class="axis" text-anchor="middle">{{ label.text }}</text>{% endfor %}
-      {% for s in chart.series | reverse %}
-      <g class="series series-{{ s.key }}" style="--c: {{ s.color }}">
-        {% if chart.count > 1 %}<polyline points="{{ s.path }}"/>{% endif %}
-        {% for d in s.dots %}<circle cx="{{ d.x }}" cy="{{ d.y }}" r="{{ 5 if s.key == 'total' else 3 }}"><title>{{ s.name }}: {{ d.value }}</title></circle>{% endfor %}
-      </g>
-      {% endfor %}
-    </svg>
-    <ul class="legend">{% for s in chart.series %}<li style="--c: {{ s.color }}" class="{{ 'main' if s.key == 'total' }}">{{ s.name }}</li>{% endfor %}</ul>
-    {% if chart.hidden %}<p class="muted">На графике последние {{ chart.count }} оценок, все — в таблице ниже.</p>{% endif %}
+  <div class="panel dynamics" data-dynamics>
+    <div class="dynamics-head">
+      <h2>Динамика</h2>
+      <div class="segmented" role="group" aria-label="Период">
+        <button type="button" data-period="all" aria-pressed="true">Всё время</button><button type="button" data-period="90" aria-pressed="false">3 месяца</button><button type="button" data-period="30" aria-pressed="false">Месяц</button>
+      </div>
+    </div>
+    <dl class="stats">
+      <div><dt>Оценок</dt><dd data-stat="count">{{ stats.count }}</dd></div>
+      <div><dt>Лучшая</dt><dd data-stat="best">{{ stats.best }}</dd></div>
+      <div><dt>Средняя</dt><dd data-stat="avg">{{ stats.avg }}</dd></div>
+      <div><dt>Изменение</dt><dd data-stat="change" class="{{ 'up' if stats.change and stats.change > 0 else 'down' if stats.change and stats.change < 0 }}">{{ '%+d' % stats.change if stats.change else '—' }}</dd></div>
+    </dl>
+    <div class="series-toggles" role="group" aria-label="Что показать на графике">
+      <button type="button" data-series="total" aria-pressed="true" style="--c:#172d29">Итог</button>{% for key, name in sphere_names.items() %}<button type="button" data-series="{{ key }}" aria-pressed="false" style="--c:var(--s-{{ key }})">{{ name }}</button>{% endfor %}
+    </div>
+    <div class="chart-wrap">
+      <svg class="chart" viewBox="0 0 640 260" role="img" aria-label="График VitaScore по датам"></svg>
+      <div class="chart-tip" hidden></div>
+      <p class="chart-empty muted" hidden>За выбранный период оценок нет.</p>
+      <noscript><p class="muted">Включите JavaScript, чтобы увидеть график. Все оценки — в истории ниже.</p></noscript>
+    </div>
+    <p class="muted chart-hint">Наведите на точку, чтобы увидеть значения, нажмите — чтобы открыть оценку в истории.</p>
+    <script type="application/json" id="history-data">{{ chart_data | tojson }}</script>
   </div>
 </section>
 
-<section class="panel">
-  <h2>История оценок</h2>
-  <div class="table-scroll">
-  <table class="history">
-    <thead><tr><th>Дата</th><th>Итог</th><th></th>{% for name in sphere_names.values() %}<th>{{ name }}</th>{% endfor %}</tr></thead>
-    <tbody>
-    {% for r in results %}
-      <tr><td>{{ r.created_at | msk('%d.%m.%Y %H:%M') }}</td><td><b>{{ r.total }}</b></td><td class="delta {{ 'up' if r.delta and r.delta > 0 else 'down' if r.delta and r.delta < 0 else '' }}">{{ '%+d' % r.delta if r.delta else '' }}</td>{% for key in sphere_names %}<td>{{ r.breakdown[key] }}</td>{% endfor %}</tr>
-    {% endfor %}
-    </tbody>
-  </table>
+<section class="panel" id="history">
+  <div class="history-head">
+    <h2>История оценок</h2>
+    <p class="muted">{{ results | length }} {{ results | length | plural('оценка', 'оценки', 'оценок') }}. Нажмите на оценку, чтобы увидеть ответы, сферы и рекомендации.</p>
   </div>
+  <ol class="timeline">
+  {% for r in results %}
+    <li>
+      <details class="entry level-{{ r.level }}" id="entry-{{ r.id }}" data-id="{{ r.id }}"{% if loop.first %} open{% endif %}>
+        <summary>
+          <span class="ring" style="--p: {{ r.total }}"><b>{{ r.total }}</b></span>
+          <span class="entry-main">
+            <span class="entry-date">{{ r.date }}{% if loop.first %} <em>последняя</em>{% endif %}</span>
+            <span class="entry-summary">{{ r.summary }}</span>
+          </span>
+          <span class="mini-bars" aria-hidden="true">{% for key in sphere_names %}<i style="--v: {{ r.breakdown[key] }}; --c: var(--s-{{ key }})"></i>{% endfor %}</span>
+          {% if r.delta is not none %}<span class="badge {{ 'up' if r.delta > 0 else 'down' if r.delta < 0 else '' }}">{{ '%+d' % r.delta if r.delta else '±0' }}</span>{% else %}<span class="badge first">первая</span>{% endif %}
+        </summary>
+        <div class="entry-body">
+          <div>
+            <h3>Сферы</h3>
+            <ul class="sphere-bars">{% for key, name in sphere_names.items() %}{% set d = r.sphere_deltas[key] %}
+              <li><span>{{ name }}</span><span class="track"><b style="width: {{ r.breakdown[key] }}%; --c: var(--s-{{ key }})"></b></span><strong>{{ r.breakdown[key] }}</strong>{% if d %}<em class="{{ 'up' if d > 0 else 'down' }}">{{ '%+d' % d }}</em>{% else %}<em></em>{% endif %}</li>{% endfor %}
+            </ul>
+          </div>
+          <div>
+            <h3>Ответы</h3>
+            <dl class="answers-list">{% for question, answer in r.answers %}<dt>{{ question }}</dt><dd>{{ answer }}</dd>{% endfor %}</dl>
+          </div>
+          <div class="entry-recs">
+            <h3>Рекомендации</h3>
+            {% for group in r.groups[:2] %}<p class="rec-sphere">{{ group.sphere_name }} · {{ group.level_name }}</p><ul>{% for rec in group.recs %}<li><b>{{ rec.title }}</b> {{ rec.text }}</li>{% endfor %}</ul>{% endfor %}
+          </div>
+        </div>
+      </details>
+    </li>
+  {% endfor %}
+  </ol>
 </section>
 
 <section class="panel" id="recommendations">
   <h2>Рекомендации</h2>
-  <p class="muted">По последней оценке от {{ latest.created_at | msk }} — начиная со сферы, которая сильнее всего влияет на итог.</p>
+  <p class="muted">Все советы по последней оценке от {{ latest.created_at | msk }} — начиная со сферы, которая сильнее всего влияет на итог.</p>
   <div class="rec-groups">
-  {% for group in groups %}
+  {% for group in latest.groups %}
     <article class="rec-group level-{{ group.level }}">
       <header><h3>{{ group.sphere_name }}</h3><span class="chip">{{ latest.breakdown[group.sphere] }} · {{ group.level_name }}</span></header>
       <ul>{% for rec in group.recs %}<li><b>{{ rec.title }}</b>{{ rec.text }}</li>{% endfor %}</ul>
     </article>
   {% endfor %}
   </div>
-  {% if results | length > 1 %}
-  <details class="rec-history">
-    <summary>Рекомендации прошлых оценок</summary>
-    {% for r in results[1:] %}
-      <div class="rec-past"><p><b>{{ r.created_at | msk }}</b> · итог {{ r.total }}</p><ul>{% for rec in r.recommendations %}<li><span>{{ rec.sphere_name }}</span> {{ rec.title }}</li>{% endfor %}</ul></div>
-    {% endfor %}
-  </details>
-  {% endif %}
   <p class="disclaimer">Рекомендации носят общий характер и не заменяют консультацию врача.</p>
 </section>
 {% endif %}
@@ -100,9 +127,7 @@
       <button class="btn small" type="submit">Сохранить</button>
     </form>
     <dl class="facts">
-      <dt>Кабинет создан</dt><dd>{{ user.created_at | msk }}</dd>
       <dt>Оценок пройдено</dt><dd>{{ results | length }}</dd>
-      <dt>Согласие на обработку данных</dt><dd>редакция политики {{ user.policy_version }}</dd>
       <dt>Заявки на тарифы</dt>
       <dd>{% if leads %}<ul class="plain">{% for l in leads %}<li>{{ l.plan }} — {{ l.created_at | msk }}</li>{% endfor %}</ul>{% else %}пока нет — <a href="{{ url_for('main.index') }}#plans">посмотреть тарифы</a>{% endif %}</dd>
     </dl>
@@ -121,8 +146,7 @@
 </section>
 
 <section class="panel" id="danger">
-  <h2>Управление данными</h2>
-  <p><a class="line" href="{{ url_for('account.export') }}">Скачать все мои данные (JSON)</a></p>
+  <h2>Удаление аккаунта</h2>
   <details class="danger-zone">
     <summary>Удалить аккаунт</summary>
     <p>Будут удалены профиль, все оценки, заявки и статистика посещений этого браузера. Отменить нельзя.</p>
@@ -136,3 +160,4 @@
 
 </main>
 {% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/account.js') }}"></script>{% endblock %}

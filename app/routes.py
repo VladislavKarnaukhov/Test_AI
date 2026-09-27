@@ -4,7 +4,6 @@ import re
 from flask import Blueprint, g, jsonify, render_template, request, session
 
 from . import assign_visitor_id
-from .auth import make_claim_token
 from .consent import (CONSENT_ALL, CONSENT_CHOICES, CONSENT_COOKIE, CONSENT_MAX_AGE,
                       CONSENT_VERSION_COOKIE, POLICY_VERSION, analytics_allowed)
 from .db import get_db, log_event, to_json
@@ -88,7 +87,7 @@ def api_score():
     clean = {k: answers[k] for k in ("sleep", "activity", "nutrition", "stress")}
     user_id = g.user["id"] if g.user else None
     db = get_db()
-    cur = db.execute(
+    db.execute(
         "INSERT INTO score_results (visitor_id, user_id, answers, total, breakdown, recommendations)"
         " VALUES (?, ?, ?, ?, ?, ?)",
         (session.get("visitor_id"), user_id, to_json(clean), result["total"],
@@ -96,9 +95,7 @@ def api_score():
     )
     db.commit()
     log_event("score_calculated", {"total": result["total"], "weakest": result["weakest"]})
-    # гость может сохранить результат в кабинете по подписанной ссылке, не раскрывая id
     result["saved_to_account"] = user_id is not None
-    result["claim_token"] = None if user_id else make_claim_token(cur.lastrowid)
     return jsonify(result)
 
 
