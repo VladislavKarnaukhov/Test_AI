@@ -114,6 +114,12 @@ def dashboard():
     )
 
 
+@bp.get("/settings")
+@login_required
+def settings():
+    return render_template("account/settings.html", user=g.user)
+
+
 @bp.post("/profile")
 @login_required
 def update_profile():
@@ -125,7 +131,7 @@ def update_profile():
         db.execute("UPDATE users SET name = ? WHERE id = ?", (name, g.user["id"]))
         db.commit()
         flash("Имя сохранено.")
-    return redirect(url_for("account.dashboard") + "#profile")
+    return redirect(url_for("account.settings") + "#profile")
 
 
 @bp.post("/password")
@@ -146,7 +152,7 @@ def change_password():
             login_user(user)  # эта сессия остаётся, остальные устройства будут разлогинены
             db.commit()
             flash("Пароль изменён. На других устройствах нужно будет войти заново.")
-    return redirect(url_for("account.dashboard") + "#password")
+    return redirect(url_for("account.settings") + "#password")
 
 
 @bp.post("/delete")
@@ -155,7 +161,7 @@ def delete_account():
     user = g.user
     if not check_password_hash(user["password_hash"], request.form.get("password", "")):
         flash("Пароль указан неверно — аккаунт не удалён.", "error")
-        return redirect(url_for("account.dashboard") + "#delete")
+        return redirect(url_for("account.settings") + "#delete")
     db = get_db()
     db.execute("DELETE FROM score_results WHERE user_id = ?", (user["id"],))
     db.execute("DELETE FROM leads WHERE user_id = ?", (user["id"],))

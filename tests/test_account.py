@@ -260,7 +260,7 @@ def test_home_shows_latest_score_for_logged_in_user(user_client):
     user_client.post("/api/score", json={**VALID, "sleep": "7_8", "stress": "1"})  # 88
     html = user_client.get("/").get_data(as_text=True)
     assert "data-user-card" in html
-    assert '<span data-uc-total class="uc-total">88</span>' in html
+    assert '<div class="score" data-uc-total>88<span>/100</span></div>' in html
     assert "Полтарелки — овощи" in html          # первый совет по самой слабой сфере (питание)
     assert ">82<span>/100</span>" not in html    # демо-карточка скрыта
 
@@ -280,9 +280,32 @@ def test_home_does_not_show_other_users_score(user_client, app):
     assert "data-user-card" not in other.get("/").get_data(as_text=True)
 
 
-def test_profile_is_compact_without_leads_and_count(user_client):
-    user_client.post("/api/lead", json={"email": "anna@example.com", "plan": "Start", "consent": True})
-    html = user_client.get("/account").get_data(as_text=True)
-    profile = html.split('id="profile"')[1]
-    assert "Заявки на тарифы" not in profile and "Оценок пройдено" not in profile
-    assert 'id="password"' in profile and 'id="delete"' in profile
+def test_settings_moved_to_footer_page(user_client, client, app):
+    dashboard = user_client.get("/account").get_data(as_text=True)
+    assert 'id="password"' not in dashboard and 'id="delete"' not in dashboard
+    settings = user_client.get("/account/settings").get_data(as_text=True)
+    assert 'id="profile"' in settings and 'id="password"' in settings and 'id="delete"' in settings
+    assert "anna@example.com" in settings
+    assert "Заявки на тарифы" not in settings and "Оценок пройдено" not in settings
+    footer = user_client.get("/").get_data(as_text=True).split("<footer>")[1]
+    for text in ("Мои данные", "Сменить пароль", "Удалить аккаунт"):
+        assert text in footer
+    guest_footer = app.test_client().get("/").get_data(as_text=True).split("<footer>")[1]
+    assert "Сменить пароль" not in guest_footer
+
+
+def test_settings_requires_login(client):
+    assert client.get("/account/settings").status_code == 302
+
+
+def test_settings_forms_redirect_back(user_client):
+    token = csrf(user_client, "/account/settings")
+    res = user_client.post("/account/profile", data={"csrf_token": token, "name": "Анна К."})
+    assert res.headers["Location"].endswith("/account/settings#profile")
+    res = user_client.post("/account/delete", data={"csrf_token": token, "password": "wrong"})
+    assert res.headers["Location"].endswith("/account/settings#delete")
+
+
+def test_static_urls_are_versioned(client):
+    html = client.get("/").get_data(as_text=True)
+    assert "/static/css/style.css?v=" in html and "/static/js/main.js?v=" in html

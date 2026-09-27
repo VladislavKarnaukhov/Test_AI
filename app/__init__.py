@@ -1,7 +1,7 @@
 import os
 import uuid
 
-from flask import Flask, g, session
+from flask import Flask, g, session, url_for
 
 from .consent import POLICY_VERSION, analytics_allowed
 from .db import init_db
@@ -42,10 +42,18 @@ def create_app(config=None):
     def load_user():
         auth.load_current_user()
 
+    def static_url(filename):
+        """Адрес статики с версией по времени изменения: после обновления браузер не возьмёт старый файл из кеша."""
+        try:
+            version = int(os.path.getmtime(os.path.join(app.static_folder, filename)))
+        except OSError:
+            version = None
+        return url_for("static", filename=filename, v=version)
+
     @app.context_processor
     def inject_globals():
         return {"policy_version": POLICY_VERSION, "current_user": g.get("user"),
-                "csrf_token": auth.csrf_token}
+                "csrf_token": auth.csrf_token, "static_url": static_url}
 
     app.add_template_filter(account.to_msk, "msk")
     app.add_template_filter(account.plural, "plural")

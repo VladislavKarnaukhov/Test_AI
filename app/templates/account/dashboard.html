@@ -15,7 +15,7 @@
   </div>
 </div>
 
-<nav class="account-nav" aria-label="Разделы кабинета"><a href="#dynamics">Динамика</a><a href="#history">История</a><a href="#recommendations">Рекомендации</a><a href="#profile">Мои данные</a></nav>
+<nav class="account-nav" aria-label="Разделы кабинета"><a href="#dynamics">Динамика</a><a href="#history">История</a><a href="#recommendations">Рекомендации</a></nav>
 
 {% if not latest %}
 <section class="panel empty">
@@ -117,35 +117,6 @@
 </section>
 {% endif %}
 
-<section class="settings" id="profile">
-  <h2>Мои данные</h2>
-  <form method="post" action="{{ url_for('account.update_profile') }}" class="settings-row">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <label>Имя <input type="text" name="name" value="{{ user.name }}" maxlength="60" required></label>
-    <button class="linkish" type="submit">Сохранить</button>
-    <span class="settings-email">{{ user.email }}</span>
-  </form>
-  <details class="settings-item" id="password">
-    <summary>Сменить пароль</summary>
-    <form method="post" action="{{ url_for('account.change_password') }}" class="settings-form">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <input type="password" name="current_password" placeholder="Текущий пароль" aria-label="Текущий пароль" autocomplete="current-password" required>
-      <input type="password" name="password" placeholder="Новый пароль" aria-label="Новый пароль" minlength="8" maxlength="128" autocomplete="new-password" required>
-      <input type="password" name="password_confirm" placeholder="Новый пароль ещё раз" aria-label="Новый пароль ещё раз" minlength="8" maxlength="128" autocomplete="new-password" required>
-      <button class="btn tiny" type="submit">Изменить</button>
-    </form>
-  </details>
-  <details class="settings-item settings-danger" id="delete">
-    <summary>Удалить аккаунт</summary>
-    <p>Будут удалены профиль, все оценки и заявки. Отменить нельзя.</p>
-    <form method="post" action="{{ url_for('account.delete_account') }}" class="settings-form">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <input type="password" name="password" placeholder="Пароль для подтверждения" aria-label="Пароль для подтверждения" autocomplete="current-password" required>
-      <button class="btn tiny danger" type="submit">Удалить навсегда</button>
-    </form>
-  </details>
-</section>
-
 </main>
 {% endblock %}
-{% block scripts %}<script src="{{ url_for('static', filename='js/account.js') }}"></script>{% endblock %}
+{% block scripts %}<script src="{{ static_url('js/account.js') }}"></script>{% endblock %}
