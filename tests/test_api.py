@@ -1,5 +1,6 @@
 import json
 import sqlite3
+from pathlib import Path
 
 from app import create_app
 from app.consent import POLICY_VERSION
@@ -143,6 +144,7 @@ def test_no_tracking_without_consent(client, query):
 
 def test_necessary_only_does_not_track(client, query):
     client.set_cookie("vs_consent", "necessary")
+    client.set_cookie("vs_consent_v", POLICY_VERSION)
     client.get("/")
     client.post("/api/event", json={"name": "anchor_click"})
     assert query("SELECT * FROM events") == []
@@ -153,6 +155,7 @@ def test_consent_all(client, query):
     assert res.status_code == 200
     cookies = res.headers.getlist("Set-Cookie")
     assert any(c.startswith("vs_consent=all") for c in cookies)
+    assert any(c.startswith("vs_consent_v=" + POLICY_VERSION) for c in cookies)
     assert any(c.startswith("session=") for c in cookies)
 
     rows = query("SELECT visitor_id, choice, policy_version FROM cookie_consents")
@@ -210,3 +213,89 @@ def test_migration_adds_policy_version(tmp_path):
     conn.close()
     assert "policy_version" in columns
     assert rows == [("old@example.com", None)]
+
+
+def test_consent_for_old_policy_version_is_ignored(client, query):
+    client.set_cookie("vs_consent", "all")
+    client.set_cookie("vs_consent_v", "2000-01-01")
+    res = client.get("/")
+    assert "Set-Cookie" not in res.headers
+    client.post("/api/event", json={"name": "anchor_click"})
+    assert query("SELECT * FROM events") == []
+
+
+# ---------- Контекст посетителя ----------
+
+CHROME_ANDROID = ("Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 "
+                  "(KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36")
+CONTEXT = {
+    "landing_path": "/", "referrer": "https://www.google.com/search?q=vitascore",
+    "language": "ru-RU", "timezone": "Europe/Moscow", "screen": "412x915",
+    "utm_source": "Telegram", "utm_medium": "social", "utm_campaign": "launch",
+}
+
+
+def test_visitor_context_saved(consented, query):
+    consented.get("/")
+    res = consented.post("/api/visitor", json=CONTEXT, headers={"User-Agent": CHROME_ANDROID})
+    assert res.status_code == 204
+    rows = query("SELECT * FROM visitors")
+    assert len(rows) == 1
+    v = rows[0]
+    assert v["visitor_id"] == query("SELECT visitor_id FROM events")[0]["visitor_id"]
+    assert (v["source"], v["utm_source"], v["utm_medium"], v["utm_campaign"]) == ("telegram", "Telegram", "social", "launch")
+    assert v["referrer"] == CONTEXT["referrer"]
+    assert (v["language"], v["timezone"], v["country"], v["screen"]) == ("ru-RU", "Europe/Moscow", "RU", "412x915")
+    assert (v["device_type"], v["os"], v["browser"]) == ("mobile", "Android", "Chrome")
+
+
+def test_visitor_first_touch_is_kept(consented, query):
+    consented.post("/api/visitor", json=CONTEXT)
+    consented.post("/api/visitor", json={"landing_path": "/privacy", "utm_source": "vk",
+                                         "referrer": "http://localhost/"})
+    v = query("SELECT source, utm_source, landing_path, first_seen, last_seen FROM visitors")[0]
+    assert (v["source"], v["utm_source"], v["landing_path"]) == ("telegram", "Telegram", "/")
+
+
+def test_visitor_referrer_and_direct(consented, app, query):
+    consented.post("/api/visitor", json={"referrer": "https://www.yandex.ru/search/?text=x"})
+    assert query("SELECT source FROM visitors")[0]["source"] == "yandex.ru"
+
+    other = app.test_client()  # второй посетитель
+    other.set_cookie("vs_consent", "all")
+    other.set_cookie("vs_consent_v", POLICY_VERSION)
+    other.post("/api/visitor", json={"referrer": "http://localhost/#plans"})  # внутренний переход
+    rows = query("SELECT source, referrer FROM visitors ORDER BY rowid")
+    assert rows[1] == {"source": "(direct)", "referrer": None}
+
+
+def test_visitor_invalid_values_dropped(consented, query):
+    consented.post("/api/visitor", json={"language": "<script>", "timezone": "../../etc",
+                                         "screen": "huge", "utm_source": "x" * 500},
+                   headers={"Accept-Language": "en-US,en;q=0.9"})
+    v = query("SELECT language, timezone, screen, utm_source, country FROM visitors")[0]
+    assert v["language"] == "en-US"  # из заголовка Accept-Language
+    assert v["timezone"] is None and v["screen"] is None
+    assert len(v["utm_source"]) == 200
+    assert v["country"] == "US"
+
+
+def test_visitor_ignored_without_consent(client, query):
+    assert client.post("/api/visitor", json=CONTEXT).status_code == 204
+    assert query("SELECT * FROM visitors") == []
+
+
+def test_reports_sql_runs(consented, app):
+    consented.post("/api/visitor", json=CONTEXT)
+    consented.post("/api/lead", json={"email": "a@b.co", "plan": "Balance", "consent": True})
+    consented.post("/api/score", json=VALID)
+    sql = (Path(__file__).parent.parent / "reports.sql").read_text(encoding="utf-8")
+    body = "\n".join(l for l in sql.splitlines() if not l.startswith((".", "--")))
+    conn = sqlite3.connect(app.config["DATABASE_PATH"])
+    try:
+        results = [conn.execute(stmt).fetchall() for stmt in body.split(";") if stmt.strip()]
+    finally:
+        conn.close()
+    assert len(results) == 6
+    assert ("telegram", 1, 1, 100.0) in results[0]
+    assert results[1] == [("launch", "Telegram", "social", 1, 0, 1)]

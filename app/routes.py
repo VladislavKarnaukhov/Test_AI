@@ -5,15 +5,20 @@ from flask import Blueprint, jsonify, render_template, request, session
 
 from . import assign_visitor_id
 from .consent import (CONSENT_ALL, CONSENT_CHOICES, CONSENT_COOKIE, CONSENT_MAX_AGE,
-                      POLICY_VERSION, analytics_allowed)
+                      CONSENT_VERSION_COOKIE, POLICY_VERSION, analytics_allowed)
 from .db import get_db, log_event, to_json
 from .scoring import ScoringError, calculate_score
+from .visitor import classify_source, guess_country, parse_user_agent, referrer_domain
 
 bp = Blueprint("main", __name__)
 
 PLANS = {"Start", "Balance"}
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 EVENT_NAME_RE = re.compile(r"^[A-Za-z0-9_.:-]{1,64}$")
+LANGUAGE_RE = re.compile(r"^[A-Za-z]{2,3}(-[A-Za-z0-9]{1,8}){0,3}$")
+TIMEZONE_RE = re.compile(r"^[A-Za-z_]+(/[A-Za-z0-9_+-]+){0,2}$")
+SCREEN_RE = re.compile(r"^\d{2,5}x\d{2,5}$")
+UTM_FIELDS = ("utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term")
 MAX_FIELD = 2048
 
 
@@ -41,7 +46,7 @@ def index():
 @bp.get("/privacy")
 def privacy():
     log_event("page_view")
-    return render_template("privacy.html", policy_version=POLICY_VERSION)
+    return render_template("privacy.html")
 
 
 @bp.post("/api/consent")
@@ -66,8 +71,8 @@ def api_consent():
     db.commit()
 
     res = jsonify(ok=True, choice=choice)
-    res.set_cookie(CONSENT_COOKIE, choice, max_age=CONSENT_MAX_AGE, samesite="Lax",
-                   secure=request.is_secure)
+    for name, value in ((CONSENT_COOKIE, choice), (CONSENT_VERSION_COOKIE, POLICY_VERSION)):
+        res.set_cookie(name, value, max_age=CONSENT_MAX_AGE, samesite="Lax", secure=request.is_secure)
     return res
 
 
@@ -130,4 +135,56 @@ def api_event():
     if params is not None and len(to_json(params)) > MAX_FIELD:
         params = {"truncated": True}
     log_event(name, params, path=_clip(data.get("path")) or "", referrer=_clip(data.get("referrer")) or "")
+    return "", 204
+
+
+def _valid(value, pattern, max_len=64):
+    if not isinstance(value, str) or len(value) > max_len:
+        return None
+    return value if pattern.match(value) else None
+
+
+@bp.post("/api/visitor")
+def api_visitor():
+    """Контекст посетителя. Первый визит фиксирует источник (first touch), дальше обновляется только last_seen."""
+    visitor_id = session.get("visitor_id")
+    if not analytics_allowed() or not visitor_id:
+        return "", 204
+    data = _json_body() or {}
+
+    utm = {key: (str(data[key]).strip()[:200] or None) if data.get(key) else None for key in UTM_FIELDS}
+    referrer = _clip(data.get("referrer")) or None
+    if not referrer_domain(referrer, request.host):
+        referrer = None  # переход внутри сайта — не источник
+    source = classify_source(utm["utm_source"], referrer, request.host)
+
+    language = _valid(data.get("language"), LANGUAGE_RE, 35)
+    if not language and request.accept_languages:
+        language = _valid(request.accept_languages.best, LANGUAGE_RE, 35)
+    timezone = _valid(data.get("timezone"), TIMEZONE_RE)
+    ua = parse_user_agent(request.user_agent.string)
+
+    row = {
+        "visitor_id": visitor_id,
+        "landing_path": _clip(data.get("landing_path")),
+        "referrer": referrer,
+        "source": source,
+        **utm,
+        "language": language,
+        "timezone": timezone,
+        "country": guess_country(timezone, language),
+        "screen": _valid(data.get("screen"), SCREEN_RE, 11),
+        **ua,
+    }
+    columns = ", ".join(row)
+    placeholders = ", ".join("?" for _ in row)
+    # поля первого визита не перезаписываем; пустые — дополняем, если появились
+    updates = ", ".join(f"{k} = coalesce(visitors.{k}, excluded.{k})" for k in row if k != "visitor_id")
+    db = get_db()
+    db.execute(
+        f"INSERT INTO visitors ({columns}) VALUES ({placeholders}) "
+        f"ON CONFLICT(visitor_id) DO UPDATE SET last_seen = datetime('now'), {updates}",
+        tuple(row.values()),
+    )
+    db.commit()
     return "", 204

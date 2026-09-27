@@ -5,10 +5,16 @@
 
   // ---------- Согласие на cookie ----------
   const CONSENT_COOKIE = 'vs_consent';
+  const CONSENT_VERSION_COOKIE = 'vs_consent_v';
+  const POLICY_VERSION = document.documentElement.dataset.policyVersion;
 
-  function getConsent() {
-    const m = document.cookie.match(/(?:^|;\s*)vs_consent=([^;]*)/);
+  function readCookie(name) {
+    const m = document.cookie.match(new RegExp('(?:^|;\\s*)' + name + '=([^;]*)'));
     return m ? decodeURIComponent(m[1]) : null;
+  }
+  // Выбор, сделанный для прошлой версии политики, не считается — баннер спросит заново
+  function getConsent() {
+    return readCookie(CONSENT_VERSION_COOKIE) === POLICY_VERSION ? readCookie(CONSENT_COOKIE) : null;
   }
   function analyticsAllowed() { return getConsent() === 'all'; }
 
@@ -70,6 +76,23 @@
     track('hashchange', { hash: location.hash, from: new URL(e.oldURL).hash });
   });
 
+  // ---------- Контекст посетителя: источник, язык, часовой пояс, экран ----------
+  function sendVisitorContext() {
+    if (!analyticsAllowed()) return;
+    const params = new URLSearchParams(location.search);
+    const ctx = {
+      landing_path: location.pathname,
+      referrer: document.referrer,
+      language: navigator.language || '',
+      screen: screen.width + 'x' + screen.height
+    };
+    try { ctx.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { /* старый браузер */ }
+    ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'].forEach(function (k) {
+      if (params.get(k)) ctx[k] = params.get(k);
+    });
+    postJSON('/api/visitor', ctx).catch(function () {});
+  }
+
   // ---------- Баннер cookie ----------
   const banner = document.querySelector('.cookie-banner');
 
@@ -92,6 +115,7 @@
     return postJSON('/api/consent', { choice: choice }).catch(function () {
       // сервер недоступен — запоминаем выбор хотя бы в браузере
       document.cookie = CONSENT_COOKIE + '=' + choice + '; Max-Age=31536000; path=/; SameSite=Lax';
+      document.cookie = CONSENT_VERSION_COOKIE + '=' + POLICY_VERSION + '; Max-Age=31536000; path=/; SameSite=Lax';
     }).then(function () {
       banner.hidden = true;
       if (choice === 'all') {
@@ -99,13 +123,17 @@
         logEvent('cookie_consent', { choice: choice });
         // сервер не записал page_view при загрузке — согласия ещё не было
         if (previous !== 'all') logEvent('page_view');
-      } else if (previous === 'all') {
-        // Метрику, уже загруженную на страницу, не выгрузить — чистим её cookie и перезагружаем
+        sendVisitorContext();
+      } else {
+        // могли остаться от согласия с прошлой версией политики
         deleteMetrikaCookies();
-        location.reload();
+        // Метрику, уже загруженную на страницу, не выгрузить — перезагружаем
+        if (previous === 'all') location.reload();
       }
     });
   }
+
+  sendVisitorContext();
 
   if (banner) {
     if (!getConsent()) banner.hidden = false;

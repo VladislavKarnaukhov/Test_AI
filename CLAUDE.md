@@ -17,6 +17,7 @@
 - app/scoring.py — только логика скоринга, без импорта Flask.
 - app/db.py — подключение к SQLite, создание таблиц и миграции (_migrate).
 - app/consent.py — cookie согласия и версия политики.
+- app/visitor.py — разбор User-Agent, примерная страна, источник перехода; без Flask и без сторонних библиотек.
 - app/routes.py — страницы и API.
 - app/templates/, app/static/css/, app/static/js/ — фронтенд.
 - tests/ — pytest.
@@ -25,3 +26,4 @@
 ## Команды
 - Запуск: python run.py  (http://localhost:5000)
 - Тесты: pytest -q
+- Отчёты: sqlite3 instance/vitascore.db < reports.sql
