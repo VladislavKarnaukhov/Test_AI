@@ -207,6 +207,26 @@
     });
   }
 
+  // ---------- Карточка последнего балла на главной (для вошедших) ----------
+  function updateUserCard(r) {
+    const card = document.querySelector('[data-user-card]');
+    if (!card) return;
+    card.querySelector('[data-uc-total]').textContent = r.total;
+    card.querySelector('[data-uc-summary]').textContent = r.summary;
+    card.querySelector('[data-uc-bar]').style.width = r.total + '%';
+    card.querySelector('[data-uc-date]').textContent = '● только что';
+    card.querySelectorAll('[data-uc-sphere]').forEach(function (el) {
+      el.querySelector('b').textContent = r.breakdown[el.dataset.ucSphere];
+      el.classList.toggle('weakest', el.dataset.ucSphere === r.weakest);
+    });
+    const rec = r.recommendations && r.recommendations[0];
+    const title = card.querySelector('[data-uc-tip-title]');
+    if (rec && title) {
+      title.textContent = rec.title;
+      card.querySelector('[data-uc-tip-text]').textContent = rec.text;
+    }
+  }
+
   // ---------- Анкета ----------
   const quizForm = document.querySelector('.quiz-form');
   if (quizForm) {
@@ -252,6 +272,7 @@
         cta.href = '/login?next=' + encodeURIComponent('/#try');
       }
       cta.dataset.metric = r.saved_to_account ? 'quiz_open_account' : 'quiz_save_to_account';
+      if (r.saved_to_account) updateUserCard(r);
       cta.hidden = false;
       quizForm.hidden = true;
       resultCard.hidden = false;

@@ -102,9 +102,6 @@ def protect_forms():
 def dashboard():
     user = g.user
     results = _load_results(user["id"])
-    leads = get_db().execute(
-        "SELECT plan, email, created_at FROM leads WHERE user_id = ? ORDER BY created_at DESC", (user["id"],)
-    ).fetchall()
     latest = results[-1] if results else None
     return render_template(
         "account/dashboard.html",
@@ -113,7 +110,6 @@ def dashboard():
         latest=latest,
         stats=history_stats(results) if results else None,
         chart_data=chart_data(results),
-        leads=leads,
         sphere_names=SPHERE_NAMES,
     )
 
@@ -150,7 +146,7 @@ def change_password():
             login_user(user)  # эта сессия остаётся, остальные устройства будут разлогинены
             db.commit()
             flash("Пароль изменён. На других устройствах нужно будет войти заново.")
-    return redirect(url_for("account.dashboard") + "#security")
+    return redirect(url_for("account.dashboard") + "#password")
 
 
 @bp.post("/delete")
@@ -159,7 +155,7 @@ def delete_account():
     user = g.user
     if not check_password_hash(user["password_hash"], request.form.get("password", "")):
         flash("Пароль указан неверно — аккаунт не удалён.", "error")
-        return redirect(url_for("account.dashboard") + "#danger")
+        return redirect(url_for("account.dashboard") + "#delete")
     db = get_db()
     db.execute("DELETE FROM score_results WHERE user_id = ?", (user["id"],))
     db.execute("DELETE FROM leads WHERE user_id = ?", (user["id"],))

@@ -7,7 +7,7 @@ from . import assign_visitor_id
 from .consent import (CONSENT_ALL, CONSENT_CHOICES, CONSENT_COOKIE, CONSENT_MAX_AGE,
                       CONSENT_VERSION_COOKIE, POLICY_VERSION, analytics_allowed)
 from .db import get_db, log_event, to_json
-from .scoring import ScoringError, calculate_score
+from .scoring import SPHERE_NAMES, ScoringError, build_recommendations, calculate_score, summary_for
 from .visitor import classify_source, guess_country, parse_user_agent, referrer_domain
 
 bp = Blueprint("main", __name__)
@@ -37,10 +37,24 @@ def _clip(value):
     return str(value)[:MAX_FIELD] if value is not None else None
 
 
+def _latest_score(user_id):
+    """Последняя оценка вошедшего клиента для карточки на главной."""
+    row = get_db().execute(
+        "SELECT total, breakdown, recommendations, created_at FROM score_results"
+        " WHERE user_id = ? ORDER BY created_at DESC, id DESC LIMIT 1", (user_id,)).fetchone()
+    if row is None:
+        return None
+    breakdown = json.loads(row["breakdown"])
+    recs = json.loads(row["recommendations"]) if row["recommendations"] else build_recommendations(breakdown)
+    return {"total": row["total"], "breakdown": breakdown, "summary": summary_for(row["total"]),
+            "created_at": row["created_at"], "tip": recs[0] if recs else None, "weakest": recs[0]["sphere"] if recs else None}
+
+
 @bp.get("/")
 def index():
     log_event("page_view")
-    return render_template("index.html")
+    latest = _latest_score(g.user["id"]) if g.user else None
+    return render_template("index.html", latest=latest, sphere_names=SPHERE_NAMES)
 
 
 @bp.get("/privacy")
