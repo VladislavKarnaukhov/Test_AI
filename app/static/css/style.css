@@ -263,3 +263,13 @@ footer .legal a+a{margin-top:0}
 .settings-back a{color:#71877f;border-bottom:1px solid}
 .settings-page .settings{margin-top:26px}
 .settings-page .settings-email{margin:10px 0 0}
+
+/* История: «Показать ещё» и сворачивание */
+.history-head{align-items:flex-start}
+.collapse-all{margin-top:6px;font-size:12px;white-space:nowrap}
+.history-more{margin-top:14px;text-align:center}
+.more-btn{padding:10px 20px;border:1px dashed #9bb3a7;border-radius:99px;background:none;color:#3b6f59;font:700 12px Manrope;cursor:pointer}
+.more-btn:hover{background:#eef4ec;border-style:solid}
+.timeline li[hidden]{display:none}
+.entry-close{grid-column:1/-1;justify-self:end;padding:4px 0;border:0;background:none;color:#71877f;font:700 11px Manrope;cursor:pointer}
+.entry-close:hover{color:var(--ink)}

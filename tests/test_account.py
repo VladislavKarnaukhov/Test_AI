@@ -309,3 +309,22 @@ def test_settings_forms_redirect_back(user_client):
 def test_static_urls_are_versioned(client):
     html = client.get("/").get_data(as_text=True)
     assert "/static/css/style.css?v=" in html and "/static/js/main.js?v=" in html
+
+
+# ---------- История: «Показать ещё» ----------
+
+def test_history_shows_four_latest_and_more_button(user_client):
+    for _ in range(6):
+        user_client.post("/api/score", json=VALID)
+    html = user_client.get("/account").get_data(as_text=True)
+    items = re.findall(r'<li( class="extra")?>\s*<details class="entry', html)
+    assert [bool(extra) for extra in items] == [False] * 4 + [True] * 2
+    assert "Показать ещё 2 оценки" in html
+    assert "data-collapse-all" in html and html.count("data-entry-close") == 6
+
+
+def test_history_without_more_button_for_few_results(user_client):
+    for _ in range(4):
+        user_client.post("/api/score", json=VALID)
+    html = user_client.get("/account").get_data(as_text=True)
+    assert 'class="extra"' not in html and "data-history-more" not in html
