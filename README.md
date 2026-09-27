@@ -15,7 +15,10 @@ app/
   visitor.py       устройство по User-Agent, примерная страна, источник перехода (без Flask)
   db.py            SQLite: get_db(), init_db(), log_event()
   routes.py        GET /, /privacy; POST /api/score, /api/lead, /api/event, /api/consent, /api/visitor
-  templates/       base.html (head, Метрика, баннер cookie, футер, виджет), index.html, privacy.html
+  auth.py          /register, /login, /logout; CSRF, лимит попыток входа, привязка гостевых данных
+  account.py       /account — личный кабинет: динамика, рекомендации, профиль, выгрузка, удаление
+  templates/       base.html (head, Метрика, баннер cookie, футер, виджет), _header.html, index.html,
+                   privacy.html, auth/ (вход, регистрация), account/ (кабинет)
   static/css/      style.css
   static/js/       main.js — анкета, форма e-mail, track() → Метрика + /api/event
 tests/             pytest: test_scoring.py, test_api.py
@@ -33,6 +36,23 @@ reports.sql        готовые отчёты по источникам, уст
 | Восстановление | `stress`: 1–5 (1 — спокойно) | 0.25 |
 
 Каждый ответ даёт 0–100 баллов по сфере, итог — взвешенная сумма. Таблицы баллов — в `app/scoring.py`.
+
+## Личный кабинет
+
+- Вход по e-mail и паролю. Пароль хранится только как хеш (`werkzeug.security`, входит во Flask).
+- Регистрация — после анкеты: под результатом кнопка «Сохранить в личном кабинете». Результат передаётся
+  подписанным токеном (`claim`), поэтому чужой результат по номеру не присвоить. При входе к аккаунту также
+  привязываются анкеты и заявки, оставленные в этом браузере без входа (если посетитель принял cookie).
+- Пока клиент вошёл, каждая анкета и заявка сразу сохраняются с его `user_id`.
+- В кабинете: последняя оценка с изменением к прошлой, SVG-график динамики (итог и 4 сферы),
+  история оценок, все рекомендации по последней оценке (от самой слабой сферы) и по прошлым,
+  имя и e-mail, заявки на тарифы, смена пароля, выгрузка всех данных в JSON и удаление аккаунта.
+- Защита: CSRF-токен во всех формах, не больше 5 неудачных входов на e-mail и 20 с IP за 15 минут,
+  смена пароля разлогинивает другие устройства. На сервере с HTTPS задайте `SESSION_COOKIE_SECURE=1`.
+- Пока нет: восстановления пароля и подтверждения e-mail — для них нужен сервис отправки писем.
+  По той же причине заявки, оставленные с другого устройства, к аккаунту по e-mail не привязываются.
+- Рекомендации — каталог `RECOMMENDATIONS` в `app/scoring.py`: по 1–3 совета на сферу и уровень
+  (`low` < 50 ≤ `mid` < 80 ≤ `high`). Список сохраняется вместе с оценкой в `score_results.recommendations`.
 
 ## Cookie и согласие
 
@@ -61,7 +81,8 @@ python run.py                      # http://localhost:5000
 
 Переменные окружения:
 
-- `SECRET_KEY` — ключ подписи cookie (в проде обязательно задать своё значение);
+- `SECRET_KEY` — ключ подписи cookie и ссылок «Сохранить в кабинете» (в проде обязательно своё значение);
+- `SESSION_COOKIE_SECURE=1` — на сервере с HTTPS, чтобы cookie входа не передавалась по http;
 - `DATABASE_PATH` — путь к файлу SQLite, по умолчанию `instance/vitascore.db`;
 - `PORT`, `FLASK_DEBUG=1` — для `run.py`.
 
@@ -76,7 +97,9 @@ pytest -q
 Таблицы: `events` (просмотры, клики, переходы, события анкеты и диалога — только при согласии на аналитику),
 `visitors` (один посетитель — одна строка: источник первого захода и UTM-метки, устройство/ОС/браузер,
 язык, часовой пояс, примерная страна, экран — только при согласии на аналитику),
-`leads` (e-mail, тариф, версия политики), `score_results` (ответы и баллы), `cookie_consents` (выбор в баннере cookie).
+`users` (клиенты кабинета), `login_attempts` (журнал входов для лимита),
+`leads` (e-mail, тариф, версия политики, `user_id`), `score_results` (ответы, баллы, рекомендации, `user_id`),
+`cookie_consents` (выбор в баннере cookie).
 Новые колонки в существующей базе добавляются автоматически при старте приложения.
 
 ```bash
@@ -84,6 +107,7 @@ sqlite3 instance/vitascore.db "select name, path, created_at from events order b
 sqlite3 instance/vitascore.db "select email, plan, created_at from leads;"
 sqlite3 instance/vitascore.db "select total, breakdown, created_at from score_results;"
 sqlite3 instance/vitascore.db "select choice, count(*) from cookie_consents group by choice;"
+sqlite3 instance/vitascore.db "select u.email, u.name, count(s.id) as scores from users u left join score_results s on s.user_id = u.id group by u.id;"
 ```
 
 ### Отчёты

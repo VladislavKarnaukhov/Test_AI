@@ -62,6 +62,23 @@ CREATE TABLE IF NOT EXISTS visitors (
     os TEXT,
     browser TEXT
 );
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    name TEXT NOT NULL,
+    password_hash TEXT NOT NULL,
+    policy_version TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    last_login_at TEXT
+);
+CREATE TABLE IF NOT EXISTS login_attempts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT,
+    ip TEXT,
+    success INTEGER NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_login_attempts_email ON login_attempts(email, created_at);
 CREATE INDEX IF NOT EXISTS idx_events_visitor ON events(visitor_id);
 CREATE INDEX IF NOT EXISTS idx_events_name ON events(name);
 """
@@ -100,11 +117,22 @@ def init_db(app):
     app.teardown_appcontext(close_db)
 
 
+# Колонки, добавленные после первого деплоя: CREATE TABLE IF NOT EXISTS их не создаст
+MIGRATIONS = [
+    ("leads", "policy_version", "TEXT"),
+    ("leads", "user_id", "INTEGER REFERENCES users(id)"),
+    ("score_results", "user_id", "INTEGER REFERENCES users(id)"),
+    ("score_results", "recommendations", "TEXT"),
+]
+
+
 def _migrate(conn):
-    # Колонки, добавленные после первого деплоя: CREATE TABLE IF NOT EXISTS их не создаст
-    lead_columns = {row["name"] for row in conn.execute("PRAGMA table_info(leads)")}
-    if "policy_version" not in lead_columns:
-        conn.execute("ALTER TABLE leads ADD COLUMN policy_version TEXT")
+    for table, column, decl in MIGRATIONS:
+        columns = {row["name"] for row in conn.execute(f"PRAGMA table_info({table})")}
+        if column not in columns:
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {decl}")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_leads_user ON leads(user_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_score_results_user ON score_results(user_id, created_at)")
 
 
 def to_json(value):
