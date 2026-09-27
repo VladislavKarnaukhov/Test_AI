@@ -1,9 +1,10 @@
 import json
 import re
 
-from flask import Blueprint, jsonify, render_template, request, session
+from flask import Blueprint, g, jsonify, render_template, request, session
 
 from . import assign_visitor_id
+from .auth import make_claim_token
 from .consent import (CONSENT_ALL, CONSENT_CHOICES, CONSENT_COOKIE, CONSENT_MAX_AGE,
                       CONSENT_VERSION_COOKIE, POLICY_VERSION, analytics_allowed)
 from .db import get_db, log_event, to_json
@@ -85,13 +86,19 @@ def api_score():
         return jsonify(error="validation_error", fields=e.errors), 400
 
     clean = {k: answers[k] for k in ("sleep", "activity", "nutrition", "stress")}
+    user_id = g.user["id"] if g.user else None
     db = get_db()
-    db.execute(
-        "INSERT INTO score_results (visitor_id, answers, total, breakdown) VALUES (?, ?, ?, ?)",
-        (session.get("visitor_id"), to_json(clean), result["total"], to_json(result["breakdown"])),
+    cur = db.execute(
+        "INSERT INTO score_results (visitor_id, user_id, answers, total, breakdown, recommendations)"
+        " VALUES (?, ?, ?, ?, ?, ?)",
+        (session.get("visitor_id"), user_id, to_json(clean), result["total"],
+         to_json(result["breakdown"]), to_json(result["recommendations"])),
     )
     db.commit()
     log_event("score_calculated", {"total": result["total"], "weakest": result["weakest"]})
+    # гость может сохранить результат в кабинете по подписанной ссылке, не раскрывая id
+    result["saved_to_account"] = user_id is not None
+    result["claim_token"] = None if user_id else make_claim_token(cur.lastrowid)
     return jsonify(result)
 
 
@@ -113,8 +120,8 @@ def api_lead():
 
     db = get_db()
     db.execute(
-        "INSERT INTO leads (visitor_id, email, plan, policy_version) VALUES (?, ?, ?, ?)",
-        (session.get("visitor_id"), email, plan, POLICY_VERSION),
+        "INSERT INTO leads (visitor_id, user_id, email, plan, policy_version) VALUES (?, ?, ?, ?, ?)",
+        (session.get("visitor_id"), g.user["id"] if g.user else None, email, plan, POLICY_VERSION),
     )
     db.commit()
     log_event("lead_submitted", {"plan": plan})

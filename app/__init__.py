@@ -1,7 +1,7 @@
 import os
 import uuid
 
-from flask import Flask, session
+from flask import Flask, g, session
 
 from .consent import POLICY_VERSION, analytics_allowed
 from .db import init_db
@@ -21,6 +21,8 @@ def create_app(config=None):
         ),
         SESSION_COOKIE_SAMESITE="Lax",
         SESSION_COOKIE_HTTPONLY=True,
+        # на сервере с HTTPS задайте SESSION_COOKIE_SECURE=1: cookie входа не уйдёт по http
+        SESSION_COOKIE_SECURE=os.environ.get("SESSION_COOKIE_SECURE") == "1",
         PERMANENT_SESSION_LIFETIME=60 * 60 * 24 * 365,
     )
     if config:
@@ -34,11 +36,20 @@ def create_app(config=None):
         if analytics_allowed() and "visitor_id" not in session:
             assign_visitor_id()
 
-    @app.context_processor
-    def inject_policy_version():
-        return {"policy_version": POLICY_VERSION}
+    from . import account, auth, routes
 
-    from .routes import bp
-    app.register_blueprint(bp)
+    @app.before_request
+    def load_user():
+        auth.load_current_user()
+
+    @app.context_processor
+    def inject_globals():
+        return {"policy_version": POLICY_VERSION, "current_user": g.get("user"),
+                "csrf_token": auth.csrf_token}
+
+    app.add_template_filter(account.to_msk, "msk")
+    app.register_blueprint(routes.bp)
+    app.register_blueprint(auth.bp)
+    app.register_blueprint(account.bp)
 
     return app

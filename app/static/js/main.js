@@ -76,6 +76,10 @@
     track('hashchange', { hash: location.hash, from: new URL(e.oldURL).hash });
   });
 
+  // ---------- Уведомления ----------
+  const flashes = document.querySelector('.flashes');
+  if (flashes) setTimeout(function () { flashes.classList.add('gone'); }, 6000);
+
   // ---------- Контекст посетителя: источник, язык, часовой пояс, экран ----------
   function sendVisitorContext() {
     if (!analyticsAllowed()) return;
@@ -238,6 +242,16 @@
           el.parentElement.classList.toggle('weakest', k === r.weakest);
         }
       });
+      const cta = resultCard.querySelector('[data-account-cta]');
+      if (r.saved_to_account) {
+        cta.textContent = 'Сохранено в кабинете →';
+        cta.href = '/account';
+      } else {
+        cta.textContent = 'Сохранить в личном кабинете';
+        cta.href = '/register?claim=' + encodeURIComponent(r.claim_token || '');
+      }
+      cta.dataset.metric = r.saved_to_account ? 'quiz_open_account' : 'quiz_save_to_account';
+      cta.hidden = false;
       quizForm.hidden = true;
       resultCard.hidden = false;
     }

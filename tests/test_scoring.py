@@ -58,3 +58,17 @@ def test_invalid_values(field, value):
 def test_non_dict():
     with pytest.raises(ScoringError):
         calculate_score(["sleep"])
+
+
+def test_recommendations_start_with_weakest():
+    result = calculate_score({**BEST, "stress": 5})
+    recs = result["recommendations"]
+    assert recs[0]["sphere"] == "recovery" and recs[0]["level"] == "low"
+    assert {r["sphere"] for r in recs} == {"sleep", "activity", "nutrition", "recovery"}
+    assert all(r["title"] and r["text"] for r in recs)
+
+
+def test_recommendation_levels():
+    result = calculate_score({"sleep": "5_6", "activity": "5plus", "nutrition": "0_1", "stress": 1})
+    levels = {r["sphere"]: r["level"] for r in result["recommendations"]}
+    assert levels == {"sleep": "mid", "activity": "high", "nutrition": "low", "recovery": "high"}

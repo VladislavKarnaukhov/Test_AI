@@ -1,0 +1,3 @@
+{%- set on_index = request.endpoint == 'main.index' -%}
+{%- set home = '' if on_index else url_for('main.index') -%}
+<header class="header wrap"><a class="logo" href="{{ '#' if on_index else url_for('main.index') }}"><i>✦</i>VitaScore</a><nav><a href="{{ home }}#how">Как это работает</a><a href="{{ home }}#plans">Тарифы</a></nav><div class="header-actions">{% if current_user %}<a class="account-link" href="{{ url_for('account.dashboard') }}" data-metric="header_account">Кабинет</a>{% else %}<a class="account-link" href="{{ url_for('auth.login') }}" data-metric="header_login">Войти</a>{% endif %}{% if on_index %}<button class="btn small open" data-plan="Start" data-metric="open_leadform_header">Получить скоринг</button>{% endif %}</div></header>

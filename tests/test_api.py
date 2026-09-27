@@ -36,7 +36,9 @@ def test_score_ok(consented, query):
     res = client.post("/api/score", json=VALID)
     assert res.status_code == 200
     data = res.get_json()
-    assert set(data) == {"total", "breakdown", "weakest", "summary", "tip"}
+    assert set(data) == {"total", "breakdown", "weakest", "summary", "tip", "recommendations",
+                         "saved_to_account", "claim_token"}
+    assert data["saved_to_account"] is False and data["claim_token"]
 
     rows = query("SELECT answers, total, breakdown, visitor_id FROM score_results")
     assert len(rows) == 1
