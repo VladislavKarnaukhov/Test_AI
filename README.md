@@ -11,14 +11,16 @@
 app/
   __init__.py      create_app(): конфиг, БД, анонимный visitor_id в cookie-сессии
   scoring.py       calculate_score() — логика скоринга, без Flask
-  consent.py       cookie согласия vs_consent и версия политики
+  consent.py       cookie согласия vs_consent / vs_consent_v и версия политики
+  visitor.py       устройство по User-Agent, примерная страна, источник перехода (без Flask)
   db.py            SQLite: get_db(), init_db(), log_event()
-  routes.py        GET /, /privacy; POST /api/score, /api/lead, /api/event, /api/consent
+  routes.py        GET /, /privacy; POST /api/score, /api/lead, /api/event, /api/consent, /api/visitor
   templates/       base.html (head, Метрика, баннер cookie, футер, виджет), index.html, privacy.html
   static/css/      style.css
   static/js/       main.js — анкета, форма e-mail, track() → Метрика + /api/event
 tests/             pytest: test_scoring.py, test_api.py
 run.py             локальный запуск
+reports.sql        готовые отчёты по источникам, устройствам и странам
 ```
 
 ### Скоринг
@@ -37,8 +39,10 @@ run.py             локальный запуск
 - При первом визите показывается баннер: «Принять все» или «Только необходимые».
 - **Пока нет согласия на аналитику**, Яндекс.Метрика не загружается, `/api/event` ничего не пишет,
   сервер не выдаёт `visitor_id` и не логирует события. Результаты анкеты сохраняются без привязки к посетителю.
-- Выбор хранится в cookie `vs_consent` (`all` / `necessary`) и записывается в таблицу `cookie_consents`
-  вместе с версией политики. Изменить выбор можно по ссылке «Настройки cookie» в футере.
+- Выбор хранится в cookie `vs_consent` (`all` / `necessary`) и `vs_consent_v` (версия политики)
+  и записывается в таблицу `cookie_consents`. Изменить выбор можно по ссылке «Настройки cookie» в футере.
+- Если `POLICY_VERSION` изменилась, прежний выбор не действует: баннер показывается снова, аналитика
+  выключена до нового согласия.
 - Форма e-mail требует отметки согласия на обработку персональных данных. Сервер проверяет `consent: true`
   и сохраняет версию политики в `leads.policy_version`.
 - Текст политики — `app/templates/privacy.html` (адрес `/privacy`). **Перед публикацией заполните реквизиты
@@ -70,6 +74,8 @@ pytest -q
 ## Данные в БД
 
 Таблицы: `events` (просмотры, клики, переходы, события анкеты и диалога — только при согласии на аналитику),
+`visitors` (один посетитель — одна строка: источник первого захода и UTM-метки, устройство/ОС/браузер,
+язык, часовой пояс, примерная страна, экран — только при согласии на аналитику),
 `leads` (e-mail, тариф, версия политики), `score_results` (ответы и баллы), `cookie_consents` (выбор в баннере cookie).
 Новые колонки в существующей базе добавляются автоматически при старте приложения.
 
@@ -79,6 +85,22 @@ sqlite3 instance/vitascore.db "select email, plan, created_at from leads;"
 sqlite3 instance/vitascore.db "select total, breakdown, created_at from score_results;"
 sqlite3 instance/vitascore.db "select choice, count(*) from cookie_consents group by choice;"
 ```
+
+### Отчёты
+
+```bash
+sqlite3 instance/vitascore.db < reports.sql
+```
+
+Покажет посетителей и заявки по источникам (с конверсией), заявки по UTM-кампаниям, устройства, страны
+и средний балл анкеты по источникам. Связь идёт по `visitor_id`, поэтому в отчёты попадают только
+посетители, принявшие cookie; сколько заявок осталось без источника — в последней таблице.
+
+- **Источник** — `utm_source`, иначе домен внешнего сайта-реферера, иначе `(direct)`. Фиксируется
+  при первом визите (first touch) и дальше не меняется.
+- **Страна** — оценка по часовому поясу браузера, а если он неизвестен — по региону языка (`ru-RU` → RU).
+  Это не геолокация по IP: VPN и путешественники дадут погрешность.
+- UTM-ссылка для рекламы: `https://vladkarnaukhov.pythonanywhere.com/?utm_source=telegram&utm_medium=social&utm_campaign=autumn`
 
 ## Деплой
 

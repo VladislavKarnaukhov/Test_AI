@@ -3,6 +3,7 @@ import sqlite3
 import pytest
 
 from app import create_app
+from app.consent import POLICY_VERSION
 
 
 @pytest.fixture
@@ -19,6 +20,7 @@ def client(app):
 def consented(client):
     """Посетитель, который нажал «Принять все»."""
     client.set_cookie("vs_consent", "all")
+    client.set_cookie("vs_consent_v", POLICY_VERSION)
     return client
 
 

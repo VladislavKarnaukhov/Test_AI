@@ -3,7 +3,7 @@ import uuid
 
 from flask import Flask, session
 
-from .consent import analytics_allowed
+from .consent import POLICY_VERSION, analytics_allowed
 from .db import init_db
 
 
@@ -33,6 +33,10 @@ def create_app(config=None):
         # Анонимный идентификатор — аналитическая cookie, выдаём только после согласия
         if analytics_allowed() and "visitor_id" not in session:
             assign_visitor_id()
+
+    @app.context_processor
+    def inject_policy_version():
+        return {"policy_version": POLICY_VERSION}
 
     from .routes import bp
     app.register_blueprint(bp)

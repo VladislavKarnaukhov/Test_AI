@@ -42,6 +42,26 @@ CREATE TABLE IF NOT EXISTS cookie_consents (
     policy_version TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+CREATE TABLE IF NOT EXISTS visitors (
+    visitor_id TEXT PRIMARY KEY,
+    first_seen TEXT NOT NULL DEFAULT (datetime('now')),
+    last_seen TEXT NOT NULL DEFAULT (datetime('now')),
+    landing_path TEXT,
+    referrer TEXT,
+    source TEXT,
+    utm_source TEXT,
+    utm_medium TEXT,
+    utm_campaign TEXT,
+    utm_content TEXT,
+    utm_term TEXT,
+    language TEXT,
+    timezone TEXT,
+    country TEXT,
+    screen TEXT,
+    device_type TEXT,
+    os TEXT,
+    browser TEXT
+);
 CREATE INDEX IF NOT EXISTS idx_events_visitor ON events(visitor_id);
 CREATE INDEX IF NOT EXISTS idx_events_name ON events(name);
 """
