@@ -1,4 +1,8 @@
-"""Вход по e-mail и паролю: регистрация, вход, выход, защита форм и привязка гостевых данных."""
+"""Вход по e-mail и паролю: регистрация, вход, выход и защита форм.
+
+К кабинету относятся только анкеты, пройденные после входа: за одним компьютером
+без входа могут считаться разные люди, поэтому гостевые расчёты не привязываются.
+"""
 import hashlib
 import hmac
 import re
@@ -7,7 +11,6 @@ from functools import wraps
 
 from flask import (Blueprint, abort, current_app, flash, g, redirect, render_template, request,
                    session, url_for)
-from itsdangerous import BadSignature, URLSafeTimedSerializer
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from .consent import POLICY_VERSION
@@ -18,7 +21,6 @@ bp = Blueprint("auth", __name__)
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 PASSWORD_MIN, PASSWORD_MAX = 8, 128
 NAME_MAX = 60
-CLAIM_MAX_AGE = 7 * 24 * 60 * 60
 # не больше 5 неудачных попыток на e-mail и 20 с одного IP за 15 минут
 FAILS_PER_EMAIL, FAILS_PER_IP, FAIL_WINDOW = 5, 20, "-15 minutes"
 
@@ -78,38 +80,6 @@ def check_csrf():
     sent = request.form.get("csrf_token", "")
     if not sent or not hmac.compare_digest(sent, session.get("csrf", "")):
         abort(400, description="Форма устарела. Обновите страницу и попробуйте ещё раз.")
-
-
-# ---------- Привязка гостевого результата ----------
-
-def _claim_serializer():
-    return URLSafeTimedSerializer(current_app.config["SECRET_KEY"], salt="claim-score-result")
-
-
-def make_claim_token(result_id):
-    return _claim_serializer().dumps(result_id)
-
-
-def _claimed_result_id(token):
-    if not token:
-        return None
-    try:
-        return int(_claim_serializer().loads(token, max_age=CLAIM_MAX_AGE))
-    except (BadSignature, TypeError, ValueError):
-        return None
-
-
-def attach_guest_data(user_id, claim_token=None):
-    """Результат из ссылки «Сохранить в кабинете» и всё, что этот браузер оставил без входа."""
-    db = get_db()
-    result_id = _claimed_result_id(claim_token)
-    if result_id:
-        db.execute("UPDATE score_results SET user_id = ? WHERE id = ? AND user_id IS NULL", (user_id, result_id))
-    visitor_id = session.get("visitor_id")
-    if visitor_id:
-        for table in ("score_results", "leads"):
-            db.execute(f"UPDATE {table} SET user_id = ? WHERE visitor_id = ? AND user_id IS NULL",
-                       (user_id, visitor_id))
 
 
 # ---------- Ограничение попыток входа ----------
@@ -180,7 +150,7 @@ def register():
     if g.user is not None:
         return redirect(url_for("account.dashboard"))
     form = request.form if request.method == "POST" else request.args
-    claim = form.get("claim", "")
+    next_url = _safe_next(form.get("next"))
     errors = {}
     if request.method == "POST":
         name = form.get("name", "").strip()
@@ -204,12 +174,14 @@ def register():
                 (email, name, hash_password(password), POLICY_VERSION))
             user = db.execute("SELECT * FROM users WHERE id = ?", (cur.lastrowid,)).fetchone()
             login_user(user)
-            attach_guest_data(user["id"], claim)
             db.commit()
             log_event("account_registered")
+            if next_url:
+                flash("Кабинет создан. Пройдите анкету — теперь результат сохранится в кабинете.")
+                return redirect(next_url)
             flash("Кабинет создан. Добро пожаловать!")
             return redirect(url_for("account.dashboard"))
-    return render_template("auth/register.html", form=form, errors=errors, claim=claim)
+    return render_template("auth/register.html", form=form, errors=errors, next_url=next_url)
 
 
 @bp.route("/login", methods=["GET", "POST"])
@@ -217,7 +189,6 @@ def login():
     if g.user is not None:
         return redirect(url_for("account.dashboard"))
     form = request.form if request.method == "POST" else request.args
-    claim = form.get("claim", "")
     next_url = _safe_next(form.get("next"))
     error = None
     if request.method == "POST":
@@ -233,13 +204,12 @@ def login():
             _record_attempt(email, ok)
             if ok:
                 login_user(user)
-                attach_guest_data(user["id"], claim)
                 db.commit()
                 log_event("account_login")
                 return redirect(next_url or url_for("account.dashboard"))
             error = "Неверный e-mail или пароль."
         db.commit()
-    return render_template("auth/login.html", form=form, error=error, claim=claim, next_url=next_url)
+    return render_template("auth/login.html", form=form, error=error, next_url=next_url)
 
 
 @bp.post("/logout")

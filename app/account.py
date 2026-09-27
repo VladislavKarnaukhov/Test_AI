@@ -1,22 +1,20 @@
-"""Личный кабинет: динамика оценок, рекомендации, профиль и управление данными."""
+"""Личный кабинет: интерактивная история оценок, рекомендации и профиль."""
 import json
 from datetime import datetime, timedelta
 
-from flask import Blueprint, Response, flash, g, redirect, render_template, request, session, url_for
+from flask import Blueprint, flash, g, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash
 
 from .auth import (NAME_MAX, check_csrf, hash_password, login_user, login_required, logout_user,
                    validate_password)
 from .db import get_db
-from .scoring import SPHERE_NAMES, WEIGHTS, build_recommendations, summary_for
+from .scoring import SPHERE_NAMES, WEIGHTS, build_recommendations, describe_answers, summary_for
 
 bp = Blueprint("account", __name__, url_prefix="/account")
 
 MSK = timedelta(hours=3)
-CHART = {"width": 640, "height": 230, "left": 34, "right": 14, "top": 14, "bottom": 30}
-CHART_LIMIT = 20
-SERIES_COLORS = {"total": "#172d29", "sleep": "#4c9374", "activity": "#8fb339",
-                 "nutrition": "#c98b3a", "recovery": "#6c8fb3"}
+MONTHS = ("января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября",
+          "октября", "ноября", "декабря")
 
 
 def to_msk(value, fmt="%d.%m.%Y"):
@@ -26,25 +24,21 @@ def to_msk(value, fmt="%d.%m.%Y"):
     return (datetime.strptime(value, "%Y-%m-%d %H:%M:%S") + MSK).strftime(fmt)
 
 
-def _load_results(user_id):
-    rows = get_db().execute(
-        "SELECT id, answers, total, breakdown, recommendations, created_at FROM score_results"
-        " WHERE user_id = ? ORDER BY created_at, id", (user_id,)).fetchall()
-    results, previous = [], None
-    for row in rows:
-        breakdown = json.loads(row["breakdown"])
-        recs = json.loads(row["recommendations"]) if row["recommendations"] else build_recommendations(breakdown)
-        results.append({
-            "id": row["id"],
-            "created_at": row["created_at"],
-            "total": row["total"],
-            "breakdown": breakdown,
-            "answers": json.loads(row["answers"]),
-            "recommendations": recs,
-            "delta": None if previous is None else row["total"] - previous,
-        })
-        previous = row["total"]
-    return results
+def human_date(value):
+    """«27 сентября 2026, 14:05» по Москве."""
+    dt = datetime.strptime(value, "%Y-%m-%d %H:%M:%S") + MSK
+    return f"{dt.day} {MONTHS[dt.month - 1]} {dt.year}, {dt:%H:%M}"
+
+
+def plural(n, one, few, many):
+    """plural(3, "оценка", "оценки", "оценок") → "оценки"."""
+    if n % 10 == 1 and n % 100 != 11:
+        return one
+    return few if n % 10 in (2, 3, 4) and n % 100 not in (12, 13, 14) else many
+
+
+def score_level(total):
+    return "high" if total >= 80 else "mid" if total >= 60 else "low"
 
 
 def group_recommendations(recs):
@@ -57,37 +51,44 @@ def group_recommendations(recs):
     return groups
 
 
-def build_chart(results):
-    """Координаты линий для SVG-графика: итог и четыре сферы, последние CHART_LIMIT оценок."""
-    points = results[-CHART_LIMIT:]
-    c = CHART
-    inner_w = c["width"] - c["left"] - c["right"]
-    inner_h = c["height"] - c["top"] - c["bottom"]
-    n = len(points)
-
-    def x(i):
-        return c["left"] + (inner_w / 2 if n == 1 else i * inner_w / (n - 1))
-
-    def y(v):
-        return c["top"] + (100 - v) * inner_h / 100
-
-    series = []
-    for key in ("total", *WEIGHTS):
-        values = [p["total"] if key == "total" else p["breakdown"][key] for p in points]
-        coords = [(round(x(i), 1), round(y(v), 1)) for i, v in enumerate(values)]
-        series.append({
-            "key": key,
-            "name": "Итог" if key == "total" else SPHERE_NAMES[key],
-            "color": SERIES_COLORS[key],
-            "path": " ".join(f"{px},{py}" for px, py in coords),
-            "dots": [{"x": px, "y": py, "value": v} for (px, py), v in zip(coords, values)],
+def _load_results(user_id):
+    """Оценки клиента по возрастанию даты — со словесными ответами и изменениями к предыдущей."""
+    rows = get_db().execute(
+        "SELECT id, answers, total, breakdown, recommendations, created_at FROM score_results"
+        " WHERE user_id = ? ORDER BY created_at, id", (user_id,)).fetchall()
+    results, previous = [], None
+    for number, row in enumerate(rows, start=1):
+        breakdown = json.loads(row["breakdown"])
+        recs = json.loads(row["recommendations"]) if row["recommendations"] else build_recommendations(breakdown)
+        results.append({
+            "id": row["id"],
+            "number": number,
+            "created_at": row["created_at"],
+            "date": human_date(row["created_at"]),
+            "total": row["total"],
+            "level": score_level(row["total"]),
+            "summary": summary_for(row["total"]),
+            "breakdown": breakdown,
+            "answers": describe_answers(json.loads(row["answers"])),
+            "groups": group_recommendations(recs),
+            "delta": None if previous is None else row["total"] - previous["total"],
+            "sphere_deltas": {k: None if previous is None else breakdown[k] - previous["breakdown"][k]
+                              for k in WEIGHTS},
         })
-    grid = [{"y": round(y(v), 1), "label": v} for v in (0, 25, 50, 75, 100)]
-    # подписи дат: не больше 6, чтобы не слипались
-    step = max(1, -(-n // 6))
-    labels = [{"x": round(x(i), 1), "text": to_msk(p["created_at"], "%d.%m")}
-              for i, p in enumerate(points) if i % step == 0 or i == n - 1]
-    return {**c, "series": series, "grid": grid, "labels": labels, "count": n, "hidden": len(results) - n}
+        previous = {"total": row["total"], "breakdown": breakdown}
+    return results
+
+
+def chart_data(results):
+    """Минимум данных для интерактивного графика в браузере."""
+    return [{"id": r["id"], "t": r["created_at"].replace(" ", "T") + "Z", "label": to_msk(r["created_at"], "%d.%m"),
+             "date": r["date"], "total": r["total"], **r["breakdown"]} for r in results]
+
+
+def history_stats(results):
+    totals = [r["total"] for r in results]
+    return {"count": len(totals), "best": max(totals), "avg": round(sum(totals) / len(totals)),
+            "change": totals[-1] - totals[0] if len(totals) > 1 else None}
 
 
 @bp.before_request
@@ -110,9 +111,8 @@ def dashboard():
         user=user,
         results=list(reversed(results)),
         latest=latest,
-        summary=summary_for(latest["total"]) if latest else None,
-        groups=group_recommendations(latest["recommendations"]) if latest else [],
-        chart=build_chart(results) if results else None,
+        stats=history_stats(results) if results else None,
+        chart_data=chart_data(results),
         leads=leads,
         sphere_names=SPHERE_NAMES,
     )
@@ -151,28 +151,6 @@ def change_password():
             db.commit()
             flash("Пароль изменён. На других устройствах нужно будет войти заново.")
     return redirect(url_for("account.dashboard") + "#security")
-
-
-@bp.get("/export")
-@login_required
-def export():
-    user = g.user
-    db = get_db()
-    data = {
-        "user": {"email": user["email"], "name": user["name"], "created_at": user["created_at"],
-                 "policy_version": user["policy_version"]},
-        "score_results": [
-            {k: r[k] for k in ("created_at", "total", "breakdown", "answers", "recommendations")}
-            for r in _load_results(user["id"])
-        ],
-        "leads": [dict(r) for r in db.execute(
-            "SELECT email, plan, policy_version, created_at FROM leads WHERE user_id = ?", (user["id"],))],
-    }
-    return Response(
-        json.dumps(data, ensure_ascii=False, indent=2),
-        mimetype="application/json",
-        headers={"Content-Disposition": "attachment; filename=vitascore-data.json"},
-    )
 
 
 @bp.post("/delete")

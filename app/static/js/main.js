@@ -247,8 +247,9 @@
         cta.textContent = 'Сохранено в кабинете →';
         cta.href = '/account';
       } else {
-        cta.textContent = 'Сохранить в личном кабинете';
-        cta.href = '/register?claim=' + encodeURIComponent(r.claim_token || '');
+        // гостевые расчёты не привязываются: за одним компьютером могут быть разные люди
+        cta.textContent = 'Войти и сохранять результаты';
+        cta.href = '/login?next=' + encodeURIComponent('/#try');
       }
       cta.dataset.metric = r.saved_to_account ? 'quiz_open_account' : 'quiz_save_to_account';
       cta.hidden = false;

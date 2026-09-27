@@ -14,9 +14,9 @@ def csrf(client, path="/login"):
     return re.search(r'name="csrf_token" value="([^"]+)"', html).group(1)
 
 
-def register(client, email="anna@example.com", name="Анна", password=PASSWORD, claim="", **extra):
+def register(client, email="anna@example.com", name="Анна", password=PASSWORD, **extra):
     data = {"csrf_token": csrf(client, "/register"), "name": name, "email": email,
-            "password": password, "password_confirm": password, "consent": "on", "claim": claim}
+            "password": password, "password_confirm": password, "consent": "on"}
     data.update(extra)
     return client.post("/register", data=data)
 
@@ -109,41 +109,29 @@ def test_forms_require_csrf(user_client, query):
 
 # ---------- Связь данных с кабинетом ----------
 
-def test_guest_result_claimed_on_register(client, query):
-    data = client.post("/api/score", json=VALID).get_json()
-    assert data["claim_token"]
-    register(client, claim=data["claim_token"])
-    rows = query("SELECT user_id FROM score_results")
-    assert rows[0]["user_id"] is not None
-
-
-def test_claim_token_cannot_be_forged(client, query):
+def test_guest_results_are_never_attached(client, query):
+    """За одним компьютером без входа могут считаться разные люди — гостевые расчёты не привязываем."""
+    client.set_cookie("vs_consent", "all")
+    client.set_cookie("vs_consent_v", POLICY_VERSION)
+    client.get("/")
     client.post("/api/score", json=VALID)
-    register(client, claim="1")  # не подписан
-    assert query("SELECT user_id FROM score_results")[0]["user_id"] is None
+    client.post("/api/lead", json={"email": "anna@example.com", "plan": "Start", "consent": True})
+    register(client)
+    client.post("/logout", data={"csrf_token": csrf(client, "/account")})
+    login(client)
+    assert query("SELECT user_id FROM score_results") == [{"user_id": None}]
+    assert query("SELECT user_id FROM leads") == [{"user_id": None}]
+    assert "Здесь появится ваш VitaScore" in client.get("/account").get_data(as_text=True)
 
 
-def test_claimed_result_of_other_user_is_not_stolen(user_client, app, query):
-    token = user_client.post("/api/score", json=VALID).get_json()["claim_token"]
-    assert token is None  # у вошедшего результат сразу в кабинете
-    guest = app.test_client()
-    guest_token = guest.post("/api/score", json=VALID).get_json()["claim_token"]
-    register(guest, email="boris@example.com", name="Борис", claim=guest_token)
-    register(app.test_client(), email="eve@example.com", name="Ева", claim=guest_token)  # повторное использование
-    owners = [r["user_id"] for r in query("SELECT user_id FROM score_results ORDER BY id")]
-    assert owners == [1, 2]
+def test_register_returns_to_quiz(client):
+    res = register(client, next="/#try")
+    assert res.status_code == 302 and res.headers["Location"].endswith("/#try")
 
 
-def test_consented_visitor_data_attached_on_login(user_client, app, query):
-    guest = app.test_client()
-    guest.set_cookie("vs_consent", "all")
-    guest.set_cookie("vs_consent_v", POLICY_VERSION)
-    guest.get("/")
-    guest.post("/api/score", json=VALID)
-    guest.post("/api/lead", json={"email": "anna@example.com", "plan": "Start", "consent": True})
-    login(guest)
-    assert [r["user_id"] for r in query("SELECT user_id FROM score_results")] == [1]
-    assert [r["user_id"] for r in query("SELECT user_id FROM leads")] == [1]
+def test_guest_score_has_login_cta_data(client):
+    data = client.post("/api/score", json=VALID).get_json()
+    assert data["saved_to_account"] is False and "claim_token" not in data
 
 
 def test_logged_in_results_and_leads_are_linked(user_client, query):
@@ -156,18 +144,30 @@ def test_logged_in_results_and_leads_are_linked(user_client, query):
 
 # ---------- Кабинет ----------
 
-def test_dashboard_shows_dynamics_and_recommendations(user_client):
+def test_dashboard_history(user_client):
     user_client.post("/api/score", json=VALID)
     user_client.post("/api/score", json={**VALID, "sleep": "7_8", "stress": "1"})
     html = user_client.get("/account").get_data(as_text=True)
-    assert "История оценок" in html
-    assert "<polyline" in html                    # две оценки — линия графика
-    assert "к прошлой оценке" in html
-    assert "Рекомендации прошлых оценок" in html
+    data = json.loads(re.search(r'id="history-data">(.*?)</script>', html, re.S).group(1))
+    assert [d["total"] for d in data] == [66, 88]
+    assert set(data[0]) >= {"id", "t", "label", "date", "total", "sleep", "activity", "nutrition", "recovery"}
+    entries = re.findall(r'<details class="entry level-(\w+)" id="entry-(\d+)"', html)
+    assert [lvl for lvl, _ in entries] == ["high", "mid"]           # новые сверху
+    assert 'id="entry-{}" data-id="{}" open'.format(data[1]["id"], data[1]["id"]) in html
+    assert "+22" in html                                           # изменение к прошлой
+    assert "7–8 часов" in html and "1 из 5 — спокойно" in html     # ответы словами
+    assert "account.js" in html
     # во второй оценке слабее всего питание (65, «есть резерв») — его советы идут первыми
     recs = html.split('id="recommendations"')[1]
     assert recs.index("Питание") < recs.index("Сон")
     assert "Полтарелки — овощи" in recs
+
+
+def test_dashboard_hides_registration_and_consent_facts(user_client):
+    html = user_client.get("/account").get_data(as_text=True)
+    assert "<dt>Кабинет создан" not in html
+    assert "Согласие на обработку" not in html
+    assert "Скачать" not in html
 
 
 def test_dashboard_empty_state(user_client):
@@ -212,14 +212,8 @@ def test_change_password_wrong_current(user_client, query):
     assert query("SELECT password_hash FROM users")[0]["password_hash"] == before
 
 
-def test_export(user_client):
-    user_client.post("/api/score", json=VALID)
-    res = user_client.get("/account/export")
-    assert "attachment" in res.headers["Content-Disposition"]
-    data = res.get_json(force=True)
-    assert data["user"]["email"] == "anna@example.com"
-    assert len(data["score_results"]) == 1 and data["score_results"][0]["recommendations"]
-    assert "password_hash" not in json.dumps(data)
+def test_export_removed(user_client):
+    assert user_client.get("/account/export").status_code == 404
 
 
 def test_delete_account(user_client, query):

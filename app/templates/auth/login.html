@@ -6,15 +6,14 @@
 <form class="auth-card" method="post" action="{{ url_for('auth.login') }}" novalidate>
 <p class="tag">Личный кабинет</p>
 <h1>Вход</h1>
-{% if claim %}<p class="auth-note">Войдите, и последний результат анкеты сохранится в вашем кабинете.</p>{% endif %}
+{% if next_url and 'try' in next_url %}<p class="auth-note">После входа пройдите анкету — результат сохранится в кабинете.</p>{% endif %}
 {% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-<input type="hidden" name="claim" value="{{ claim }}">
 {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
 <label>E-mail<input type="email" name="email" value="{{ form.get('email', '') }}" autocomplete="email" required autofocus></label>
 <label>Пароль<input type="password" name="password" autocomplete="current-password" required></label>
 <button class="btn" type="submit">Войти</button>
-<p class="auth-switch">Нет кабинета? <a href="{{ url_for('auth.register', claim=claim or None) }}">Зарегистрируйтесь</a></p>
+<p class="auth-switch">Нет кабинета? <a href="{{ url_for('auth.register', next=next_url) }}">Зарегистрируйтесь</a></p>
 <p class="auth-hint">Забыли пароль? Восстановление по почте появится позже — пока напишите нам, и мы поможем.</p>
 </form>
 </main>
