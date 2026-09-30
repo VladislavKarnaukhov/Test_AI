@@ -7,7 +7,9 @@ from . import assign_visitor_id
 from .consent import (CONSENT_ALL, CONSENT_CHOICES, CONSENT_COOKIE, CONSENT_MAX_AGE,
                       CONSENT_VERSION_COOKIE, POLICY_VERSION, analytics_allowed)
 from .db import get_db, log_event, to_json
-from .scoring import SPHERE_NAMES, ScoringError, build_recommendations, calculate_score, summary_for
+from .results import SELECT_COLUMNS, present
+from .scoring import (AEROBIC_TARGET, CRISIS_CONTACTS, INTENSITY, LEVELS, POINTS, SPHERE_NAMES, SPHERE_SHORT,
+                      STEPS, ScoringError, calculate_score)
 from .visitor import classify_source, guess_country, parse_user_agent, referrer_domain
 
 bp = Blueprint("main", __name__)
@@ -40,27 +42,32 @@ def _clip(value):
 def _latest_score(user_id):
     """Последняя оценка вошедшего клиента для карточки на главной."""
     row = get_db().execute(
-        "SELECT total, breakdown, recommendations, created_at FROM score_results"
-        " WHERE user_id = ? ORDER BY created_at DESC, id DESC LIMIT 1", (user_id,)).fetchone()
+        f"SELECT {SELECT_COLUMNS} FROM score_results WHERE user_id = ? ORDER BY created_at DESC, id DESC LIMIT 1",
+        (user_id,)).fetchone()
     if row is None:
         return None
-    breakdown = json.loads(row["breakdown"])
-    recs = json.loads(row["recommendations"]) if row["recommendations"] else build_recommendations(breakdown)
-    return {"total": row["total"], "breakdown": breakdown, "summary": summary_for(row["total"]),
-            "created_at": row["created_at"], "tip": recs[0] if recs else None, "weakest": recs[0]["sphere"] if recs else None}
+    return {**present(row), "created_at": row["created_at"]}
 
 
 @bp.get("/")
 def index():
     log_event("page_view")
     latest = _latest_score(g.user["id"]) if g.user else None
-    return render_template("index.html", latest=latest, sphere_names=SPHERE_NAMES)
+    return render_template("index.html", latest=latest, sphere_names=SPHERE_NAMES, sphere_short=SPHERE_SHORT,
+                           steps=STEPS)
 
 
 @bp.get("/privacy")
 def privacy():
     log_event("page_view")
     return render_template("privacy.html")
+
+
+@bp.get("/methodology")
+def methodology():
+    log_event("page_view")
+    return render_template("methodology.html", steps=STEPS, points=POINTS, levels=LEVELS,
+                           intensity=INTENSITY, aerobic_target=AEROBIC_TARGET, crisis=CRISIS_CONTACTS)
 
 
 @bp.post("/api/consent")
@@ -92,23 +99,30 @@ def api_consent():
 
 @bp.post("/api/score")
 def api_score():
-    answers = _json_body()
+    data = _json_body()
+    if data is None:
+        return jsonify(error="validation_error", fields={"answers": "ожидается объект с ответами"}), 400
+    # ответы анкеты — сведения о здоровье: без отдельного согласия не считаем и не храним
+    if data.get("health_consent") is not True:
+        return jsonify(error="health_consent_required",
+                       fields={"health_consent": "Нужно согласие на обработку данных о здоровье."}), 400
     try:
-        result = calculate_score(answers)
+        result = calculate_score(data)
     except ScoringError as e:
-        return jsonify(error="validation_error", fields=e.errors), 400
+        return jsonify(error=e.code, fields=e.errors), 400
 
-    clean = {k: answers[k] for k in ("sleep", "activity", "nutrition", "stress")}
     user_id = g.user["id"] if g.user else None
     db = get_db()
     db.execute(
-        "INSERT INTO score_results (visitor_id, user_id, answers, total, breakdown, recommendations)"
-        " VALUES (?, ?, ?, ?, ?, ?)",
-        (session.get("visitor_id"), user_id, to_json(clean), result["total"],
-         to_json(result["breakdown"]), to_json(result["recommendations"])),
+        "INSERT INTO score_results (visitor_id, user_id, answers, total, breakdown, recommendations,"
+        " method_version, flags, focus, health_consent_version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (session.get("visitor_id"), user_id, to_json(result.pop("answers")), result["total"],
+         to_json(result["breakdown"]), to_json(result["recommendations"]), result["version"],
+         to_json(result["flags"]), to_json(result["focus"]), POLICY_VERSION),
     )
     db.commit()
-    log_event("score_calculated", {"total": result["total"], "weakest": result["weakest"]})
+    log_event("score_calculated", {"total": result["total"], "weakest": result["weakest"],
+                                   "flags": [f["code"] for f in result["flags"]]})
     result["saved_to_account"] = user_id is not None
     return jsonify(result)
 

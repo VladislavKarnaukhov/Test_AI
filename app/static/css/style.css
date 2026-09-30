@@ -273,3 +273,64 @@ footer .legal a+a{margin-top:0}
 .timeline li[hidden]{display:none}
 .entry-close{grid-column:1/-1;justify-self:end;padding:4px 0;border:0;background:none;color:#71877f;font:700 11px Manrope;cursor:pointer}
 .entry-close:hover{color:var(--ink)}
+
+/* Анкета v1.0: шаги и варианты ответов */
+.beta-note{max-width:520px;margin:0;color:#526a63;font-size:12px;line-height:1.6}
+.beta-note a,.method-link a{color:#3b8b6d;border-bottom:1px solid;font-weight:700}
+.quiz-progress{display:grid;gap:8px;margin-bottom:18px;font-size:11px;font-weight:700;color:#598375}
+.quiz-bar{height:5px;border-radius:5px;background:#e3ece2;overflow:hidden}
+.quiz-bar b{display:block;height:100%;border-radius:inherit;background:var(--ink);transition:width .3s}
+.quiz-step{margin:0;padding:0;border:0;min-width:0}
+.quiz-step legend{padding:0;font:600 26px "Playfair Display",Georgia,serif;letter-spacing:-.5px}
+.quiz-sub{margin:4px 0 14px;color:#71877f;font-size:12px;line-height:1.5}
+.q{padding:12px 0;border-top:1px solid #edf1ea}
+.q-text{margin:0 0 9px;font-size:13px;font-weight:700;line-height:1.45}
+.q-hint{margin:-5px 0 9px;color:#7c8e88;font-size:11px}
+.choices{display:flex;flex-wrap:wrap;gap:6px}
+.choices.many .choice span{min-width:34px;text-align:center}
+.choice{position:relative;cursor:pointer}
+.choice input{position:absolute;opacity:0;width:1px;height:1px}
+.choice span{display:inline-block;padding:8px 12px;border:1px solid #cbdcd0;border-radius:8px;background:#fff;font:600 12px Manrope;line-height:1.3;transition:.15s}
+.choice:hover span{border-color:var(--ink)}
+.choice input:checked+span{background:var(--ink);border-color:var(--ink);color:#fff}
+.choice input:focus-visible+span{outline:2px solid #4c9374;outline-offset:2px}
+.q.missing .q-text{color:#b04a33}
+.q.missing .choice span{border-color:#e8b3a6}
+.health-consent{display:flex;gap:9px;align-items:flex-start;margin:14px 0 0;padding:12px;border-radius:10px;background:#f1f6ef;font-size:11px;line-height:1.5;color:#40584f;cursor:pointer}
+.health-consent input{display:inline-block;width:16px;height:16px;flex:none;margin:1px 0 0;accent-color:var(--ink)}
+.health-consent a{color:#3b8b6d;border-bottom:1px solid}
+.health-consent.missing{outline:2px solid #e8b3a6}
+.quiz-nav{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:14px}
+.quiz-nav .btn{margin-left:auto}
+.quiz-nav .line{background:none;border:0;border-bottom:1px solid;cursor:pointer;font:700 12px Manrope;color:var(--ink);padding:0 0 3px}
+.quiz-form .btn{width:auto}
+
+/* Результат: уровень, фокус, красные флаги */
+.level-name{margin:0 0 4px;color:var(--lime);font-size:13px;font-weight:800}
+.flags{display:grid;gap:8px;margin-bottom:18px}
+.flag{padding:12px 14px;border-radius:12px;background:#fff4e8;color:#5a3a12;font-size:11px;line-height:1.5}
+.flag b{display:block;font-size:12px}
+.flag p{margin:4px 0 0}
+.flag-urgent{background:#fde8e3;color:#7a2616}
+.flag-info{background:#eef4f8;color:#2d4a5e}
+.flag-contacts{font-weight:800}
+.method-link{margin:14px 0 0;font-size:11px}
+.method-link a{color:var(--lime)}
+.uc-flag{margin:0 0 12px;color:#ffb199;font-size:11px;font-weight:800}
+.entry-date em.legacy{background:#eef1ea;color:#71877f}
+.entry-date em.flagged{background:#fde8e3;color:#a4442f}
+.entry-flag{margin:0 0 10px;padding:8px 10px;border-radius:8px;font-size:11px;line-height:1.5}
+.entry-flag.flag-warn{background:#fff4e8;color:#5a3a12}
+.entry-flag.flag-urgent{background:#fde8e3;color:#7a2616}
+.entry-flag.flag-info{background:#eef4f8;color:#2d4a5e}
+.ans-group{margin:10px 0 6px;font-size:10px;font-weight:800;color:#3b6f59}
+.ans-group:first-of-type{margin-top:0}
+
+/* Страница методики */
+.method-page .beta-box{padding:14px 16px;border-radius:12px;background:#e4eee3;color:#3b5a4e;font-size:13px;line-height:1.6}
+.method-page .formula{padding:12px 16px;border-left:3px solid var(--lime);background:#fff;font-weight:700}
+.method-page .points td:first-child{width:45%}
+.method-page ol{padding-left:20px;color:#40584f;font-size:14px;line-height:1.7}
+@media(max-width:720px){.quiz{padding:20px}.choice span{padding:8px 10px}}
+.quiz-form .choice{display:inline-block;margin:0;font-size:inherit}
+.quiz-form .health-consent{display:flex;margin:14px 0 0;font-size:11px}

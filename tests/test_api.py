@@ -4,8 +4,9 @@ from pathlib import Path
 
 from app import create_app
 from app.consent import POLICY_VERSION
+from tests.answers import EXAMPLE, with_consent
 
-VALID = {"sleep": "7_8", "activity": "3_4", "nutrition": "2_3", "stress": "2"}
+VALID = with_consent(EXAMPLE)
 
 
 def test_index_renders_and_logs_page_view(consented, query):
@@ -36,23 +37,50 @@ def test_score_ok(consented, query):
     res = client.post("/api/score", json=VALID)
     assert res.status_code == 200
     data = res.get_json()
-    assert set(data) == {"total", "breakdown", "weakest", "summary", "tip", "recommendations", "saved_to_account"}
+    assert {"version", "total", "level", "level_name", "summary", "breakdown", "weakest", "flags", "focus",
+            "recommendations", "saved_to_account"} <= set(data)
+    assert data["total"] == 60 and data["version"] == "1.0" and "answers" not in data
     assert data["saved_to_account"] is False
 
-    rows = query("SELECT answers, total, breakdown, visitor_id FROM score_results")
+    rows = query("SELECT answers, total, breakdown, method_version, flags, focus, health_consent_version, visitor_id"
+                 " FROM score_results")
     assert len(rows) == 1
-    assert rows[0]["total"] == data["total"]
-    assert json.loads(rows[0]["answers"]) == VALID
-    assert json.loads(rows[0]["breakdown"]) == data["breakdown"]
-    assert rows[0]["visitor_id"]
+    row = rows[0]
+    assert row["total"] == 60 and row["method_version"] == "1.0"
+    assert row["health_consent_version"] == POLICY_VERSION
+    saved = json.loads(row["answers"])
+    assert saved["s1"] == "6_7" and "health_consent" not in saved
+    assert json.loads(row["breakdown"]) == data["breakdown"]
+    assert json.loads(row["focus"])["item"] == "aerobic" and json.loads(row["flags"]) == []
+    assert row["visitor_id"]
     assert [e["name"] for e in query("SELECT name FROM events")] == ["score_calculated"]
 
 
+def test_score_requires_health_consent(client, query):
+    for payload in (EXAMPLE, {**EXAMPLE, "health_consent": False}, {**EXAMPLE, "health_consent": "yes"}):
+        res = client.post("/api/score", json=payload)
+        assert res.status_code == 400 and res.get_json()["error"] == "health_consent_required"
+    assert query("SELECT * FROM score_results") == []
+
+
+def test_score_under_18(client, query):
+    res = client.post("/api/score", json={**VALID, "age": "under18"})
+    assert res.status_code == 400 and res.get_json()["error"] == "age_restricted"
+    assert query("SELECT * FROM score_results") == []
+
+
+def test_score_red_flag_saved(client, query):
+    res = client.post("/api/score", json={**VALID, "p1": "3", "p2": "3", "p3": "3", "p4": "0"})
+    data = res.get_json()
+    assert [f["code"] for f in data["flags"]] == ["distress"] and data["focus"]["type"] == "specialist"
+    assert json.loads(query("SELECT flags FROM score_results")[0]["flags"])[0]["code"] == "distress"
+
+
 def test_score_validation_error(client, query):
-    res = client.post("/api/score", json={"sleep": "bad"})
+    res = client.post("/api/score", json={"health_consent": True, "s1": "bad"})
     assert res.status_code == 400
     fields = res.get_json()["fields"]
-    assert set(fields) == {"sleep", "activity", "nutrition", "stress"}
+    assert "s1" in fields and "p4" in fields and len(fields) == 22
     assert query("SELECT * FROM score_results") == []
 
 

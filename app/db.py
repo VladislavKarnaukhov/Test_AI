@@ -123,6 +123,10 @@ MIGRATIONS = [
     ("leads", "user_id", "INTEGER REFERENCES users(id)"),
     ("score_results", "user_id", "INTEGER REFERENCES users(id)"),
     ("score_results", "recommendations", "TEXT"),
+    ("score_results", "method_version", "TEXT"),        # NULL — старая формула (scoring_v0)
+    ("score_results", "flags", "TEXT"),                 # красные флаги, JSON
+    ("score_results", "focus", "TEXT"),                 # фокус недели, JSON
+    ("score_results", "health_consent_version", "TEXT"),  # редакция политики, по которой дано согласие
 ]
 
 

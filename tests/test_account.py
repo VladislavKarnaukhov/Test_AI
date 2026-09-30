@@ -4,8 +4,10 @@ import re
 import pytest
 
 from app.consent import POLICY_VERSION
+from tests.answers import EXAMPLE, answers, with_consent
 
-VALID = {"sleep": "5_6", "activity": "3_4", "nutrition": "2_3", "stress": "3"}
+VALID = with_consent(EXAMPLE)                        # итог 60
+BETTER = with_consent(answers(n1="2", n2="daily"))  # итог 92, слабее всего питание — сладкие напитки
 PASSWORD = "correct-horse-1"
 
 
@@ -146,21 +148,21 @@ def test_logged_in_results_and_leads_are_linked(user_client, query):
 
 def test_dashboard_history(user_client):
     user_client.post("/api/score", json=VALID)
-    user_client.post("/api/score", json={**VALID, "sleep": "7_8", "stress": "1"})
+    user_client.post("/api/score", json=BETTER)
     html = user_client.get("/account").get_data(as_text=True)
     data = json.loads(re.search(r'id="history-data">(.*?)</script>', html, re.S).group(1))
-    assert [d["total"] for d in data] == [66, 88]
+    assert [d["total"] for d in data] == [60, 92]
     assert set(data[0]) >= {"id", "t", "label", "date", "total", "sleep", "activity", "nutrition", "recovery"}
     entries = re.findall(r'<details class="entry level-(\w+)" id="entry-(\d+)"', html)
     assert [lvl for lvl, _ in entries] == ["high", "mid"]           # новые сверху
     assert 'id="entry-{}" data-id="{}" open'.format(data[1]["id"], data[1]["id"]) in html
-    assert "+22" in html                                           # изменение к прошлой
-    assert "7–8 часов" in html and "1 из 5 — спокойно" in html     # ответы словами
+    assert "+32" in html                                           # изменение к прошлой
+    assert "6–7" in html and "Умеренно — можете говорить, но не петь" in html  # ответы словами
     assert "account.js" in html
-    # во второй оценке слабее всего питание (65, «есть резерв») — его советы идут первыми
+    assert "Фокус недели: Замените сладкий напиток" in html
     recs = html.split('id="recommendations"')[1]
     assert recs.index("Питание") < recs.index("Сон")
-    assert "Полтарелки — овощи" in recs
+    assert "Замените сладкий напиток" in recs
 
 
 def test_dashboard_hides_registration_and_consent_facts(user_client):
@@ -256,12 +258,12 @@ def test_migration_adds_user_columns(tmp_path):
 # ---------- Последний балл на главной ----------
 
 def test_home_shows_latest_score_for_logged_in_user(user_client):
-    user_client.post("/api/score", json=VALID)                                  # 66
-    user_client.post("/api/score", json={**VALID, "sleep": "7_8", "stress": "1"})  # 88
+    user_client.post("/api/score", json=VALID)   # 60
+    user_client.post("/api/score", json=BETTER)  # 92
     html = user_client.get("/").get_data(as_text=True)
     assert "data-user-card" in html
-    assert '<div class="score" data-uc-total>88<span>/100</span></div>' in html
-    assert "Полтарелки — овощи" in html          # первый совет по самой слабой сфере (питание)
+    assert '<div class="score" data-uc-total>92<span>/100</span></div>' in html
+    assert "Замените сладкий напиток" in html    # фокус недели по самой слабой сфере (питание)
     assert ">82<span>/100</span>" not in html    # демо-карточка скрыта
 
 
@@ -328,3 +330,62 @@ def test_history_without_more_button_for_few_results(user_client):
         user_client.post("/api/score", json=VALID)
     html = user_client.get("/account").get_data(as_text=True)
     assert 'class="extra"' not in html and "data-history-more" not in html
+
+
+# ---------- Методика v1.0 ----------
+
+def _insert_legacy(app, user_id=1):
+    import sqlite3
+    conn = sqlite3.connect(app.config["DATABASE_PATH"])
+    conn.execute("INSERT INTO score_results (user_id, answers, total, breakdown, created_at) VALUES (?, ?, 66, ?,"
+                 " datetime('now', '-7 days'))",
+                 (user_id, json.dumps({"sleep": "5_6", "activity": "3_4", "nutrition": "2_3", "stress": "3"}),
+                  json.dumps({"sleep": 60, "activity": 80, "nutrition": 65, "recovery": 60})))
+    conn.commit()
+    conn.close()
+
+
+def test_legacy_results_marked_and_not_compared(user_client, app):
+    _insert_legacy(app)
+    user_client.post("/api/score", json=VALID)
+    html = user_client.get("/account").get_data(as_text=True)
+    data = json.loads(re.search(r'id="history-data">(.*?)</script>', html, re.S).group(1))
+    assert [d["total"] for d in data] == [60]                    # на графике только v1.0
+    assert "старая методика" in html
+    assert "к прошлой оценке" not in html                        # 60 не сравнивается с 66 старой формулы
+    assert "Сон: 5–6 часов" in html or "5–6 часов" in html       # ответы старой анкеты словами
+
+
+def test_only_legacy_results_show_chart_placeholder(user_client, app):
+    _insert_legacy(app)
+    html = user_client.get("/account").get_data(as_text=True)
+    assert "График появится после первой анкеты по методике v1.0" in html
+    assert 'id="history-data"' not in html
+
+
+def test_quiz_markup_has_all_questions_and_health_consent(client):
+    html = client.get("/").get_data(as_text=True)
+    assert len(set(re.findall(r'type="radio" name="(\w+)"', html))) == 22
+    assert 'name="health_consent"' in html and "сведений о состоянии моего здоровья" in html
+    assert 'class="quiz-step"' in html and "Шаг 1 из 5" in html
+    assert "ПСИХОЛОГИЧЕСКОЕ СОСТОЯНИЕ" in html and "/methodology" in html
+
+
+def test_methodology_page(client):
+    html = client.get("/methodology").get_data(as_text=True)
+    assert "Методика v1.0" in html and "бета-версия" in html
+    assert "7–8 → <b>100</b>" in html and "8–9 → <b>100</b> (65+: 70)" in html   # таблицы из кода скоринга
+    assert "Балл = 100 − PHQ-4 / 12 × 100" in html
+    assert "Красные флаги" in html and "112" in html
+
+
+def test_privacy_has_health_section(client):
+    html = client.get("/privacy").get_data(as_text=True)
+    assert 'id="health"' in html and "ст. 10 152-ФЗ" in html
+
+
+def test_home_card_shows_specialist_flag(user_client):
+    user_client.post("/api/score", json={**VALID, "s6": "yes"})
+    html = user_client.get("/").get_data(as_text=True)
+    assert "Есть рекомендация обратиться к специалисту" in html
+    assert "Фокус недели — консультация специалиста" in html
