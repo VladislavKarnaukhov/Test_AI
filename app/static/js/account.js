@@ -76,7 +76,7 @@
 
   const W = 640, H = 260, L = 34, R = 16, T = 16, B = 34;
   const IW = W - L - R, IH = H - T - B;
-  const NAMES = { total: 'Итог', sleep: 'Сон', activity: 'Движение', nutrition: 'Питание', recovery: 'Восстановление' };
+  const NAMES = { total: 'Итог', sleep: 'Сон', activity: 'Движение', nutrition: 'Питание', recovery: 'Психол. состояние' };
   const ORDER = ['total', 'sleep', 'activity', 'nutrition', 'recovery'];
   const rootStyle = getComputedStyle(document.documentElement);
   const COLORS = { total: '#172d29' };

@@ -26,15 +26,24 @@
 {% else %}
 
 <section class="account-overview" id="dynamics">
+  {% set weakest = (latest.breakdown | dictsort(by='value'))[0][0] %}
   <div class="card score-card account-score">
-    <div class="cardtop"><span>Последняя оценка</span><span class="fresh">● {{ latest.created_at | msk }}</span></div>
+    {% if latest.flags %}<div class="flags">{% for f in latest.flags %}<div class="flag flag-{{ f.level }}"><b>{{ f.title }}</b><p>{{ f.text }}</p>{% if f.contacts %}<p class="flag-contacts">Если очень тяжело или есть угроза жизни — звоните 112.</p>{% endif %}</div>{% endfor %}</div>{% endif %}
+    <div class="cardtop"><span>Последняя оценка</span><span class="fresh">● {{ latest.created_at | msk }} · {{ 'старая методика' if latest.legacy else 'методика v' ~ latest.version }}</span></div>
     <div class="score">{{ latest.total }}<span>/100</span></div>
     {% if latest.delta is not none %}<p class="delta {{ 'up' if latest.delta > 0 else 'down' if latest.delta < 0 else '' }}">{{ '%+d' % latest.delta if latest.delta else '±0' }} к прошлой оценке</p>{% endif %}
     <p class="caption">{{ latest.summary }}</p>
     <div class="bar"><b style="width: {{ latest.total }}%"></b></div>
-    <div class="metrics">{% for key, name in sphere_names.items() %}<div class="{{ 'weakest' if latest.groups[0].sphere == key }}"><span>{{ name | upper }}</span><b>{{ latest.breakdown[key] }}</b></div>{% endfor %}</div>
+    <div class="metrics">{% for key, name in sphere_short.items() %}<div class="{{ 'weakest' if key == weakest }}"><span>{{ name | upper }}</span><b>{{ latest.breakdown[key] }}</b></div>{% endfor %}</div>
+    {% if latest.focus %}<div class="tip"><i>✦</i><div><b>{{ latest.focus.title if latest.focus.title.startswith('Фокус недели') else 'Фокус недели: ' ~ latest.focus.title }}</b>{{ latest.focus.text }}</div></div>{% endif %}
   </div>
 
+  {% if not stats %}
+  <div class="panel dynamics">
+    <h2>Динамика</h2>
+    <p class="muted">График появится после первой анкеты по методике v{{ method_version }}. Баллы старой методики с новыми не сравниваются — они остаются в истории ниже.</p>
+  </div>
+  {% else %}
   <div class="panel dynamics" data-dynamics>
     <div class="dynamics-head">
       <h2>Динамика</h2>
@@ -49,7 +58,7 @@
       <div><dt>Изменение</dt><dd data-stat="change" class="{{ 'up' if stats.change and stats.change > 0 else 'down' if stats.change and stats.change < 0 }}">{{ '%+d' % stats.change if stats.change else '—' }}</dd></div>
     </dl>
     <div class="series-toggles" role="group" aria-label="Что показать на графике">
-      <button type="button" data-series="total" aria-pressed="true" style="--c:#172d29">Итог</button>{% for key, name in sphere_names.items() %}<button type="button" data-series="{{ key }}" aria-pressed="false" style="--c:var(--s-{{ key }})">{{ name }}</button>{% endfor %}
+      <button type="button" data-series="total" aria-pressed="true" style="--c:#172d29">Итог</button>{% for key, name in sphere_short.items() %}<button type="button" data-series="{{ key }}" aria-pressed="false" style="--c:var(--s-{{ key }})">{{ name }}</button>{% endfor %}
     </div>
     <div class="chart-wrap">
       <svg class="chart" viewBox="0 0 640 260" role="img" aria-label="График VitaScore по датам"></svg>
@@ -60,6 +69,7 @@
     <p class="muted chart-hint">Наведите на точку, чтобы увидеть значения, нажмите — чтобы открыть оценку в истории.</p>
     <script type="application/json" id="history-data">{{ chart_data | tojson }}</script>
   </div>
+  {% endif %}
 </section>
 
 <section class="panel" id="history">
@@ -77,7 +87,7 @@
         <summary>
           <span class="ring" style="--p: {{ r.total }}"><b>{{ r.total }}</b></span>
           <span class="entry-main">
-            <span class="entry-date">{{ r.date }}{% if loop.first %} <em>последняя</em>{% endif %}</span>
+            <span class="entry-date">{{ r.date }}{% if loop.first %} <em>последняя</em>{% endif %}{% if r.legacy %} <em class="legacy">старая методика</em>{% endif %}{% if r.flags | selectattr('level', 'ne', 'info') | list %} <em class="flagged">к специалисту</em>{% endif %}</span>
             <span class="entry-summary">{{ r.summary }}</span>
           </span>
           <span class="mini-bars" aria-hidden="true">{% for key in sphere_names %}<i style="--v: {{ r.breakdown[key] }}; --c: var(--s-{{ key }})"></i>{% endfor %}</span>
@@ -87,15 +97,17 @@
           <div>
             <h3>Сферы</h3>
             <ul class="sphere-bars">{% for key, name in sphere_names.items() %}{% set d = r.sphere_deltas[key] %}
-              <li><span>{{ name }}</span><span class="track"><b style="width: {{ r.breakdown[key] }}%; --c: var(--s-{{ key }})"></b></span><strong>{{ r.breakdown[key] }}</strong>{% if d %}<em class="{{ 'up' if d > 0 else 'down' }}">{{ '%+d' % d }}</em>{% else %}<em></em>{% endif %}</li>{% endfor %}
+              <li><span>{{ sphere_short[key] }}</span><span class="track"><b style="width: {{ r.breakdown[key] }}%; --c: var(--s-{{ key }})"></b></span><strong>{{ r.breakdown[key] }}</strong>{% if d %}<em class="{{ 'up' if d > 0 else 'down' }}">{{ '%+d' % d }}</em>{% else %}<em></em>{% endif %}</li>{% endfor %}
             </ul>
           </div>
           <div>
             <h3>Ответы</h3>
-            <dl class="answers-list">{% for question, answer in r.answers %}<dt>{{ question }}</dt><dd>{{ answer }}</dd>{% endfor %}</dl>
+            {% for group_title, rows in r.answer_groups %}{% if r.answer_groups | length > 1 %}<p class="ans-group">{{ group_title }}</p>{% endif %}<dl class="answers-list">{% for question, answer in rows %}<dt>{{ question }}</dt><dd>{{ answer }}</dd>{% endfor %}</dl>{% endfor %}
           </div>
           <div class="entry-recs">
             <h3>Рекомендации</h3>
+            {% for f in r.flags %}<p class="entry-flag flag-{{ f.level }}"><b>{{ f.title }}.</b> {{ f.text }}</p>{% endfor %}
+            {% if r.legacy %}<p class="muted">Посчитано по старой методике — баллы не сравнимы с новыми.</p>{% endif %}
             {% for group in r.groups[:2] %}<p class="rec-sphere">{{ group.sphere_name }} · {{ group.level_name }}</p><ul>{% for rec in group.recs %}<li><b>{{ rec.title }}</b> {{ rec.text }}</li>{% endfor %}</ul>{% endfor %}
           </div>
           <button type="button" class="entry-close" data-entry-close hidden>Свернуть ↑</button>

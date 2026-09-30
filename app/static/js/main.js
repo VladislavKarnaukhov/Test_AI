@@ -227,86 +227,190 @@
       el.querySelector('b').textContent = r.breakdown[el.dataset.ucSphere];
       el.classList.toggle('weakest', el.dataset.ucSphere === r.weakest);
     });
-    const rec = r.recommendations && r.recommendations[0];
     const title = card.querySelector('[data-uc-tip-title]');
-    if (rec && title) {
-      title.textContent = rec.title;
-      card.querySelector('[data-uc-tip-text]').textContent = rec.text;
+    if (r.focus && title) {
+      title.textContent = r.focus.title;
+      card.querySelector('[data-uc-tip-text]').textContent = r.focus.text;
+    }
+    const flag = card.querySelector('[data-uc-flag]');
+    const serious = (r.flags || []).some(function (f) { return f.level !== 'info'; });
+    if (flag) {
+      flag.textContent = serious ? '● Есть рекомендация обратиться к специалисту' : '';
+      flag.hidden = !serious;
     }
   }
 
-  // ---------- Анкета ----------
+  // ---------- Анкета (методика v1.0): 5 шагов, ответы — радиокнопки ----------
   const quizForm = document.querySelector('.quiz-form');
   if (quizForm) {
     const quizError = quizForm.querySelector('.form-error');
-    const quizBtn = quizForm.querySelector('button[type=submit]');
+    const steps = Array.prototype.slice.call(quizForm.querySelectorAll('.quiz-step'));
+    const prevBtn = quizForm.querySelector('[data-prev]');
+    const nextBtn = quizForm.querySelector('[data-next]');
+    const submitBtn = quizForm.querySelector('button[type=submit]');
+    const stepLabel = quizForm.querySelector('[data-step-label]');
+    const stepBar = quizForm.querySelector('[data-step-bar]');
+    const consent = quizForm.querySelector('input[name=health_consent]');
     const resultCard = document.querySelector('.score-card');
-    const FIELD_LABELS = { sleep: 'сон', activity: 'активность', nutrition: 'питание', stress: 'стресс' };
+    let current = 0;
+
+    function value(name) {
+      const checked = quizForm.querySelector('input[name="' + name + '"]:checked');
+      return checked ? checked.value : null;
+    }
+
+    // «сколько минут» и «насколько интенсивно» не нужны, если активности нет
+    function updateDependents() {
+      quizForm.querySelectorAll('[data-depends-on]').forEach(function (q) {
+        q.hidden = value(q.dataset.dependsOn) === '0';
+      });
+    }
+
+    function showStep(i) {
+      current = i;
+      steps.forEach(function (s, n) { s.hidden = n !== i; });
+      prevBtn.hidden = i === 0;
+      nextBtn.hidden = i === steps.length - 1;
+      submitBtn.hidden = i !== steps.length - 1;
+      stepLabel.textContent = 'Шаг ' + (i + 1) + ' из ' + steps.length + ' · ' + steps[i].dataset.title;
+      stepBar.style.width = ((i + 1) / steps.length * 100) + '%';
+      quizError.textContent = '';
+    }
+
+    function scrollToQuiz() {
+      const top = quizForm.getBoundingClientRect().top;
+      if (top < 0) quizForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // все видимые вопросы шага отвечены (+ согласие на первом шаге)
+    function checkStep(i) {
+      let firstMissing = null;
+      steps[i].querySelectorAll('.q').forEach(function (q) {
+        const missing = !q.hidden && !value(q.dataset.q);
+        q.classList.toggle('missing', missing);
+        if (missing && !firstMissing) firstMissing = q;
+      });
+      if (firstMissing) {
+        quizError.textContent = 'Ответьте на все вопросы этого шага.';
+        firstMissing.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return false;
+      }
+      if (i === 0 && value('age') === 'under18') {
+        quizError.textContent = 'Анкета VitaScore рассчитана на взрослых — от 18 лет.';
+        return false;
+      }
+      if (i === 0 && !consent.checked) {
+        consent.closest('.consent').classList.add('missing');
+        quizError.textContent = 'Чтобы продолжить, дайте согласие на обработку данных о здоровье.';
+        return false;
+      }
+      return true;
+    }
 
     quizForm.addEventListener('change', function (e) {
-      if (e.target.name) {
-        e.target.classList.remove('invalid');
-        track('quiz_answer', { question: e.target.name, value: e.target.value });
+      const t = e.target;
+      if (t.type === 'radio') {
+        t.closest('.q').classList.remove('missing');
+        updateDependents();
+        track('quiz_answer', { question: t.name, value: t.value });
       }
+      if (t === consent) consent.closest('.consent').classList.toggle('missing', !consent.checked);
+      quizError.textContent = '';
     });
 
-    function showErrors(fields) {
-      quizForm.querySelectorAll('select').forEach(function (s) {
-        s.classList.toggle('invalid', Object.prototype.hasOwnProperty.call(fields, s.name));
+    nextBtn.addEventListener('click', function () {
+      if (!checkStep(current)) return;
+      track('quiz_step', { step: current + 2 });
+      showStep(current + 1);
+      scrollToQuiz();
+    });
+    prevBtn.addEventListener('click', function () { showStep(current - 1); scrollToQuiz(); });
+
+    function el(tag, cls, text) {
+      const node = document.createElement(tag);
+      if (cls) node.className = cls;
+      if (text) node.textContent = text;
+      return node;
+    }
+
+    // красные флаги — над баллом, отдельным блоком
+    function renderFlags(flags) {
+      const box = resultCard.querySelector('[data-flags]');
+      box.textContent = '';
+      flags.forEach(function (f) {
+        const item = el('div', 'flag flag-' + f.level);
+        item.appendChild(el('b', '', f.title));
+        item.appendChild(el('p', '', f.text));
+        if (f.contacts) item.appendChild(el('p', 'flag-contacts', 'Если очень тяжело или есть угроза жизни — звоните 112.'));
+        box.appendChild(item);
       });
-      const names = Object.keys(fields).map(function (k) { return FIELD_LABELS[k] || k; });
-      quizError.textContent = names.length ? 'Ответьте на все вопросы: ' + names.join(', ') + '.' : 'Не удалось рассчитать балл.';
+      box.hidden = !flags.length;
     }
 
     function showResult(r) {
+      renderFlags(r.flags || []);
       resultCard.querySelector('[data-total]').textContent = r.total;
-      resultCard.querySelector('[data-summary]').textContent = r.summary;
+      resultCard.querySelector('[data-level]').textContent = r.level_name;
+      resultCard.querySelector('[data-summary]').textContent = r.summary.replace(r.level_name + '. ', '');
       resultCard.querySelector('[data-bar]').style.width = r.total + '%';
-      resultCard.querySelector('[data-tip]').textContent = r.tip;
+      const ft = r.focus.title;
+      resultCard.querySelector('[data-focus-title]').textContent = ft.indexOf('Фокус недели') === 0 ? ft : 'Фокус недели: ' + ft;
+      resultCard.querySelector('[data-tip]').textContent = r.focus.text;
       Object.keys(r.breakdown).forEach(function (k) {
-        const el = resultCard.querySelector('[data-sphere="' + k + '"]');
-        if (el) {
-          el.textContent = r.breakdown[k];
-          el.parentElement.classList.toggle('weakest', k === r.weakest);
+        const cell = resultCard.querySelector('[data-sphere="' + k + '"]');
+        if (cell) {
+          cell.textContent = r.breakdown[k];
+          cell.parentElement.classList.toggle('weakest', k === r.weakest);
         }
       });
       const cta = resultCard.querySelector('[data-account-cta]');
       if (r.saved_to_account) {
         cta.textContent = 'Сохранено в кабинете →';
         cta.href = '/account';
+        updateUserCard(r);
       } else {
         // гостевые расчёты не привязываются: за одним компьютером могут быть разные люди
         cta.textContent = 'Войти и сохранять результаты';
         cta.href = '/login?next=' + encodeURIComponent('/#try');
       }
       cta.dataset.metric = r.saved_to_account ? 'quiz_open_account' : 'quiz_save_to_account';
-      if (r.saved_to_account) updateUserCard(r);
       cta.hidden = false;
       quizForm.hidden = true;
       resultCard.hidden = false;
+      resultCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     quizForm.addEventListener('submit', function (e) {
       e.preventDefault();
-      const answers = {};
-      new FormData(quizForm).forEach(function (v, k) { answers[k] = v; });
-      const missing = {};
-      ['sleep', 'activity', 'nutrition', 'stress'].forEach(function (k) { if (!answers[k]) missing[k] = 'обязательное поле'; });
-      if (Object.keys(missing).length) { showErrors(missing); return; }
-
+      if (!checkStep(current)) return;
+      const payload = { health_consent: consent.checked };
+      quizForm.querySelectorAll('.q').forEach(function (q) {
+        if (!q.hidden && value(q.dataset.q)) payload[q.dataset.q] = value(q.dataset.q);
+      });
       quizError.textContent = '';
-      quizBtn.disabled = true;
-      postJSON('/api/score', answers).then(function (r) {
-        if (r.ok) showResult(r.data);
-        else showErrors((r.data && r.data.fields) || {});
+      submitBtn.disabled = true;
+      postJSON('/api/score', payload).then(function (r) {
+        if (r.ok) return showResult(r.data);
+        const d = r.data || {};
+        if (d.error === 'age_restricted') quizError.textContent = d.fields.age;
+        else if (d.error === 'health_consent_required') { showStep(0); checkStep(0); }
+        else quizError.textContent = 'Проверьте ответы: не все вопросы заполнены.';
       }).catch(function () {
         quizError.textContent = 'Нет связи с сервером. Попробуйте ещё раз.';
-      }).finally(function () { quizBtn.disabled = false; });
+      }).finally(function () { submitBtn.disabled = false; });
     });
 
     resultCard.querySelector('.again').addEventListener('click', function () {
+      quizForm.reset();
+      quizForm.querySelectorAll('.missing').forEach(function (m) { m.classList.remove('missing'); });
+      updateDependents();
+      showStep(0);
       resultCard.hidden = true;
       quizForm.hidden = false;
+      scrollToQuiz();
     });
+
+    updateDependents();
+    showStep(0);
   }
 })();

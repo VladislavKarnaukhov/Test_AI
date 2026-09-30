@@ -1,5 +1,4 @@
 """Личный кабинет: интерактивная история оценок, рекомендации и профиль."""
-import json
 from datetime import datetime, timedelta
 
 from flask import Blueprint, flash, g, redirect, render_template, request, session, url_for
@@ -8,7 +7,8 @@ from werkzeug.security import check_password_hash
 from .auth import (NAME_MAX, check_csrf, hash_password, login_user, login_required, logout_user,
                    validate_password)
 from .db import get_db
-from .scoring import SPHERE_NAMES, WEIGHTS, build_recommendations, describe_answers, summary_for
+from .results import SELECT_COLUMNS, present
+from .scoring import METHOD_VERSION, SPHERE_NAMES, SPHERE_SHORT, SPHERES
 
 bp = Blueprint("account", __name__, url_prefix="/account")
 
@@ -52,41 +52,38 @@ def group_recommendations(recs):
 
 
 def _load_results(user_id):
-    """Оценки клиента по возрастанию даты — со словесными ответами и изменениями к предыдущей."""
+    """Оценки клиента по возрастанию даты. Изменения считаются только к прошлой оценке той же методики."""
     rows = get_db().execute(
-        "SELECT id, answers, total, breakdown, recommendations, created_at FROM score_results"
-        " WHERE user_id = ? ORDER BY created_at, id", (user_id,)).fetchall()
-    results, previous = [], None
-    for number, row in enumerate(rows, start=1):
-        breakdown = json.loads(row["breakdown"])
-        recs = json.loads(row["recommendations"]) if row["recommendations"] else build_recommendations(breakdown)
+        f"SELECT {SELECT_COLUMNS} FROM score_results WHERE user_id = ? ORDER BY created_at, id", (user_id,)
+    ).fetchall()
+    results, previous = [], {}
+    for row in rows:
+        r = present(row)
+        prev = previous.get(r["version"])
         results.append({
+            **r,
             "id": row["id"],
-            "number": number,
             "created_at": row["created_at"],
             "date": human_date(row["created_at"]),
-            "total": row["total"],
             "level": score_level(row["total"]),
-            "summary": summary_for(row["total"]),
-            "breakdown": breakdown,
-            "answers": describe_answers(json.loads(row["answers"])),
-            "groups": group_recommendations(recs),
-            "delta": None if previous is None else row["total"] - previous["total"],
-            "sphere_deltas": {k: None if previous is None else breakdown[k] - previous["breakdown"][k]
-                              for k in WEIGHTS},
+            "groups": group_recommendations(r["recommendations"]),
+            "delta": None if prev is None else r["total"] - prev["total"],
+            "sphere_deltas": {k: None if prev is None else r["breakdown"][k] - prev["breakdown"][k] for k in SPHERES},
         })
-        previous = {"total": row["total"], "breakdown": breakdown}
+        previous[r["version"]] = r
     return results
 
 
 def chart_data(results):
-    """Минимум данных для интерактивного графика в браузере."""
+    """Точки графика — только по действующей методике: баллы старой формулы с ними не сравнимы."""
     return [{"id": r["id"], "t": r["created_at"].replace(" ", "T") + "Z", "label": to_msk(r["created_at"], "%d.%m"),
-             "date": r["date"], "total": r["total"], **r["breakdown"]} for r in results]
+             "date": r["date"], "total": r["total"], **r["breakdown"]} for r in results if not r["legacy"]]
 
 
 def history_stats(results):
-    totals = [r["total"] for r in results]
+    totals = [r["total"] for r in results if not r["legacy"]]
+    if not totals:
+        return None
     return {"count": len(totals), "best": max(totals), "avg": round(sum(totals) / len(totals)),
             "change": totals[-1] - totals[0] if len(totals) > 1 else None}
 
@@ -108,8 +105,10 @@ def dashboard():
         user=user,
         results=list(reversed(results)),
         latest=latest,
-        stats=history_stats(results) if results else None,
+        stats=history_stats(results),
         chart_data=chart_data(results),
+        method_version=METHOD_VERSION,
+        sphere_short=SPHERE_SHORT,
         sphere_names=SPHERE_NAMES,
     )
 
