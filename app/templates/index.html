@@ -5,7 +5,6 @@
 <main id="main" tabindex="-1">
 
 <section class="hero">
-<canvas class="hero-canvas" aria-hidden="true"></canvas>
 <div class="wrap hero-grid">
 <div class="hero-copy">
 <h1>Узнайте свой индекс здоровья</h1>
@@ -27,7 +26,7 @@
 {% set demo = [('sleep', 72), ('activity', 85), ('nutrition', 64), ('mental', 80), ('nicotine', 100), ('alcohol', 90)] %}
 <figure class="sheet sheet-demo" aria-label="Пример результата">
 <div class="sheet-cap-row"><span class="sheet-cap">Пример результата</span></div>
-<div class="sheet-total"><div class="score">82<span>/100</span></div><p class="sheet-summary">Высокий уровень. Привычки близки к рекомендациям.</p></div>
+<div class="sheet-total"><div class="score" style="--v:82">82<span>/100</span></div><p class="sheet-summary">Высокий уровень. Привычки близки к рекомендациям.</p></div>
 <div class="total-range">{{ range_bar(82) }}{{ range_axis() }}</div>
 <ul class="rows">
 {%- for key, value in demo %}
