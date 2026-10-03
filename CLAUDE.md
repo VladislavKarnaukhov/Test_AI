@@ -1,4 +1,6 @@
-# VitaScore — правила проекта
+# Adelina Health — правила проекта
+
+Продукт переименован из VitaScore в Adelina Health (только пользовательские тексты). Внутренние имена (БД instance/vitascore.db, cookie vs_*, переменные, файлы) не переименовывать. Контекст продукта — PRODUCT.md.
 
 ## Стек
 - Python 3.11+, Flask, SQLite через стандартный модуль sqlite3 (без ORM).
@@ -12,7 +14,6 @@
   включаются только после согласия на аналитические cookie (cookie vs_consent=all, см. app/consent.py).
 - Новые cookie, трекеры и поля с персональными данными — только вместе с обновлением app/templates/privacy.html
   и POLICY_VERSION в app/consent.py.
-- Дизайн и тексты страницы не менять, кроме блока анкеты.
 - Ответы анкеты — данные о здоровье: /api/score без health_consent=true не считает и не хранит.
 - Соглашения: /terms (TERMS_VERSION), /consent/health и /privacy (POLICY_VERSION) в app/consent.py; реквизиты
   оператора — только в app/templates/_operator.html. Новые данные о здоровье — вместе с текстом /consent/health.
@@ -40,3 +41,15 @@
 - Запуск: python run.py  (http://localhost:5000)
 - Тесты: pytest -q
 - Отчёты: sqlite3 instance/vitascore.db < reports.sql
+
+## КРИТИЧНАЯ ЛОГИКА (не трогать при дизайн-работах)
+app/scoring.py, scoring_v1.py, scoring_v0.py, results.py, consent.py, API /api/score, схема БД. Дизайн-задачи меняют только шаблоны, CSS, JS-отображение. Проверка: pytest + сравнение golden-снимка расчётов до/после.
+
+## Дизайн
+- Скиллы: Impeccable (audit/critique/polish/typeset/layout, детектор `impeccable detect`), design-taste-frontend (источник визуального направления), animate (осмысленные микро-взаимодействия).
+- Концепция «бланк анализа»: светлая бумага, лист-карточка с тонкой линией, один акцент (#2B3FD6), шрифт Onest (self-hosted, app/static/fonts), радиус 3px, тёмная тема через prefers-color-scheme. Все значения — токены в начале style.css.
+- Компонент шкалы: макрос range_bar в templates/_components.html (зоны 0–49/50–79/80–100 = категории LE8). Строки сфер — макрос rows. Не дублировать разметку.
+- Анимация: только transform/opacity, только внутри `@media (prefers-reduced-motion: no-preference)`, до 300 мс (кроме «заполнения шкалы» 700 мс на результате); ease-out cubic-bezier(.23,1,.32,1); никаких анимаций на частых действиях.
+- Адаптив: проверять 375 / 768 / 1024+; без горизонтальной прокрутки; цели касания ≥ 44px; mobile-first.
+- Доступность: WCAG AA, видимый фокус, skip-link, aria-live для результата, цвет никогда не единственный носитель смысла.
+- Правила UI: без новых библиотек и CDN; без слогана без согласования; не выдумывать отзывы, клиентов, регалии Аделины; классы `data-*` и id в шаблонах — хуки JS и тестов, не переименовывать.

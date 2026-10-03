@@ -2,7 +2,7 @@
 <html lang="ru" data-policy-version="{{ policy_version }}">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{% block title %}VitaScore — скоринг здоровья{% endblock %}</title>
+<title>{% block title %}Adelina Health — индекс здоровья{% endblock %}</title>
 <!-- Yandex.Metrika counter: загружается только после согласия на аналитические cookie -->
 <script>
 window.vsLoadMetrika=function(){
@@ -19,16 +19,28 @@ ym(112820979,'init',{ssr:true,webvisor:true,clickmap:true,ecommerce:'dataLayer',
 if(ck('vs_consent')==='all'&&ck('vs_consent_v')==='{{ policy_version }}')window.vsLoadMetrika();})();
 </script>
 <!-- /Yandex.Metrika counter -->
-<meta name="description" content="Понятный индекс здоровья и персональные рекомендации.">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+<meta name="description" content="{% block description %}Индекс здоровья по шести сферам и один понятный шаг на неделю. Расчёт по рекомендациям ВОЗ и валидированным опросникам.{% endblock %}">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#F3F5F7" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#0B131B" media="(prefers-color-scheme: dark)">
+<meta property="og:site_name" content="Adelina Health"><meta property="og:type" content="website"><meta property="og:locale" content="ru_RU">
+<meta property="og:title" content="{% block og_title %}Adelina Health{% endblock %}"><meta property="og:description" content="Индекс здоровья по шести сферам и один понятный шаг на неделю.">
+<link rel="icon" type="image/svg+xml" href="{{ static_url('favicon.svg') }}">
+<link rel="preload" as="font" type="font/woff2" crossorigin href="{{ static_url('fonts/Onest-cyrillic.woff2') }}">
 <link rel="stylesheet" href="{{ static_url('css/style.css') }}">
 </head>
 <body>
+<a class="skip-link" href="#main">К содержимому</a>
 {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}<div class="flashes" role="status">{% for category, message in messages %}<p class="flash flash-{{ category }}">{{ message }}</p>{% endfor %}</div>{% endif %}{% endwith %}
 {% block content %}{% endblock %}
-<footer><div class="wrap"><a class="logo" href="{{ '#' if request.endpoint == 'main.index' else url_for('main.index') }}"><i>✦</i>VitaScore</a><p>Ваши данные остаются вашими.</p><div class="legal"><a href="{{ url_for('account.dashboard') if current_user else url_for('auth.login') }}">Личный кабинет</a>{% if current_user %}<a href="{{ url_for('account.settings') }}#profile">Мои данные</a><a href="{{ url_for('account.settings') }}#password">Сменить пароль</a><a href="{{ url_for('account.settings') }}#delete">Удалить аккаунт</a>{% endif %}<a href="{{ url_for('main.methodology') }}">Методика</a><a href="{{ url_for('main.terms') }}">Пользовательское соглашение</a><a href="{{ url_for('main.privacy') }}">Политика обработки данных</a><button type="button" class="linkish" data-cookie-settings>Настройки cookie</button><small>VitaScore не заменяет консультацию врача.</small></div></div></footer>
-<div class="cookie-banner" role="region" aria-label="Согласие на cookie" hidden><p>Мы используем cookie. Необходимые нужны для работы сайта. Аналитические — Яндекс.Метрика и наша статистика посещений — помогают улучшать VitaScore, их мы включим только с вашего согласия. Подробнее — в <a href="{{ url_for('main.privacy') }}">политике обработки персональных данных</a>.</p><div class="cookie-actions"><button type="button" class="btn small" data-consent="all">Принять все</button><button type="button" class="btn small ghost" data-consent="necessary">Только необходимые</button></div></div>
+{% from "_components.html" import brand %}
+<footer>
+<div class="wrap footer-grid">
+<div class="footer-brand">{{ brand('#' if request.endpoint == 'main.index' else url_for('main.index')) }}<p>Ваши данные остаются вашими.</p><small>Adelina Health не заменяет консультацию врача.</small></div>
+<nav class="footer-col" aria-label="Сервис"><h2 class="footer-title">Сервис</h2><a href="{{ url_for('account.dashboard') if current_user else url_for('auth.login') }}">Личный кабинет</a>{% if current_user %}<a href="{{ url_for('account.settings') }}#profile">Мои данные</a><a href="{{ url_for('account.settings') }}#password">Сменить пароль</a><a href="{{ url_for('account.settings') }}#delete">Удалить аккаунт</a>{% endif %}<a href="{{ url_for('main.methodology') }}">Методика</a></nav>
+<nav class="footer-col" aria-label="Документы"><h2 class="footer-title">Документы</h2><a href="{{ url_for('main.terms') }}">Пользовательское соглашение</a><a href="{{ url_for('main.privacy') }}">Политика обработки данных</a><a href="{{ url_for('main.health_consent') }}">Согласие на данные о здоровье</a><button type="button" class="link-button" data-cookie-settings>Настройки cookie</button></nav>
+</div>
+</footer>
+<div class="cookie-banner" role="region" aria-label="Согласие на cookie" hidden><p>Мы используем cookie. Необходимые нужны для работы сайта. Аналитические (Яндекс.Метрика и наша статистика посещений) помогают улучшать Adelina Health, их мы включим только с вашего согласия. Подробнее в <a href="{{ url_for('main.privacy') }}">политике обработки персональных данных</a>.</p><div class="cookie-actions"><button type="button" class="btn btn-primary btn-sm" data-consent="all">Принять все</button><button type="button" class="btn btn-quiet btn-sm" data-consent="necessary">Только необходимые</button></div></div>
 <script src="{{ static_url('js/main.js') }}"></script>
 {% block scripts %}{% endblock %}
 

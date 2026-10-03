@@ -1,4 +1,4 @@
--- Отчёты VitaScore. Запуск:  sqlite3 instance/vitascore.db < reports.sql
+-- Отчёты Adelina Health. Запуск:  sqlite3 instance/vitascore.db < reports.sql
 -- Учитываются только посетители, согласившиеся на аналитические cookie (таблица visitors).
 .headers on
 .mode column

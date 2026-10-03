@@ -75,13 +75,25 @@
   const tip = panel.querySelector('.chart-tip');
   const empty = panel.querySelector('.chart-empty');
 
-  const W = 640, H = 260, L = 34, R = 16, T = 16, B = 34;
-  const IW = W - L - R, IH = H - T - B;
-  // линии графика задаёт сервер: итог + сферы ядра действующей методики
+  // график рисуется в реальных пикселях контейнера: на телефоне подписи остаются читаемыми
+  let W = 640, H = 260, IW, IH;
+  const L = 34, R = 16, T = 16, B = 34;
+  function layout() {
+    W = Math.max(280, Math.round(svg.getBoundingClientRect().width) || 640);
+    H = W < 520 ? 230 : 260;
+    IW = W - L - R;
+    IH = H - T - B;
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  }
+  layout();
+  // линии графика задаёт сервер: итог + сферы ядра действующей методики; цвета берутся из токенов темы
   const NAMES = {}, ORDER = payload.series.map(function (s) { NAMES[s[0]] = s[1]; return s[0]; });
-  const rootStyle = getComputedStyle(document.documentElement);
-  const COLORS = { total: '#172d29' };
-  ORDER.slice(1).forEach(function (k) { COLORS[k] = rootStyle.getPropertyValue('--s-' + k).trim(); });
+  const COLORS = {};
+  function readColors() {
+    const root = getComputedStyle(document.documentElement);
+    ORDER.forEach(function (k) { COLORS[k] = root.getPropertyValue('--s-' + k).trim(); });
+  }
+  readColors();
 
   const state = { period: 'all', series: { total: true }, points: [], selected: null, hover: null };
 
@@ -102,9 +114,7 @@
     empty.hidden = n > 0;
     if (!n) { svg.innerHTML = ''; hideTip(); return; }
 
-    let out = '<defs><linearGradient id="area" x1="0" y1="0" x2="0" y2="1">' +
-      '<stop offset="0" stop-color="#d9f54a" stop-opacity=".55"/><stop offset="1" stop-color="#d9f54a" stop-opacity="0"/>' +
-      '</linearGradient></defs>';
+    let out = '';
     [0, 25, 50, 75, 100].forEach(function (v) {
       out += '<line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v) + '" y2="' + y(v) + '"/>' +
         '<text class="axis" x="' + (L - 8) + '" y="' + (y(v) + 4) + '" text-anchor="end">' + v + '</text>';
@@ -124,7 +134,7 @@
     ORDER.slice().reverse().forEach(function (key) {
       if (!state.series[key]) return;
       const coords = pts.map(function (d, i) { return x(i, n) + ',' + y(value(d, key)); });
-      if (n > 1) out += '<polyline class="line line-' + key + '" style="stroke:' + COLORS[key] + '" points="' + coords.join(' ') + '"/>';
+      if (n > 1) out += '<polyline class="line line-' + key + '" pathLength="1" style="stroke:' + COLORS[key] + '" points="' + coords.join(' ') + '"/>';
       pts.forEach(function (d, i) {
         const sel = d.id === state.selected ? ' selected' : '';
         out += '<circle class="dot dot-' + key + sel + '" data-id="' + d.id + '" cx="' + x(i, n) + '" cy="' + y(value(d, key)) +
@@ -132,6 +142,12 @@
       });
     });
     svg.innerHTML = out;
+    if (!state.drawn) {
+      // линии «прорисовываются» один раз при первом показе: направление времени слева направо
+      state.drawn = true;
+      svg.classList.add('first-draw');
+      setTimeout(function () { svg.classList.remove('first-draw'); }, 900);
+    }
     if (state.hover !== null) showHover(state.hover);
   }
 
@@ -255,7 +271,18 @@
     });
   });
 
-  window.addEventListener('resize', function () { if (state.hover !== null) showHover(state.hover); });
+  if (window.ResizeObserver) {
+    let lastW = W;
+    new ResizeObserver(function () {
+      const w = Math.round(svg.getBoundingClientRect().width);
+      if (!w || w === lastW) return;
+      lastW = w;
+      layout();
+      draw();
+    }).observe(svg);
+  }
+  const scheme = window.matchMedia('(prefers-color-scheme: dark)');
+  if (scheme.addEventListener) scheme.addEventListener('change', function () { readColors(); draw(); });
 
   const firstOpen = document.querySelector('.entry[open]');
   if (firstOpen) state.selected = Number(firstOpen.dataset.id);

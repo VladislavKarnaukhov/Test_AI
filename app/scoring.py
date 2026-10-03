@@ -329,7 +329,7 @@ def validate(answers):
     if errors:
         raise ScoringError(errors)
     if clean["age"] == "under18":
-        raise ScoringError({"age": "Анкета VitaScore рассчитана на взрослых — от 18 лет."}, code="age_restricted")
+        raise ScoringError({"age": "Анкета Adelina Health рассчитана на взрослых — от 18 лет."}, code="age_restricted")
     return tier, clean
 
 
@@ -512,7 +512,7 @@ def red_flags(a, d, tier):
                            "Это значимый фактор риска для сердца и сосудов — обсудите его с врачом."))
     if b.get("bmi") is not None and b["bmi"] < 18.5:
         flags.append(_flag("underweight", "warn", "Вес ниже нормы",
-                           "ИМТ меньше 18,5 — обсудите это с врачом. Советов по снижению веса VitaScore не даёт."))
+                           "ИМТ меньше 18,5 — обсудите это с врачом. Советов по снижению веса Adelina Health не даёт."))
     if a["restriction"] != "no":
         flags.append(_flag("restriction", "info", "Советы по движению — только после разговора с врачом",
                            "Врач ограничил нагрузку или вы беременны: общие рекомендации могут не подойти. "

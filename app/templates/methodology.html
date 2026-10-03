@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% block title %}Методика VitaScore v{{ s.METHOD_VERSION }}{% endblock %}
+{% block title %}Методика Adelina Health v{{ s.METHOD_VERSION }}{% endblock %}
 {% block content %}
 {% include "_header.html" %}
 {% set le8 = "https://pmc.ncbi.nlm.nih.gov/articles/PMC10503546/" %}
-<main class="wrap legal-page method-page">
-<p class="tag">Методика v{{ s.METHOD_VERSION }} · бета-версия</p>
-<h1>Как считается VitaScore</h1>
-<p class="beta-box">Бета-версия методики: построена на рекомендациях ВОЗ и профессиональных обществ, таблицах баллов Life's Essential 8 и валидированных опросниках, проходит проверку. VitaScore — образовательный индекс образа жизни, а не медицинская оценка: он ничего не диагностирует.</p>
+<main id="main" tabindex="-1" class="wrap prose method-page">
+<p class="doc-meta">Методика v{{ s.METHOD_VERSION }} · бета-версия</p>
+<h1>Как считается индекс Adelina</h1>
+<p class="beta-box">Бета-версия методики: построена на рекомендациях ВОЗ и профессиональных обществ, таблицах баллов Life's Essential 8 и валидированных опросниках, проходит проверку. Adelina Health — образовательный индекс образа жизни, а не медицинская оценка: он ничего не диагностирует.</p>
 
 <h2>Принципы</h2>
 <ul>
@@ -18,39 +18,39 @@
 </ul>
 
 <h2>Три уровня, которые сочетаются</h2>
-<p>Каждый следующий уровень содержит все вопросы предыдущего без изменений. Поэтому <b>VitaScore-ядро</b> (6 сфер) считается при любом уровне и сравнимо во времени.</p>
-<table class="cookie-table">
+<p>Каждый следующий уровень содержит все вопросы предыдущего без изменений. Поэтому <b>ядро индекса Adelina</b> (6 сфер) считается при любом уровне и сравнимо во времени.</p>
+<div class="table-wrap"><table class="data-table">
 <thead><tr><th>Уровень</th><th>Объём</th><th>Что даёт</th></tr></thead>
 <tbody>
-<tr><td>{{ s.TIER_NAMES.short }}</td><td>{{ s.TIER_INFO.short }}</td><td>VitaScore-ядро: сон, движение, питание, психологическое состояние, никотин, алкоголь</td></tr>
+<tr><td>{{ s.TIER_NAMES.short }}</td><td>{{ s.TIER_INFO.short }}</td><td>Ядро индекса Adelina: сон, движение, питание, психологическое состояние, никотин, алкоголь</td></tr>
 <tr><td>{{ s.TIER_NAMES.medium }}</td><td>{{ s.TIER_INFO.medium }}</td><td>+ уточнённые сферы (PHQ-8, GAD-7, силовые, питание по 5 вопросам) и «Самочувствие и связи» → подробный индекс по 7 сферам</td></tr>
 <tr><td>{{ s.TIER_NAMES.extended }}</td><td>{{ s.TIER_INFO.extended }}</td><td>+ IPAQ, полный AUDIT, модуль «Тело и метаболизм» (ИМТ, давление, холестерин, глюкоза по таблицам LE8), напоминание о диспансеризации</td></tr>
 </tbody>
-</table>
+</table></div>
 <p><b>Каскад точности.</b> В подробный индекс каждая сфера берётся с самого подробного уровня, если измерение не старше периода, о котором спрашивает опросник:
 {% for k, days in s.VALIDITY_DAYS.items() %}{{ s.DOMAIN_NAMES[k] | lower }} — {{ days }} дн.{% if not loop.last %}, {% endif %}{% endfor %}. Иначе используется балл ядра.</p>
 
 <h2>Вопросы по уровням</h2>
 {% for key, title, subtitle, questions in s.STEPS %}
 <h3>{{ title }}</h3>
-<table class="cookie-table">
+<div class="table-wrap"><table class="data-table">
 <thead><tr><th>Вопрос</th><th>Уровень</th></tr></thead>
 <tbody>{% for q in questions %}<tr><td>{{ q.text }}{% if q.optional %} <span class="muted">(необязательно)</span>{% endif %}</td><td>{{ s.TIER_NAMES[q.tier] }}</td></tr>{% endfor %}</tbody>
-</table>
+</table></div>
 {% endfor %}
 
 <h2>Баллы сфер</h2>
 <h3>Сон</h3>
 <p>Ядро — часы сна по таблице LE8 (<a href="{{ le8 }}" rel="noopener">Lloyd-Jones 2022</a>), в согласии с рекомендациями AASM/SRS (<a href="https://doi.org/10.5665/sleep.4716" rel="noopener">Watson 2015</a>) и NSF (<a href="https://doi.org/10.1016/j.sleh.2014.12.010" rel="noopener">Hirshkowitz 2015</a>). Вопрос о ночах с нарушением сна на балл не влияет и проверяет критерий частоты инсомнии — 3 ночи в неделю (<a href="https://doi.org/10.1378/chest.14-0970" rel="noopener">ICSD-3</a>).</p>
-<table class="cookie-table"><thead><tr><th>Часов за ночь</th><th>Балл</th></tr></thead><tbody>
+<div class="table-wrap"><table class="data-table"><thead><tr><th>Часов за ночь</th><th>Балл</th></tr></thead><tbody>
 {% for value, label in s.QUESTIONS.sl1.options %}<tr><td>{{ label }}</td><td>{{ s.LE8_SLEEP[value] }}</td></tr>{% endfor %}
-</tbody></table>
+</tbody></table></div>
 
 <h3>Движение</h3>
 <p>Ядро — Exercise Vital Sign (<a href="https://doi.org/10.1249/MSS.0b013e3182630ec1" rel="noopener">Coleman 2012</a>): дни × минуты умеренной или интенсивной активности в неделю → таблица LE8. Средний уровень: интенсивные минуты удваиваются (правило ВОЗ), добавляются силовые — доля рекомендации ВОЗ «2 дня в неделю» (<a href="https://doi.org/10.1136/bjsports-2020-102955" rel="noopener">Bull 2020</a>); балл = (аэробный + силовые) / 2. Расширенный: аэробная часть — из IPAQ (<a href="https://doi.org/10.1249/01.MSS.0000078924.61453.FB" rel="noopener">Craig 2003</a>): МЕТ-мин = {{ s.IPAQ_MET.vig | int }} × интенсивные + {{ s.IPAQ_MET.mod | int }} × умеренные + {{ s.IPAQ_MET.walk }} × ходьба, эквивалентные минуты = МЕТ-мин / {{ s.MET_PER_MODERATE_MINUTE | int }}. Сидячее время и шаги — только для советов (<a href="https://doi.org/10.1016/S0140-6736(16)30370-1" rel="noopener">Ekelund 2016</a>, <a href="https://doi.org/10.1016/S2468-2667(21)00302-9" rel="noopener">Paluch 2022</a>).</p>
-<table class="cookie-table"><thead><tr><th>Минут в неделю, от</th><th>Балл LE8</th></tr></thead><tbody>
+<div class="table-wrap"><table class="data-table"><thead><tr><th>Минут в неделю, от</th><th>Балл LE8</th></tr></thead><tbody>
 {% for minutes, points in s.LE8_PA %}<tr><td>{{ minutes }}</td><td>{{ points }}</td></tr>{% endfor %}
-</tbody></table>
+</tbody></table></div>
 
 <h3>Питание</h3>
 <p>Каждый вопрос проверяет одну рекомендацию ВОЗ (<a href="https://www.who.int/news-room/fact-sheets/detail/healthy-diet" rel="noopener">здоровое питание</a>): овощи и фрукты — min(100; порции / 5 × 100); сладкие напитки, колбаса и фастфуд, сладости — (7 − дни) / 7 × 100; цельные злаки, бобовые, орехи — дни / 7 × 100. Ядро — среднее трёх вопросов, средний уровень — пяти. Вопросы сформулированы по рекомендациям, но как набор не валидированы и проходят проверку.</p>
@@ -59,11 +59,11 @@
 <p>Ядро — PHQ-4 (<a href="https://doi.org/10.1176/appi.psy.50.6.613" rel="noopener">Kroenke 2009</a>, <a href="https://doi.org/10.1016/j.jad.2009.06.019" rel="noopener">Löwe 2010</a>): балл = 100 − PHQ-4 / 12 × 100. Средний уровень — PHQ-8 (<a href="https://doi.org/10.1016/j.jad.2008.06.026" rel="noopener">Kroenke 2009</a>) и GAD-7 (<a href="https://doi.org/10.1001/archinte.166.10.1092" rel="noopener">Spitzer 2006</a>): балл = среднее (100 − PHQ-8 / 24 × 100) и (100 − GAD-7 / 21 × 100). Пункт 9 PHQ-9 о самоповреждении не задаётся: сервис не может обеспечить на него безопасную реакцию.</p>
 
 <h3>Никотин</h3>
-<table class="cookie-table"><thead><tr><th>Статус</th><th>Балл LE8</th></tr></thead><tbody>
+<div class="table-wrap"><table class="data-table"><thead><tr><th>Статус</th><th>Балл LE8</th></tr></thead><tbody>
 <tr><td>Никогда не курил(а)</td><td>{{ s.LE8_NICOTINE.never }}</td></tr><tr><td>Бросил(а) 5+ лет назад</td><td>{{ s.LE8_NICOTINE.ge5 }}</td></tr>
 <tr><td>Бросил(а) 1–5 лет назад</td><td>{{ s.LE8_NICOTINE["1_5"] }}</td></tr><tr><td>Бросил(а) меньше года назад или вейп</td><td>{{ s.LE8_NICOTINE.lt1 }}</td></tr>
 <tr><td>Курит</td><td>{{ s.LE8_NICOTINE.current }}</td></tr><tr><td>Курят дома в помещении</td><td>− 20</td></tr>
-</tbody></table>
+</tbody></table></div>
 
 <h3>Алкоголь</h3>
 <p>AUDIT-C (<a href="https://doi.org/10.1001/archinte.158.16.1789" rel="noopener">Bush 1998</a>), сумма 0–12: балл = 100 − AUDIT-C / 12 × 100 — шкала начинается с нуля потребления, безопасного уровня алкоголя не установлено (<a href="https://doi.org/10.1016/S2468-2667(22)00317-6" rel="noopener">Anderson 2023</a>). Положительный скрининг: 4+ у мужчин, 3+ у женщин (<a href="https://doi.org/10.1111/j.1530-0277.2007.00403.x" rel="noopener">Bradley 2007</a>). На расширенном уровне при положительном AUDIT-C — полный AUDIT ВОЗ (<a href="https://www.who.int/publications/i/item/WHO-MSD-MSB-01.6a" rel="noopener">Babor 2001</a>) для зоны риска; балл сферы не меняется.</p>
@@ -73,22 +73,22 @@
 
 <h3>Тело и метаболизм (расширенный уровень)</h3>
 <p>Значения вносите вы сами; анализы старше 12 месяцев не используются. Таблицы LE8 (<a href="{{ le8 }}" rel="noopener">Lloyd-Jones 2022</a>); балл модуля — среднее внесённых показателей.</p>
-<table class="cookie-table"><thead><tr><th>Показатель</th><th>Баллы LE8</th></tr></thead><tbody>
+<div class="table-wrap"><table class="data-table"><thead><tr><th>Показатель</th><th>Баллы LE8</th></tr></thead><tbody>
 <tr><td>ИМТ, кг/м²</td><td>{% for bmi, points in s.LE8_BMI | reverse %}{% if loop.first %}меньше 25 → {{ points }}{% else %}; от {{ bmi }} → {{ points }}{% endif %}{% endfor %}</td></tr>
 <tr><td>Давление, мм рт. ст.</td><td>меньше 120/80 → 100; 120–129/меньше 80 → 75; 130–139 или 80–89 → 50; 140–159 или 90–99 → 25; 160+ или 100+ → 0; лечение − 20</td></tr>
 <tr><td>Не-ЛПВП холестерин, ммоль/л</td><td>{% for v, points in s.LE8_NONHDL_MMOL | reverse %}{% if loop.first %}меньше 3,36 → {{ points }}{% else %}; от {{ v }} → {{ points }}{% endif %}{% endfor %}; лечение − 20</td></tr>
 <tr><td>Глюкоза / HbA1c</td><td>без диабета: меньше 5,6 ммоль/л (HbA1c меньше 5,7%) → 100, 5,6–6,9 (5,7–6,4%) → 60; диабет: HbA1c меньше 7 → 40, 7–7,9 → 30, 8–8,9 → 20, 9–9,9 → 10, 10+ → 0</td></tr>
-</tbody></table>
+</tbody></table></div>
 <p>Полный балл LE8 (8 компонентов) требует опросника питания MEPA и будет доступен после получения разрешения (см. «Лицензии»).</p>
 
 <h2>Итог, уровни и фокус недели</h2>
-<p>VitaScore-ядро — среднее 6 сфер; подробный индекс — среднее 7 сфер по каскаду точности; округление до целого (0,5 — вверх). Уровни — категории LE8:
+<p>Ядро индекса Adelina — среднее 6 сфер; подробный индекс — среднее 7 сфер по каскаду точности; округление до целого (0,5 — вверх). Уровни — категории LE8:
 {% for threshold, code, name, text in s.LEVELS %}{{ threshold }}{% if loop.first %}–100{% elif loop.index == 2 %}–79{% else %}–49{% endif %} — {{ name | lower }}{% if not loop.last %}, {% endif %}{% endfor %}. Границы будут проверены на данных пилота.</p>
 <p><b>Фокус недели:</b> при красном флаге — обращение к специалисту; иначе сфера с самым низким баллом, где есть что изменить за неделю, и в ней пункт с наибольшим отставанием (100 − балл) × вес — с одним шагом к следующей ступени рекомендации.</p>
 <p><b>Пример (короткий уровень).</b> Сон 6–7 ч → 70; 3 дня × 30 мин = 90 мин → 80; питание: 3 порции (60), сладкие напитки 2 дня (71), колбаса и фастфуд 3 дня (57) → 63; PHQ-4 = 3 → 75; бросил курить 1–5 лет назад → 50; AUDIT-C = 3 → 75. Ядро = (70 + 80 + 63 + 75 + 50 + 75) / 6 = 68,8 → <b>69, умеренный уровень</b>. Фокус: у бросившего курить балл никотина растёт со временем, поэтому — питание: «замените колбасу или фастфуд в один из дней».</p>
 
 <h2 id="red-flags">Красные флаги</h2>
-<table class="cookie-table"><thead><tr><th>Условие</th><th>Что предлагаем</th></tr></thead><tbody>
+<div class="table-wrap"><table class="data-table"><thead><tr><th>Условие</th><th>Что предлагаем</th></tr></thead><tbody>
 <tr><td>PHQ-4 9+</td><td>Не откладывать обращение к специалисту; при угрозе жизни — {% for phone, what in s.CRISIS_CONTACTS %}{{ phone }}{% endfor %}</td></tr>
 <tr><td>PHQ-2 3+ или PHQ-8 10+; GAD-2 3+ или GAD-7 10+</td><td>Обсудить настроение или тревогу со специалистом (<a href="https://doi.org/10.1097/01.MLR.0000093487.78664.3C" rel="noopener">Kroenke 2003</a>, <a href="https://doi.org/10.7326/0003-4819-146-5-200703060-00004" rel="noopener">Kroenke 2007</a>)</td></tr>
 <tr><td>3+ ночи в неделю с нарушением сна</td><td>При длительности 3+ месяцев — к врачу; метод первой линии — КПТ инсомнии (<a href="https://doi.org/10.5664/jcsm.8986" rel="noopener">Edinger 2021</a>)</td></tr>
@@ -100,7 +100,7 @@
 <tr><td>ИМТ меньше 18,5</td><td>Обсудить с врачом; советов по снижению веса нет</td></tr>
 <tr><td>Беременность или ограничение нагрузки</td><td>Советы по движению — только «обсудите с врачом» (<a href="https://doi.org/10.1249/MSS.0000000000000664" rel="noopener">ACSM 2015</a>)</td></tr>
 <tr><td>Профосмотр больше года назад</td><td>Напоминание: профосмотр ежегодно, диспансеризация — раз в 3 года в 18–39 лет и ежегодно с 40 (<a href="https://legalacts.ru/doc/prikaz-minzdrava-rossii-ot-27042021-n-404n-ob-utverzhdenii/" rel="noopener">Приказ № 404н</a>)</td></tr>
-</tbody></table>
+</tbody></table></div>
 
 <h2>Лицензии</h2>
 <p>PHQ-4, PHQ-8, GAD-7 используются без разрешения правообладателей; IPAQ — свободно; AUDIT — опросник ВОЗ. Таблицы баллов LE8 опубликованы в открытой статье. Опросники, для которых нужны разрешения, отключены до их получения:</p>
