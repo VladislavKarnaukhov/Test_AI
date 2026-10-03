@@ -270,7 +270,7 @@ def test_home_shows_latest_score_for_logged_in_user(user_client):
 
 def test_home_shows_demo_card_for_guest_and_new_user(client):
     html = client.get("/").get_data(as_text=True)
-    assert "data-user-card" not in html and ">82<span>/100</span>" in html
+    assert "data-user-card" not in html and "<b>82</b>" in html and "instrument" in html
     register(client)
     html = client.get("/").get_data(as_text=True)
     assert "data-user-card" not in html  # оценок ещё нет
