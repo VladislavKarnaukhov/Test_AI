@@ -443,7 +443,8 @@ def _body(a):
             bp = max(0, bp - 20)
         parts["bp"] = bp
     labs_fresh = a.get("lab_age") != "gt12m"
-    if labs_fresh and a.get("chol") and a.get("hdl"):
+    # ЛПВП выше общего холестерина невозможны — считаем, что липиды не указаны
+    if labs_fresh and a.get("chol") and a.get("hdl") and a["chol"] >= a["hdl"]:
         nonhdl = a["chol"] - a["hdl"]
         info["nonhdl"] = round(nonhdl, 2)
         lip = _table(nonhdl, LE8_NONHDL_MMOL)
