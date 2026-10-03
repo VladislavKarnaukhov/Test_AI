@@ -582,3 +582,18 @@ input[type=number],input[type=email],input[type=text],input[type=password],.choi
 .brand-i::after{background:var(--accent)}
 @media (max-width:420px){.footer-grid{grid-template-columns:minmax(0,1fr)}.footer-col a{text-wrap:balance}}
 @media (max-width:720px){.site-header{position:static}}
+
+/* Детали по мотивам Function Health / Oura: подписи-эйброу, акцентное слово, бегущая лента тем */
+.accent-word{color:var(--accent)}
+.eyebrow{margin-bottom:var(--sp-4);font-size:var(--fs-xs);font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-variant-numeric:tabular-nums}
+#how .eyebrow,#plans .eyebrow{color:var(--accent)}
+.ticker{overflow:clip;border-block:1px solid var(--line);background:var(--sheet);-webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
+.ticker-track{display:flex;width:max-content}
+.ticker ul{display:flex;flex:none;gap:0;margin:0;padding:0;list-style:none}
+.ticker li{padding:1rem 1.5rem;font-size:var(--fs-sm);color:var(--ink-2);white-space:nowrap}
+.ticker li::after{content:"";display:inline-block;width:.3rem;height:.3rem;margin-left:3rem;border-radius:50%;background:var(--accent);vertical-align:middle}
+@media (prefers-reduced-motion:no-preference){
+  .ticker-track{animation:tick 48s linear infinite}
+  @keyframes tick{to{transform:translateX(-50%)}}
+}
+@media (prefers-reduced-motion:reduce){.ticker{overflow-x:auto}}
