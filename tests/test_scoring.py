@@ -207,3 +207,8 @@ def test_question_bank_is_nested():
     short_ids = {k for k, q in QUESTIONS.items() if q["tier"] == "short"}
     assert {"sl1", "pa1", "pa2", "n1", "n2", "n3", "p1", "p2", "p3", "p4", "nic1", "a1"} <= short_ids
     assert LE8_PA[0] == (150, 100)
+
+
+def test_hdl_above_total_cholesterol_is_ignored_not_crash():
+    r = calculate_score(extended(chol=3.0, hdl=4.0))
+    assert "nonhdl" not in r.get("info", {}) or r["info"]["nonhdl"] >= 0
