@@ -124,7 +124,7 @@ def test_guest_results_are_never_attached(client, query):
     login(client)
     assert query("SELECT user_id FROM score_results") == [{"user_id": None}]
     assert query("SELECT user_id FROM leads") == [{"user_id": None}]
-    assert "Здесь появится ваш VitaScore" in client.get("/account").get_data(as_text=True)
+    assert "Здесь появится ваш индекс" in client.get("/account").get_data(as_text=True)
 
 
 def test_register_returns_to_quiz(client):
@@ -174,7 +174,7 @@ def test_dashboard_hides_registration_and_consent_facts(user_client):
 
 def test_dashboard_empty_state(user_client):
     html = user_client.get("/account").get_data(as_text=True)
-    assert "Здесь появится ваш VitaScore" in html
+    assert "Здесь появится ваш индекс" in html
 
 
 def test_dashboard_old_result_without_stored_recommendations(user_client, app):
@@ -372,7 +372,8 @@ def test_quiz_markup_has_all_questions_and_health_consent(client):
     assert radios | numbers == set(QUESTIONS) | {"tier"}
     assert 'data-tier="medium"' in html and 'data-tier="extended"' in html and "data-cond=" in html
     assert 'name="health_consent"' in html and "/consent/health" in html and "/terms" in html
-    assert "НИКОТИН И АЛКОГОЛЬ" in html and "/methodology" in html
+    assert "Что входит в индекс" in html and "<dt>Никотин</dt>" in html and "<dt>Алкоголь</dt>" in html
+    assert "/methodology" in html
 
 
 def test_methodology_page(client):

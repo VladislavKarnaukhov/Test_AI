@@ -1,40 +1,40 @@
 {% extends "base.html" %}
-{% block title %}Мои данные — VitaScore{% endblock %}
+{% block title %}Мои данные — Adelina Health{% endblock %}
 {% block content %}
 {% include "_header.html" %}
-<main class="wrap settings-page">
-<p class="settings-back"><a href="{{ url_for('account.dashboard') }}">← Личный кабинет</a></p>
+<main id="main" tabindex="-1" class="wrap settings-page">
+<p class="settings-back"><a class="text-link" href="{{ url_for('account.dashboard') }}">Личный кабинет</a></p>
 
-<section class="settings" id="profile">
+<section class="settings-section" id="profile">
   <h2>Мои данные</h2>
-  <form method="post" action="{{ url_for('account.update_profile') }}" class="settings-row">
+  <form method="post" action="{{ url_for('account.update_profile') }}" class="settings-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <label>Имя <input type="text" name="name" value="{{ user.name }}" maxlength="60" required></label>
-    <button class="linkish" type="submit">Сохранить</button>
+    <label class="field">Имя<input type="text" name="name" value="{{ user.name }}" maxlength="60" required></label>
+    <button class="btn btn-quiet btn-sm" type="submit">Сохранить</button>
   </form>
-  <p class="settings-email">E-mail: {{ user.email }}</p>
+  <p class="settings-meta">E-mail: {{ user.email }}</p>
 </section>
 
-<section class="settings" id="password">
+<section class="settings-section" id="password">
   <h2>Сменить пароль</h2>
   <form method="post" action="{{ url_for('account.change_password') }}" class="settings-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <input type="password" name="current_password" placeholder="Текущий пароль" aria-label="Текущий пароль" autocomplete="current-password" required>
-    <input type="password" name="password" placeholder="Новый пароль" aria-label="Новый пароль" minlength="8" maxlength="128" autocomplete="new-password" required>
-    <input type="password" name="password_confirm" placeholder="Новый пароль ещё раз" aria-label="Новый пароль ещё раз" minlength="8" maxlength="128" autocomplete="new-password" required>
-    <button class="btn tiny" type="submit">Изменить</button>
+    <label class="field">Текущий пароль<input type="password" name="current_password" autocomplete="current-password" required></label>
+    <label class="field">Новый пароль<input type="password" name="password" minlength="8" maxlength="128" autocomplete="new-password" required></label>
+    <label class="field">Новый пароль ещё раз<input type="password" name="password_confirm" minlength="8" maxlength="128" autocomplete="new-password" required></label>
+    <button class="btn btn-quiet btn-sm" type="submit">Изменить пароль</button>
   </form>
 </section>
 
-<section class="settings" id="delete">
+<section class="settings-section" id="delete">
   <h2>Удалить аккаунт</h2>
-  <details class="settings-item settings-danger" id="delete-form">
+  <details class="danger-zone" id="delete-form">
     <summary>Удалить аккаунт и все данные</summary>
     <p>Будут удалены профиль, все оценки и заявки. Отменить нельзя.</p>
     <form method="post" action="{{ url_for('account.delete_account') }}" class="settings-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <input type="password" name="password" placeholder="Пароль для подтверждения" aria-label="Пароль для подтверждения" autocomplete="current-password" required>
-      <button class="btn tiny danger" type="submit">Удалить навсегда</button>
+      <label class="field">Пароль для подтверждения<input type="password" name="password" autocomplete="current-password" required></label>
+      <button class="btn btn-danger btn-sm" type="submit">Удалить навсегда</button>
     </form>
   </details>
 </section>
