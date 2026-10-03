@@ -127,6 +127,9 @@ MIGRATIONS = [
     ("score_results", "flags", "TEXT"),                 # красные флаги, JSON
     ("score_results", "focus", "TEXT"),                 # фокус недели, JSON
     ("score_results", "health_consent_version", "TEXT"),  # редакция политики, по которой дано согласие
+    ("score_results", "tier", "TEXT"),                  # уровень анкеты v2.0: short / medium / extended
+    ("score_results", "details", "TEXT"),               # v2.0: уточнённые сферы, подробный индекс, тело, скрининги
+    ("users", "terms_version", "TEXT"),                 # редакция пользовательского соглашения при регистрации
 ]
 
 

@@ -10,7 +10,7 @@ CONSENT_MAX_AGE = 60 * 60 * 24 * 365
 
 # Меняйте при каждой правке текста политики: версия сохраняется вместе с согласием,
 # а посетители, соглашавшиеся с прошлой версией, увидят баннер снова
-POLICY_VERSION = "2026-09-30"
+POLICY_VERSION = "2026-10-03"
 
 
 def current_consent():
@@ -22,3 +22,6 @@ def current_consent():
 
 def analytics_allowed():
     return current_consent() == CONSENT_ALL
+
+# Редакция пользовательского соглашения (/terms); сохраняется при регистрации в users.terms_version
+TERMS_VERSION = "2026-10-03"

@@ -240,7 +240,7 @@
     }
   }
 
-  // ---------- Анкета (методика v1.0): 5 шагов, ответы — радиокнопки ----------
+  // ---------- Анкета (методика v2.0): уровни, условия показа, числовые поля ----------
   const quizForm = document.querySelector('.quiz-form');
   if (quizForm) {
     const quizError = quizForm.querySelector('.form-error');
@@ -252,54 +252,93 @@
     const stepBar = quizForm.querySelector('[data-step-bar]');
     const consent = quizForm.querySelector('input[name=health_consent]');
     const resultCard = document.querySelector('.score-card');
+    const TIER_RANK = { short: 0, medium: 1, extended: 2 };
     let current = 0;
 
     function value(name) {
+      const field = quizForm.querySelector('[name="' + name + '"]');
+      if (field && field.type === 'number') return field.value === '' ? null : field.value;
       const checked = quizForm.querySelector('input[name="' + name + '"]:checked');
       return checked ? checked.value : null;
     }
+    function tier() { return value('tier') || 'short'; }
 
-    // «сколько минут» и «насколько интенсивно» не нужны, если активности нет
-    function updateDependents() {
-      quizForm.querySelectorAll('[data-depends-on]').forEach(function (q) {
-        q.hidden = value(q.dataset.dependsOn) === '0';
+    // AUDIT-C положителен: 4+ у мужчин, 3+ у женщин (Bush 1998, Bradley 2007)
+    function auditPositive() {
+      if (!value('a1') || value('a1') === '0') return false;
+      const sum = ['a1', 'a2', 'a3'].reduce(function (s, k) { return s + Number(value(k) || 0); }, 0);
+      return sum >= (value('sex') === 'male' ? 4 : 3);
+    }
+
+    function conditionMet(cond) {
+      if (!cond) return true;
+      if (cond.audit_positive) return auditPositive();
+      const v = value(cond.q);
+      if (v === null) return false;
+      return cond.in ? cond.in.indexOf(v) >= 0 : cond.not_in.indexOf(v) < 0;
+    }
+
+    // вопрос виден, если входит в выбранный уровень и выполнено условие показа
+    function updateVisibility() {
+      const rank = TIER_RANK[tier()];
+      quizForm.querySelectorAll('.q[data-q]').forEach(function (q) {
+        if (q.dataset.q === 'tier') return;
+        const cond = q.dataset.cond ? JSON.parse(q.dataset.cond) : null;
+        q.hidden = TIER_RANK[q.dataset.tier] > rank || !conditionMet(cond);
       });
     }
 
+    function stepVisible(s) {
+      return Array.prototype.some.call(s.querySelectorAll('.q[data-q]'), function (q) { return !q.hidden; });
+    }
+    function visibleSteps() { return steps.filter(stepVisible); }
+
     function showStep(i) {
-      current = i;
-      steps.forEach(function (s, n) { s.hidden = n !== i; });
-      prevBtn.hidden = i === 0;
-      nextBtn.hidden = i === steps.length - 1;
-      submitBtn.hidden = i !== steps.length - 1;
-      stepLabel.textContent = 'Шаг ' + (i + 1) + ' из ' + steps.length + ' · ' + steps[i].dataset.title;
-      stepBar.style.width = ((i + 1) / steps.length * 100) + '%';
+      updateVisibility();
+      const list = visibleSteps();
+      current = Math.max(0, Math.min(i, list.length - 1));
+      steps.forEach(function (s) { s.hidden = s !== list[current]; });
+      prevBtn.hidden = current === 0;
+      nextBtn.hidden = current === list.length - 1;
+      submitBtn.hidden = current !== list.length - 1;
+      stepLabel.textContent = 'Шаг ' + (current + 1) + ' из ' + list.length + ' · ' + list[current].dataset.title;
+      stepBar.style.width = ((current + 1) / list.length * 100) + '%';
       quizError.textContent = '';
     }
 
     function scrollToQuiz() {
-      const top = quizForm.getBoundingClientRect().top;
-      if (top < 0) quizForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (quizForm.getBoundingClientRect().top < 0) quizForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
-    // все видимые вопросы шага отвечены (+ согласие на первом шаге)
-    function checkStep(i) {
-      let firstMissing = null;
-      steps[i].querySelectorAll('.q').forEach(function (q) {
-        const missing = !q.hidden && !value(q.dataset.q);
-        q.classList.toggle('missing', missing);
-        if (missing && !firstMissing) firstMissing = q;
+    // все обязательные видимые вопросы шага отвечены, числа в допустимых границах
+    function checkStep() {
+      const step = visibleSteps()[current];
+      let firstBad = null, message = 'Ответьте на все вопросы этого шага.';
+      step.querySelectorAll('.q[data-q]').forEach(function (q) {
+        if (q.hidden) return;
+        const v = value(q.dataset.q);
+        let bad = v === null && !q.hasAttribute('data-optional');
+        if (v !== null && q.dataset.kind === 'number') {
+          const input = q.querySelector('input');
+          const n = Number(v);
+          if (isNaN(n) || n < Number(input.min) || n > Number(input.max)) {
+            bad = true;
+            message = 'Проверьте значения: ' + q.querySelector('.q-text').firstChild.nodeValue.trim() + ' — от ' + input.min + ' до ' + input.max + '.';
+          }
+        }
+        q.classList.toggle('missing', bad);
+        if (bad && !firstBad) firstBad = q;
       });
-      if (firstMissing) {
-        quizError.textContent = 'Ответьте на все вопросы этого шага.';
-        firstMissing.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (firstBad) {
+        quizError.textContent = message;
+        firstBad.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return false;
       }
-      if (i === 0 && value('age') === 'under18') {
+      if (step === steps[0] && value('age') === 'under18') {
         quizError.textContent = 'Анкета VitaScore рассчитана на взрослых — от 18 лет.';
         return false;
       }
-      if (i === 0 && !consent.checked) {
+      if (step === steps[0] && !consent.checked) {
         consent.closest('.consent').classList.add('missing');
         quizError.textContent = 'Чтобы продолжить, дайте согласие на обработку данных о здоровье.';
         return false;
@@ -309,18 +348,20 @@
 
     quizForm.addEventListener('change', function (e) {
       const t = e.target;
-      if (t.type === 'radio') {
-        t.closest('.q').classList.remove('missing');
-        updateDependents();
-        track('quiz_answer', { question: t.name, value: t.value });
+      if (t.type === 'radio' || t.type === 'number') {
+        const q = t.closest('.q');
+        if (q) q.classList.remove('missing');
+        updateVisibility();
+        if (t.type === 'radio') track('quiz_answer', { question: t.name, value: t.name === 'tier' ? t.value : 'set' });
       }
       if (t === consent) consent.closest('.consent').classList.toggle('missing', !consent.checked);
       quizError.textContent = '';
+      if (t.name === 'tier') showStep(current);
     });
 
     nextBtn.addEventListener('click', function () {
-      if (!checkStep(current)) return;
-      track('quiz_step', { step: current + 2 });
+      if (!checkStep()) return;
+      track('quiz_step', { step: current + 2, tier: tier() });
       showStep(current + 1);
       scrollToQuiz();
     });
@@ -347,8 +388,19 @@
       box.hidden = !flags.length;
     }
 
+    // подробный индекс и «Тело и метаболизм» — под сферами ядра
+    function renderExtra(r) {
+      const box = resultCard.querySelector('[data-extra]');
+      box.textContent = '';
+      if (r.detailed) box.appendChild(el('p', '', 'Подробный индекс (7 сфер): ' + r.detailed.total + '/100'));
+      if (r.body) box.appendChild(el('p', '', 'Тело и метаболизм: ' + r.body.score + '/100 — по ' + r.body.known + ' из 4 показателей'));
+      box.hidden = !box.childNodes.length;
+    }
+
     function showResult(r) {
       renderFlags(r.flags || []);
+      renderExtra(r);
+      resultCard.querySelector('[data-tier-label]').textContent = '● ' + ({ short: 'короткий', medium: 'средний', extended: 'расширенный' })[r.tier] + ' уровень · v' + r.version;
       resultCard.querySelector('[data-total]').textContent = r.total;
       resultCard.querySelector('[data-level]').textContent = r.level_name;
       resultCard.querySelector('[data-summary]').textContent = r.summary.replace(r.level_name + '. ', '');
@@ -382,10 +434,12 @@
 
     quizForm.addEventListener('submit', function (e) {
       e.preventDefault();
-      if (!checkStep(current)) return;
-      const payload = { health_consent: consent.checked };
-      quizForm.querySelectorAll('.q').forEach(function (q) {
-        if (!q.hidden && value(q.dataset.q)) payload[q.dataset.q] = value(q.dataset.q);
+      if (!checkStep()) return;
+      updateVisibility();
+      const payload = { health_consent: consent.checked, tier: tier() };
+      quizForm.querySelectorAll('.q[data-q]').forEach(function (q) {
+        const v = value(q.dataset.q);
+        if (q.dataset.q !== 'tier' && !q.hidden && v !== null) payload[q.dataset.q] = v;
       });
       quizError.textContent = '';
       submitBtn.disabled = true;
@@ -393,24 +447,24 @@
         if (r.ok) return showResult(r.data);
         const d = r.data || {};
         if (d.error === 'age_restricted') quizError.textContent = d.fields.age;
-        else if (d.error === 'health_consent_required') { showStep(0); checkStep(0); }
-        else quizError.textContent = 'Проверьте ответы: не все вопросы заполнены.';
+        else if (d.error === 'health_consent_required') { showStep(0); checkStep(); }
+        else quizError.textContent = 'Проверьте ответы: ' + Object.keys(d.fields || {}).length + ' вопрос(а) заполнены неверно.';
       }).catch(function () {
         quizError.textContent = 'Нет связи с сервером. Попробуйте ещё раз.';
       }).finally(function () { submitBtn.disabled = false; });
     });
 
     resultCard.querySelector('.again').addEventListener('click', function () {
+      const chosen = tier();
       quizForm.reset();
+      quizForm.querySelector('input[name=tier][value="' + chosen + '"]').checked = true;
       quizForm.querySelectorAll('.missing').forEach(function (m) { m.classList.remove('missing'); });
-      updateDependents();
       showStep(0);
       resultCard.hidden = true;
       quizForm.hidden = false;
       scrollToQuiz();
     });
 
-    updateDependents();
     showStep(0);
   }
 })();

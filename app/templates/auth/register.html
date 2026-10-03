@@ -16,6 +16,8 @@
 <label>Пароль<input type="password" name="password" minlength="8" maxlength="128" autocomplete="new-password" required></label>
 <label>Пароль ещё раз<input type="password" name="password_confirm" minlength="8" maxlength="128" autocomplete="new-password" required></label>
 {% if errors.password %}<p class="field-error">{{ errors.password }}</p>{% else %}<p class="auth-hint">Не короче 8 символов.</p>{% endif %}
+<label class="consent"><input type="checkbox" name="terms"{% if form.get('terms') == 'on' %} checked{% endif %}><span>Я принимаю <a href="{{ url_for('main.terms') }}" target="_blank" rel="noopener">пользовательское соглашение</a> VitaScore</span></label>
+{% if errors.terms %}<p class="field-error">{{ errors.terms }}</p>{% endif %}
 <label class="consent"><input type="checkbox" name="consent"{% if form.get('consent') == 'on' %} checked{% endif %}><span>Я соглашаюсь на <a href="{{ url_for('main.privacy') }}" target="_blank" rel="noopener">обработку персональных данных</a> в соответствии с политикой VitaScore</span></label>
 {% if errors.consent %}<p class="field-error">{{ errors.consent }}</p>{% endif %}
 <button class="btn" type="submit">Создать кабинет</button>

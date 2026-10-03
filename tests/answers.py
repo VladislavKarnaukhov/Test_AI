@@ -1,27 +1,53 @@
-"""Готовые ответы анкеты v1.0 для тестов."""
+"""Готовые ответы анкеты VitaScore v2.0 для тестов."""
 
-BEST = {
-    "age": "18_64", "restriction": "no",
-    "s1": "7_8", "s2": "lt30", "s3": "0", "s4": "never", "s5": "4", "s6": "no",
-    "m1": "5", "m2": "30", "m3": "moderate", "m4": "2plus", "m5": "lt6",
-    "n1": "5plus", "n2": "rare", "n3": "le2", "n4": "le1", "n5": "5_7",
+SHORT_BEST = {
+    "tier": "short", "age": "18_39", "sex": "female", "restriction": "no",
+    "sl1": "7_9", "sl2": "0",
+    "pa1": "5", "pa2": "30",
+    "n1": "5", "n2": "0", "n3": "0",
     "p1": "0", "p2": "0", "p3": "0", "p4": "0",
+    "nic1": "never", "nic3": "no", "nic4": "no",
+    "a1": "0",
 }
 
-# «Пример расчёта» из методики v1.0
-EXAMPLE = {
-    **BEST,
-    "s1": "6_7", "s2": "1_2h", "s3": "1_2", "s4": "several", "s5": "3",
-    "m1": "3", "m2": "30", "m3": "moderate", "m4": "0", "m5": "8_10",
-    "n1": "2", "n2": "1_3", "n3": "3_6", "n4": "2_3", "n5": "3_4",
+# «Пример расчёта» из методики v2.0 (короткий уровень): 70 / 80 / 63 / 75 / 50 / 75 → 69
+SHORT_EXAMPLE = {
+    **SHORT_BEST,
+    "sex": "male",
+    "sl1": "6_7",
+    "pa1": "3", "pa2": "30",
+    "n1": "3", "n2": "2", "n3": "3",
     "p1": "1", "p2": "1", "p3": "1", "p4": "0",
+    "nic1": "former", "nic2": "1_5",
+    "a1": "2", "a2": "1", "a3": "0",
+}
+
+MEDIUM_EXTRA = {
+    "pa3": "moderate", "pa4": "2plus", "pa5": "4_6",
+    "n4": "1", "n5": "5",
+    "ph3": "0", "ph4": "1", "ph5": "0", "ph6": "0", "ph7": "0", "ph8": "0",
+    "ga3": "1", "ga4": "0", "ga5": "0", "ga6": "0", "ga7": "0",
+    "w1": "3", "w2": "1", "w3": "1", "w4": "2",
+}
+
+EXTENDED_EXTRA = {
+    "ip_vd": "2", "ip_vm": "30", "ip_md": "2", "ip_mm": "30", "ip_wd": "5", "ip_wm": "30",
+    "height": 170, "weight": 70, "sbp": 118, "dbp": 76, "bp_src": "clinic", "bp_tx": "no",
+    "chol": 5.0, "hdl": 1.5, "lip_tx": "no", "dm": "no", "glu": 5.0, "lab_age": "lt3m", "checkup": "lt1y",
 }
 
 
-def answers(**changes):
-    return {**BEST, **changes}
+def short(**changes):
+    return {**SHORT_BEST, **changes}
+
+
+def medium(**changes):
+    return {**SHORT_BEST, **MEDIUM_EXTRA, "tier": "medium", **changes}
+
+
+def extended(**changes):
+    return {**SHORT_BEST, **MEDIUM_EXTRA, **EXTENDED_EXTRA, "tier": "extended", **changes}
 
 
 def with_consent(data):
-    """Тело запроса /api/score: ответы + согласие на обработку данных о здоровье."""
     return {**data, "health_consent": True}

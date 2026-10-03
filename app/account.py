@@ -8,7 +8,7 @@ from .auth import (NAME_MAX, check_csrf, hash_password, login_user, login_requir
                    validate_password)
 from .db import get_db
 from .results import SELECT_COLUMNS, present
-from .scoring import METHOD_VERSION, SPHERE_NAMES, SPHERE_SHORT, SPHERES
+from .scoring import CORE_DOMAINS, DOMAIN_SHORT, METHOD_VERSION
 
 bp = Blueprint("account", __name__, url_prefix="/account")
 
@@ -68,20 +68,24 @@ def _load_results(user_id):
             "level": score_level(row["total"]),
             "groups": group_recommendations(r["recommendations"]),
             "delta": None if prev is None else r["total"] - prev["total"],
-            "sphere_deltas": {k: None if prev is None else r["breakdown"][k] - prev["breakdown"][k] for k in SPHERES},
+            "sphere_deltas": {k: None if prev is None else v - prev["breakdown"].get(k, v) for k, _, v in r["spheres"]},
         })
         previous[r["version"]] = r
     return results
 
 
 def chart_data(results):
-    """Точки графика — только по действующей методике: баллы старой формулы с ними не сравнимы."""
-    return [{"id": r["id"], "t": r["created_at"].replace(" ", "T") + "Z", "label": to_msk(r["created_at"], "%d.%m"),
-             "date": r["date"], "total": r["total"], **r["breakdown"]} for r in results if not r["legacy"]]
+    """Точки графика — только по действующей методике (ядро v2.0): баллы других версий с ними не сравнимы."""
+    return {
+        "series": [["total", "Итог"]] + [[k, DOMAIN_SHORT[k]] for k in CORE_DOMAINS],
+        "points": [{"id": r["id"], "t": r["created_at"].replace(" ", "T") + "Z",
+                    "label": to_msk(r["created_at"], "%d.%m"), "date": r["date"], "total": r["total"],
+                    **r["breakdown"]} for r in results if r["current"]],
+    }
 
 
 def history_stats(results):
-    totals = [r["total"] for r in results if not r["legacy"]]
+    totals = [r["total"] for r in results if r["current"]]
     if not totals:
         return None
     return {"count": len(totals), "best": max(totals), "avg": round(sum(totals) / len(totals)),
@@ -108,8 +112,7 @@ def dashboard():
         stats=history_stats(results),
         chart_data=chart_data(results),
         method_version=METHOD_VERSION,
-        sphere_short=SPHERE_SHORT,
-        sphere_names=SPHERE_NAMES,
+        core_short={k: DOMAIN_SHORT[k] for k in CORE_DOMAINS},
     )
 
 
