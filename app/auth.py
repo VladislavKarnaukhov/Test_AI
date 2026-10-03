@@ -13,7 +13,7 @@ from flask import (Blueprint, abort, current_app, flash, g, redirect, render_tem
                    session, url_for)
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from .consent import POLICY_VERSION
+from .consent import POLICY_VERSION, TERMS_VERSION
 from .db import get_db, log_event
 
 bp = Blueprint("auth", __name__)
@@ -163,6 +163,8 @@ def register():
         password_error = validate_password(password, form.get("password_confirm", ""))
         if password_error:
             errors["password"] = password_error
+        if form.get("terms") != "on":
+            errors["terms"] = "Нужно принять пользовательское соглашение."
         if form.get("consent") != "on":
             errors["consent"] = "Нужно согласие на обработку персональных данных."
         db = get_db()
@@ -170,8 +172,8 @@ def register():
             errors["email"] = "Этот e-mail уже зарегистрирован — войдите."
         if not errors:
             cur = db.execute(
-                "INSERT INTO users (email, name, password_hash, policy_version) VALUES (?, ?, ?, ?)",
-                (email, name, hash_password(password), POLICY_VERSION))
+                "INSERT INTO users (email, name, password_hash, policy_version, terms_version) VALUES (?, ?, ?, ?, ?)",
+                (email, name, hash_password(password), POLICY_VERSION, TERMS_VERSION))
             user = db.execute("SELECT * FROM users WHERE id = ?", (cur.lastrowid,)).fetchone()
             login_user(user)
             db.commit()

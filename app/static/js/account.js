@@ -69,15 +69,16 @@
   const source = document.getElementById('history-data');
   if (!panel || !source) return;
 
-  const data = JSON.parse(source.textContent);
+  const payload = JSON.parse(source.textContent);
+  const data = payload.points;
   const svg = panel.querySelector('.chart');
   const tip = panel.querySelector('.chart-tip');
   const empty = panel.querySelector('.chart-empty');
 
   const W = 640, H = 260, L = 34, R = 16, T = 16, B = 34;
   const IW = W - L - R, IH = H - T - B;
-  const NAMES = { total: 'Итог', sleep: 'Сон', activity: 'Движение', nutrition: 'Питание', recovery: 'Психол. состояние' };
-  const ORDER = ['total', 'sleep', 'activity', 'nutrition', 'recovery'];
+  // линии графика задаёт сервер: итог + сферы ядра действующей методики
+  const NAMES = {}, ORDER = payload.series.map(function (s) { NAMES[s[0]] = s[1]; return s[0]; });
   const rootStyle = getComputedStyle(document.documentElement);
   const COLORS = { total: '#172d29' };
   ORDER.slice(1).forEach(function (k) { COLORS[k] = rootStyle.getPropertyValue('--s-' + k).trim(); });

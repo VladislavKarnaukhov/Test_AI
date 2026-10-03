@@ -4,10 +4,10 @@ import re
 import pytest
 
 from app.consent import POLICY_VERSION
-from tests.answers import EXAMPLE, answers, with_consent
+from tests.answers import SHORT_EXAMPLE as EXAMPLE, medium, short, with_consent
 
-VALID = with_consent(EXAMPLE)                        # итог 60
-BETTER = with_consent(answers(n1="2", n2="daily"))  # итог 92, слабее всего питание — сладкие напитки
+VALID = with_consent(EXAMPLE)                    # ядро 69
+BETTER = with_consent(short(n1="2", n2="7"))      # ядро 91, слабее всего питание — сладкие напитки
 PASSWORD = "correct-horse-1"
 
 
@@ -18,7 +18,7 @@ def csrf(client, path="/login"):
 
 def register(client, email="anna@example.com", name="Анна", password=PASSWORD, **extra):
     data = {"csrf_token": csrf(client, "/register"), "name": name, "email": email,
-            "password": password, "password_confirm": password, "consent": "on"}
+            "password": password, "password_confirm": password, "consent": "on", "terms": "on"}
     data.update(extra)
     return client.post("/register", data=data)
 
@@ -53,10 +53,11 @@ def test_register_creates_user_and_logs_in(client, query):
     ({"password_confirm": "different-123"}, "Пароли не совпадают"),
     ({"name": ""}, "Укажите имя"),
     ({"consent": ""}, "Нужно согласие"),
+    ({"terms": ""}, "Нужно принять пользовательское соглашение"),
 ])
 def test_register_validation(client, query, override, field):
     data = {"csrf_token": csrf(client, "/register"), "name": "Анна", "email": "anna@example.com",
-            "password": PASSWORD, "password_confirm": PASSWORD, "consent": "on", **override}
+            "password": PASSWORD, "password_confirm": PASSWORD, "consent": "on", "terms": "on", **override}
     res = client.post("/register", data=data)
     assert res.status_code == 200
     assert field in res.get_data(as_text=True)
@@ -151,18 +152,17 @@ def test_dashboard_history(user_client):
     user_client.post("/api/score", json=BETTER)
     html = user_client.get("/account").get_data(as_text=True)
     data = json.loads(re.search(r'id="history-data">(.*?)</script>', html, re.S).group(1))
-    assert [d["total"] for d in data] == [60, 92]
-    assert set(data[0]) >= {"id", "t", "label", "date", "total", "sleep", "activity", "nutrition", "recovery"}
+    assert [d["total"] for d in data["points"]] == [69, 91]
+    assert [k for k, _ in data["series"]] == ["total", "sleep", "activity", "nutrition", "mental", "nicotine", "alcohol"]
     entries = re.findall(r'<details class="entry level-(\w+)" id="entry-(\d+)"', html)
     assert [lvl for lvl, _ in entries] == ["high", "mid"]           # новые сверху
-    assert 'id="entry-{}" data-id="{}" open'.format(data[1]["id"], data[1]["id"]) in html
-    assert "+32" in html                                           # изменение к прошлой
-    assert "6–7" in html and "Умеренно — можете говорить, но не петь" in html  # ответы словами
-    assert "account.js" in html
-    assert "Фокус недели: Замените сладкий напиток" in html
+    last_id = data["points"][1]["id"]
+    assert 'id="entry-{}" data-id="{}" open'.format(last_id, last_id) in html
+    assert "+22" in html                                           # изменение к прошлой
+    assert "6–7" in html and "Бросил(а)" in html                   # ответы словами
+    assert "Фокус недели: На один день без сладких напитков больше" in html
     recs = html.split('id="recommendations"')[1]
     assert recs.index("Питание") < recs.index("Сон")
-    assert "Замените сладкий напиток" in recs
 
 
 def test_dashboard_hides_registration_and_consent_facts(user_client):
@@ -258,13 +258,14 @@ def test_migration_adds_user_columns(tmp_path):
 # ---------- Последний балл на главной ----------
 
 def test_home_shows_latest_score_for_logged_in_user(user_client):
-    user_client.post("/api/score", json=VALID)   # 60
-    user_client.post("/api/score", json=BETTER)  # 92
+    user_client.post("/api/score", json=VALID)   # 69
+    user_client.post("/api/score", json=BETTER)  # 91
     html = user_client.get("/").get_data(as_text=True)
     assert "data-user-card" in html
-    assert '<div class="score" data-uc-total>92<span>/100</span></div>' in html
-    assert "Замените сладкий напиток" in html    # фокус недели по самой слабой сфере (питание)
-    assert ">82<span>/100</span>" not in html    # демо-карточка скрыта
+    assert '<div class="score" data-uc-total>91<span>/100</span></div>' in html
+    assert "На один день без сладких напитков больше" in html     # фокус недели по самой слабой сфере
+    assert html.count('data-uc-sphere=') == 6                     # 6 сфер ядра
+    assert ">82<span>/100</span>" not in html                     # демо-карточка скрыта
 
 
 def test_home_shows_demo_card_for_guest_and_new_user(client):
@@ -350,33 +351,37 @@ def test_legacy_results_marked_and_not_compared(user_client, app):
     user_client.post("/api/score", json=VALID)
     html = user_client.get("/account").get_data(as_text=True)
     data = json.loads(re.search(r'id="history-data">(.*?)</script>', html, re.S).group(1))
-    assert [d["total"] for d in data] == [60]                    # на графике только v1.0
+    assert [d["total"] for d in data["points"]] == [69]          # на графике только v2.0
     assert "старая методика" in html
-    assert "к прошлой оценке" not in html                        # 60 не сравнивается с 66 старой формулы
-    assert "Сон: 5–6 часов" in html or "5–6 часов" in html       # ответы старой анкеты словами
+    assert "к прошлой оценке" not in html                        # 69 не сравнивается с 66 старой формулы
+    assert "5–6 часов" in html                                   # ответы старой анкеты словами
 
 
 def test_only_legacy_results_show_chart_placeholder(user_client, app):
     _insert_legacy(app)
     html = user_client.get("/account").get_data(as_text=True)
-    assert "График появится после первой анкеты по методике v1.0" in html
+    assert "График появится после первой анкеты по методике v2.0" in html
     assert 'id="history-data"' not in html
 
 
 def test_quiz_markup_has_all_questions_and_health_consent(client):
+    from app.scoring import QUESTIONS
     html = client.get("/").get_data(as_text=True)
-    assert len(set(re.findall(r'type="radio" name="(\w+)"', html))) == 22
-    assert 'name="health_consent"' in html and "сведений о состоянии моего здоровья" in html
-    assert 'class="quiz-step"' in html and "Шаг 1 из 5" in html
-    assert "ПСИХОЛОГИЧЕСКОЕ СОСТОЯНИЕ" in html and "/methodology" in html
+    radios = set(re.findall(r'type="radio" name="(\w+)"', html))
+    numbers = set(re.findall(r'type="number" name="(\w+)"', html))
+    assert radios | numbers == set(QUESTIONS) | {"tier"}
+    assert 'data-tier="medium"' in html and 'data-tier="extended"' in html and "data-cond=" in html
+    assert 'name="health_consent"' in html and "/consent/health" in html and "/terms" in html
+    assert "НИКОТИН И АЛКОГОЛЬ" in html and "/methodology" in html
 
 
 def test_methodology_page(client):
     html = client.get("/methodology").get_data(as_text=True)
-    assert "Методика v1.0" in html and "бета-версия" in html
-    assert "7–8 → <b>100</b>" in html and "8–9 → <b>100</b> (65+: 70)" in html   # таблицы из кода скоринга
-    assert "Балл = 100 − PHQ-4 / 12 × 100" in html
+    assert "Методика v2.0" in html and "бета-версия" in html
+    assert "<td>7–9</td><td>100</td>" in html and "<td>150</td><td>100</td>" in html  # таблицы LE8 из кода
+    assert "Три уровня" in html and "Каскад точности" in html
     assert "Красные флаги" in html and "112" in html
+    assert "Sleep Condition Indicator — отключён" in html
 
 
 def test_privacy_has_health_section(client):
@@ -385,7 +390,49 @@ def test_privacy_has_health_section(client):
 
 
 def test_home_card_shows_specialist_flag(user_client):
-    user_client.post("/api/score", json={**VALID, "s6": "yes"})
+    user_client.post("/api/score", json={**VALID, "sl2": "3plus"})
     html = user_client.get("/").get_data(as_text=True)
     assert "Есть рекомендация обратиться к специалисту" in html
     assert "Фокус недели — консультация специалиста" in html
+
+
+
+
+# ---------- Методика v2.0: уровни, каскад, соглашения ----------
+
+def test_cascade_between_submissions(user_client, query):
+    """Средний уровень сегодня + короткий завтра → подробный индекс собирается из свежих уточнённых сфер."""
+    user_client.post("/api/score", json=with_consent(medium()))
+    data = user_client.post("/api/score", json=VALID).get_json()
+    assert data["detailed"] is not None
+    assert data["detailed"]["sources"]["wellbeing"] == "medium"
+    assert data["detailed"]["sources"]["sleep"] == "short"
+
+
+def test_guest_gets_no_cascade(client):
+    client.post("/api/score", json=with_consent(medium()))
+    assert client.post("/api/score", json=VALID).get_json()["detailed"] is None
+
+
+def test_terms_and_health_consent_pages(client):
+    terms = client.get("/terms").get_data(as_text=True)
+    assert "Пользовательское соглашение" in terms and "не является медицинской услугой" in terms
+    assert "Pfizer" in terms and "Всемирная организация здравоохранения" in terms
+    consent = client.get("/consent/health").get_data(as_text=True)
+    assert "статьями 9 и 10" in consent and "HbA1c" in consent and "Отзыв согласия" in consent
+    footer = client.get("/").get_data(as_text=True).split("<footer>")[1]
+    assert "Пользовательское соглашение" in footer
+
+
+def test_registration_stores_terms_version(client, query):
+    from app.consent import TERMS_VERSION
+    register(client)
+    assert query("SELECT terms_version FROM users")[0]["terms_version"] == TERMS_VERSION
+
+
+def test_extended_result_in_dashboard(user_client):
+    from tests.answers import extended
+    user_client.post("/api/score", json=with_consent(extended()))
+    html = user_client.get("/account").get_data(as_text=True)
+    assert "Подробный индекс (7 сфер)" in html and "Тело и метаболизм: 90/100 — по 4 из 4 показателей" in html
+    assert "170 см" in html and "расширенный" in html

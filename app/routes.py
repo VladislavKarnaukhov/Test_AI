@@ -8,8 +8,9 @@ from .consent import (CONSENT_ALL, CONSENT_CHOICES, CONSENT_COOKIE, CONSENT_MAX_
                       CONSENT_VERSION_COOKIE, POLICY_VERSION, analytics_allowed)
 from .db import get_db, log_event, to_json
 from .results import SELECT_COLUMNS, present
-from .scoring import (AEROBIC_TARGET, CRISIS_CONTACTS, INTENSITY, LEVELS, POINTS, SPHERE_NAMES, SPHERE_SHORT,
-                      STEPS, ScoringError, calculate_score)
+from . import scoring
+from .consent import TERMS_VERSION
+from .scoring import ScoringError, calculate_score
 from .visitor import classify_source, guess_country, parse_user_agent, referrer_domain
 
 bp = Blueprint("main", __name__)
@@ -49,12 +50,26 @@ def _latest_score(user_id):
     return {**present(row), "created_at": row["created_at"]}
 
 
+def _history_for(user_id):
+    """Самые свежие уточнённые измерения сфер из прошлых анкет v2.0 — для каскада точности."""
+    rows = get_db().execute(
+        "SELECT tier, details, julianday('now') - julianday(created_at) AS age FROM score_results"
+        " WHERE user_id = ? AND method_version = ? AND details IS NOT NULL ORDER BY created_at DESC, id DESC",
+        (user_id, scoring.METHOD_VERSION)).fetchall()
+    history = {}
+    for row in rows:
+        for key, score in json.loads(row["details"]).get("refined", {}).items():
+            history.setdefault(key, {"score": score, "tier": row["tier"], "age_days": row["age"]})
+    return history
+
+
 @bp.get("/")
 def index():
     log_event("page_view")
     latest = _latest_score(g.user["id"]) if g.user else None
-    return render_template("index.html", latest=latest, sphere_names=SPHERE_NAMES, sphere_short=SPHERE_SHORT,
-                           steps=STEPS)
+    return render_template("index.html", latest=latest, quiz=scoring.public_questions(), tiers=scoring.TIERS,
+                           tier_names=scoring.TIER_NAMES, tier_info=scoring.TIER_INFO,
+                           core_short={k: scoring.DOMAIN_SHORT[k] for k in scoring.CORE_DOMAINS})
 
 
 @bp.get("/privacy")
@@ -66,8 +81,19 @@ def privacy():
 @bp.get("/methodology")
 def methodology():
     log_event("page_view")
-    return render_template("methodology.html", steps=STEPS, points=POINTS, levels=LEVELS,
-                           intensity=INTENSITY, aerobic_target=AEROBIC_TARGET, crisis=CRISIS_CONTACTS)
+    return render_template("methodology.html", s=scoring)
+
+
+@bp.get("/terms")
+def terms():
+    log_event("page_view")
+    return render_template("terms.html", terms_version=TERMS_VERSION)
+
+
+@bp.get("/consent/health")
+def health_consent():
+    log_event("page_view")
+    return render_template("health_consent.html", s=scoring)
 
 
 @bp.post("/api/consent")
@@ -106,22 +132,23 @@ def api_score():
     if data.get("health_consent") is not True:
         return jsonify(error="health_consent_required",
                        fields={"health_consent": "Нужно согласие на обработку данных о здоровье."}), 400
+    user_id = g.user["id"] if g.user else None
     try:
-        result = calculate_score(data)
+        result = calculate_score(data, history=_history_for(user_id) if user_id else None)
     except ScoringError as e:
         return jsonify(error=e.code, fields=e.errors), 400
 
-    user_id = g.user["id"] if g.user else None
+    details = {k: result[k] for k in ("refined", "detailed", "body", "screens")}
     db = get_db()
     db.execute(
-        "INSERT INTO score_results (visitor_id, user_id, answers, total, breakdown, recommendations,"
-        " method_version, flags, focus, health_consent_version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO score_results (visitor_id, user_id, answers, total, breakdown, recommendations, method_version,"
+        " flags, focus, health_consent_version, tier, details) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (session.get("visitor_id"), user_id, to_json(result.pop("answers")), result["total"],
          to_json(result["breakdown"]), to_json(result["recommendations"]), result["version"],
-         to_json(result["flags"]), to_json(result["focus"]), POLICY_VERSION),
+         to_json(result["flags"]), to_json(result["focus"]), POLICY_VERSION, result["tier"], to_json(details)),
     )
     db.commit()
-    log_event("score_calculated", {"total": result["total"], "weakest": result["weakest"],
+    log_event("score_calculated", {"total": result["total"], "tier": result["tier"], "weakest": result["weakest"],
                                    "flags": [f["code"] for f in result["flags"]]})
     result["saved_to_account"] = user_id is not None
     return jsonify(result)

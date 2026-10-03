@@ -136,7 +136,7 @@ footer .legal a+a{margin-top:0}
 }
 
 /* Кабинет: интерактивная динамика и история */
-:root{--s-sleep:#4c9374;--s-activity:#8fb339;--s-nutrition:#c98b3a;--s-recovery:#6c8fb3}
+:root{--s-sleep:#4c9374;--s-activity:#8fb339;--s-nutrition:#c98b3a;--s-recovery:#6c8fb3;--s-mental:#6c8fb3;--s-nicotine:#9a7bb5;--s-alcohol:#c26a6a;--s-wellbeing:#4fa3a5}
 .dynamics-head,.history-head{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
 .dynamics-head h2,.history-head h2{margin:0}
 .history-head{margin-bottom:18px}
@@ -334,3 +334,22 @@ footer .legal a+a{margin-top:0}
 @media(max-width:720px){.quiz{padding:20px}.choice span{padding:8px 10px}}
 .quiz-form .choice{display:inline-block;margin:0;font-size:inherit}
 .quiz-form .health-consent{display:flex;margin:14px 0 0;font-size:11px}
+
+/* Методика v2.0: уровни анкеты, 6 сфер ядра, числовые поля */
+.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.quiz-form .tier-choice span{display:grid;gap:3px;height:100%;padding:10px 12px;text-align:left}
+.tier-choice b{font-size:13px}
+.tier-choice small{font-size:10.5px;font-weight:500;line-height:1.35;opacity:.8}
+.q-text em{margin-left:4px;font-style:normal;font-size:10px;font-weight:700;color:#7c8e88}
+.number-field{display:flex;align-items:center;gap:8px}
+.quiz-form .number-field input{display:inline-block;width:140px;margin:0;padding:9px 10px;font:600 13px Manrope}
+.number-field span{font-size:12px;color:#71877f}
+.q-number .q-text{display:block;margin:0 0 8px}
+.terms-note{margin:10px 0 0}
+.terms-note a{color:#3b8b6d;border-bottom:1px solid}
+.metrics-6{flex-wrap:wrap;row-gap:10px}
+.score-card .metrics-6 div,.user-card .metrics-6 div,.account-score .metrics-6 div{width:calc(33.33% - 8px)}
+.extra-scores{margin-top:14px;padding-top:10px;border-top:1px solid #4e6a60;font-size:11px;color:#d1dfd8}
+.extra-scores p{margin:2px 0}
+.entry-date em.tier-tag{background:#eef1ea;color:#3b6f59}
+@media(max-width:720px){.tiers{grid-template-columns:1fr}.score-card .metrics-6 div,.user-card .metrics-6 div,.account-score .metrics-6 div{width:calc(50% - 6px)}}
