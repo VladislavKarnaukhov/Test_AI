@@ -346,7 +346,7 @@
       let before = 0, total = 0;
       list.forEach(function (st, n) { const k = stepQs(st).length; if (n < current) before += k; total += k; });
       const pos = before + qi + 1;
-      stepLabel.textContent = 'Вопрос ' + pos + ' из ' + total + ' · ' + step.dataset.title;
+      stepLabel.textContent = 'Вопрос ' + pos + ' из ' + total;
       stepBar.style.setProperty('--f', (pos / total).toFixed(3));
     }
     function focusQuestion() {
@@ -498,7 +498,7 @@
       if (reduceMotion.matches || to === 0) { node.textContent = to; return; }
       const t0 = performance.now(), dur = 600;
       (function tick(now) {
-        const p = Math.min(1, (now - t0) / dur);
+        const p = Math.max(0, Math.min(1, (now - t0) / dur));
         node.textContent = Math.round(to * (1 - Math.pow(1 - p, 3)));
         if (p < 1) requestAnimationFrame(tick);
       })(t0);
@@ -641,7 +641,7 @@
   function count(textNode, to) {
     const t0 = performance.now(), dur = 900;
     (function tick(now) {
-      const k = Math.min(1, (now - t0) / dur);
+      const k = Math.max(0, Math.min(1, (now - t0) / dur));
       textNode.nodeValue = String(Math.round(to * easeOut(k)));
       if (k < 1) requestAnimationFrame(tick);
     })(t0);
