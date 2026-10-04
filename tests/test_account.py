@@ -159,7 +159,7 @@ def test_dashboard_history(user_client):
     last_id = data["points"][1]["id"]
     assert 'id="entry-{}" data-id="{}" open'.format(last_id, last_id) in html
     assert "+22" in html                                           # изменение к прошлой
-    assert "Бросил(а)" not in html and "answers-list" not in html  # подробные ответы в кабинете не показываются
+    assert "6–7" in html and "Бросил(а)" in html                   # ответы словами (во вложенном «Что вы ответили»)
     assert "Фокус недели: На один день без сладких напитков больше" in html
     recs = html.split('id="recommendations"')[1]
     assert recs.index("Питание") < recs.index("Сон")
@@ -354,7 +354,7 @@ def test_legacy_results_marked_and_not_compared(user_client, app):
     assert [d["total"] for d in data["points"]] == [69]          # на графике только v2.0
     assert "старая методика" in html
     assert "к прошлой оценке" not in html                        # 69 не сравнивается с 66 старой формулы
-    assert "answers-list" not in html                            # ответы анкеты в кабинете не показываются
+    assert "5–6 часов" in html                                   # ответы старой анкеты словами
 
 
 def test_only_legacy_results_show_chart_placeholder(user_client, app):
@@ -436,4 +436,60 @@ def test_extended_result_in_dashboard(user_client):
     user_client.post("/api/score", json=with_consent(extended()))
     html = user_client.get("/account").get_data(as_text=True)
     assert "Подробный индекс (7 сфер)" in html and "Тело и метаболизм: 90/100 — по 4 из 4 показателей" in html
-    assert "170 см" not in html and "расширенный" in html
+    assert "170 см" in html and "расширенный" in html
+
+
+# ---------- Удаление отдельной оценки ----------
+
+def _history_ids(client):
+    html = client.get("/account").get_data(as_text=True)
+    return [int(i) for i in re.findall(r'<details class="entry level-\w+" id="entry-(\d+)"', html)]
+
+
+def test_delete_result_removes_only_selected_own_result(user_client, query):
+    user_client.post("/api/score", json=VALID)
+    user_client.post("/api/score", json=BETTER)
+    first, second = sorted(_history_ids(user_client))
+    token = csrf(user_client, "/account")
+    r = user_client.post(f"/account/results/{first}/delete", data={"csrf_token": token})
+    assert r.status_code == 302 and r.headers["Location"].endswith("/account#history")
+    html = user_client.get("/account").get_data(as_text=True)          # сообщение показывается один раз
+    assert "Оценка удалена" in html and f'id="entry-{first}"' not in html and f'id="entry-{second}"' in html
+    assert [row["id"] for row in query("SELECT id FROM score_results")] == [second]
+
+
+def test_delete_result_requires_csrf_and_login(user_client, client, app, query):
+    user_client.post("/api/score", json=VALID)
+    (rid,) = _history_ids(user_client)
+    assert user_client.post(f"/account/results/{rid}/delete").status_code == 400      # без csrf_token
+    assert len(query("SELECT id FROM score_results")) == 1
+    anon = app.test_client()
+    r = anon.post(f"/account/results/{rid}/delete", data={"csrf_token": "x"})
+    assert r.status_code in (302, 400) and len(query("SELECT id FROM score_results")) == 1
+
+
+def test_cannot_delete_someone_elses_result(user_client, app, query):
+    user_client.post("/api/score", json=VALID)
+    (rid,) = _history_ids(user_client)
+    other = app.test_client()
+    register(other, email="boris@example.com", name="Борис")
+    r = other.post(f"/account/results/{rid}/delete", data={"csrf_token": csrf(other, "/account")})
+    assert r.status_code == 302
+    assert len(query("SELECT id FROM score_results")) == 1                                # чужая оценка на месте
+    assert "нет в вашем кабинете" in other.get("/account").get_data(as_text=True)
+
+
+def test_history_offers_answers_full_result_and_delete(user_client):
+    user_client.post("/api/score", json=VALID)
+    html = user_client.get("/account").get_data(as_text=True)
+    assert "Что вы ответили" in html and "Полный результат и советы" in html and "Удалить оценку" in html
+    assert "/delete" in html and 'data-metric="account_delete_result"' in html
+
+
+def test_choosing_necessary_cookies_keeps_login(user_client):
+    user_client.post("/api/consent", json={"choice": "all"})
+    assert user_client.get("/account").status_code == 200
+    user_client.post("/api/consent", json={"choice": "necessary"})
+    assert user_client.get("/account").status_code == 200      # вход сохранён
+    with user_client.session_transaction() as s:
+        assert "visitor_id" not in s                            # аналитический идентификатор забыт
