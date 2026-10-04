@@ -52,17 +52,16 @@
 <div class="wrap score-story-grid">
 <div class="score-story-copy">
 <p class="eyebrow">Индекс здоровья</p>
-<h2 id="score-title">Один балл. <span class="soft">И понятно, из чего он состоит.</span></h2>
-<p class="lead">Шесть сфер на одной шкале от 0 до 100. Вы видите не только итог, но и то, что сильнее всего на него влияет.</p>
+<h2 id="score-title">Один балл. <span class="soft">И один шаг на неделю.</span></h2>
+<p class="lead">Шесть сфер сводятся в число от 0 до 100. Вы видите, где находитесь, и получаете один понятный шаг, а не список из тридцати советов.</p>
 </div>
-<figure class="score-demo" aria-label="Пример: индекс 82, шесть сфер">
-<div class="score-demo-top"><div class="ring-score big" style="--v:82"><b>82</b></div><div><p class="peek-label">Пример</p><p class="score-demo-level">Высокий уровень</p><p class="score-demo-note">Привычки близки к рекомендациям</p></div></div>
-<p class="rows-title">Что влияет на индекс</p>
-<ul class="rows">
-{%- for key, value in [('sleep', 72), ('activity', 85), ('nutrition', 64), ('mental', 80), ('nicotine', 100), ('alcohol', 90)] %}
-<li class="row tone-{{ 'high' if value >= 80 else 'mid' if value >= 50 else 'low' }}{% if key == 'nutrition' %} weakest{% endif %}"><span class="row-name">{{ core_short[key] }}</span><b class="row-val">{{ value }}</b>{{ range_bar(value) }}</li>
-{%- endfor %}
-</ul>
+<figure class="score-demo" aria-label="Пример: индекс 82, высокий уровень">
+<div class="ring-score big" style="--v:82"><b>82</b></div>
+<figcaption>
+<span class="peek-label">Пример результата</span>
+<span class="score-demo-level">Высокий уровень</span>
+<span class="score-demo-note">Привычки близки к рекомендациям</span>
+</figcaption>
 <p class="score-demo-step"><b>Шаг на неделю:</b> добавьте порцию овощей или фруктов к одному приёму пищи.</p>
 </figure>
 </div>

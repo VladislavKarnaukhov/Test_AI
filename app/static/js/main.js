@@ -594,22 +594,32 @@
 })();
 
 
-/* Кольцо индекса: тонкая дуга с закруглёнными концами (SVG добавляется в конец, чтобы текст числа остался первым узлом) */
+/* Кольцо индекса — «циферблат»: 60 тонких рисок, дуга с закруглёнными концами и бегунок на её конце.
+   SVG добавляется в конец элемента, чтобы текст числа остался первым узлом (его обновляет остальной код). */
 (function () {
   'use strict';
   const NS = 'http://www.w3.org/2000/svg';
   function toneOf(v) { return v >= 80 ? 'high' : v >= 50 ? 'mid' : 'low'; }
+  function circle(cls, r) {
+    const c = document.createElementNS(NS, 'circle');
+    c.setAttribute('class', cls); c.setAttribute('cx', '50'); c.setAttribute('cy', '50'); c.setAttribute('r', r); c.setAttribute('pathLength', '100');
+    return c;
+  }
   document.querySelectorAll('.ring-score, .score').forEach(function (el) {
     if (el.closest('.entry') || el.querySelector('.ring-svg')) return;
     const svg = document.createElementNS(NS, 'svg');
     svg.setAttribute('class', 'ring-svg');
     svg.setAttribute('viewBox', '0 0 100 100');
     svg.setAttribute('aria-hidden', 'true');
-    ['ring-track', 'ring-arc'].forEach(function (cls) {
-      const c = document.createElementNS(NS, 'circle');
-      c.setAttribute('class', cls); c.setAttribute('cx', '50'); c.setAttribute('cy', '50'); c.setAttribute('r', '45'); c.setAttribute('pathLength', '100');
-      svg.appendChild(c);
-    });
+    svg.appendChild(circle('ring-ticks', '47.5'));
+    svg.appendChild(circle('ring-track', '41'));
+    svg.appendChild(circle('ring-arc', '41'));
+    const knob = document.createElementNS(NS, 'g');
+    knob.setAttribute('class', 'ring-knob');
+    const dot = document.createElementNS(NS, 'circle');
+    dot.setAttribute('cx', '91'); dot.setAttribute('cy', '50'); dot.setAttribute('r', '3.4');
+    knob.appendChild(dot);
+    svg.appendChild(knob);
     el.appendChild(svg);
     el.classList.add('has-ring');
     let v = parseFloat(el.style.getPropertyValue('--v'));
