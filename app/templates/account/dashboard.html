@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "_components.html" import rows, range_bar, range_axis %}
-{% block title %}Личный кабинет — Adelina Health{% endblock %}
+{% block title %}Личный кабинет — Del Health{% endblock %}
 {% block content %}
 {% include "_header.html" %}
 <main id="main" tabindex="-1" class="wrap account-page">
@@ -65,7 +65,7 @@
       <button type="button" data-series="total" aria-pressed="true" style="--c:var(--s-total)">Итог</button>{% for key, name in core_short.items() %}<button type="button" data-series="{{ key }}" aria-pressed="false" style="--c:var(--s-{{ key }})">{{ name }}</button>{% endfor %}
     </div>
     <div class="chart-wrap">
-      <svg class="chart" viewBox="0 0 640 260" role="img" aria-label="График индекса Adelina по датам"></svg>
+      <svg class="chart" viewBox="0 0 640 260" role="img" aria-label="График индекса Del Health по датам"></svg>
       <div class="chart-tip" hidden></div>
       <p class="chart-empty muted" hidden>За выбранный период оценок нет.</p>
       <noscript><p class="muted">Включите JavaScript, чтобы увидеть график. Все оценки в истории ниже.</p></noscript>

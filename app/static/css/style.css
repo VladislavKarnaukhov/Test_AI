@@ -1,15 +1,15 @@
-/* Adelina Health: визуальная система «бланк».
+/* Del Health: визуальная система «бланк».
    Страница читается как лабораторный бланк: подписи над значениями, линованные строки, шкалы
    «зоны + ваша отметка». Единственный акцент (шариковая синяя) значит «ваш выбор / ваш результат».
    Красное и янтарное зарезервированы за флагами. Разметка вызывается из шаблонов; JS-хуки (data-*) не менять. */
 
-@font-face{font-family:"Onest";src:url("../fonts/Onest-cyrillic.woff2") format("woff2");font-weight:100 900;font-style:normal;font-display:swap;unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
-@font-face{font-family:"Onest";src:url("../fonts/Onest-latin.woff2") format("woff2");font-weight:100 900;font-style:normal;font-display:swap;unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"Inter";src:url("../fonts/Inter-cyrillic.woff2") format("woff2");font-weight:100 900;font-style:normal;font-display:swap;unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:"Inter";src:url("../fonts/Inter-latin.woff2") format("woff2");font-weight:100 900;font-style:normal;font-display:swap;unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
 
 /* ---------- Токены ---------- */
 :root{
   color-scheme:light dark;
-  --font:"Onest",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --font:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
 
   --paper:#FAF8F4; --sheet:#FFFFFF; --sunken:#F1EDE5;
   --ink:#1F1E1B; --ink-2:#47443E; --ink-3:#6A665D;
@@ -19,7 +19,7 @@
   --warn:#7A4300; --warn-bg:#FFF2DC; --warn-line:#E3AE5C;
   --danger:#9B1C14; --danger-bg:#FDECE9; --danger-line:#E08A82;
   --info:#1F4A6B; --info-bg:#E8F2F9; --info-line:#8FB9D6;
-  --shadow-sheet:0 1px 2px rgba(40,30,10,.04),0 40px 70px -44px rgba(60,40,10,.30);
+  --shadow-sheet:0 1px 2px rgba(40,30,10,.04),0 28px 50px -36px rgba(60,40,10,.22);
   --shadow-pop:0 30px 80px -30px rgba(10,20,40,.55);
   --backdrop:rgba(11,19,27,.55);
 
@@ -78,7 +78,6 @@ ul,ol,dl{margin:0}
 .skip-link:focus{top:.75rem}
 main:focus{outline:none}
 .section{padding-block:clamp(3.5rem,8vw,6.5rem)}
-.section-tint{background:var(--sunken)}
 .section h2+.lead{margin-top:var(--sp-3)}
 
 /* ---------- Ссылки и кнопки ---------- */
@@ -107,8 +106,6 @@ main:focus{outline:none}
 .brand{display:inline-flex;align-items:baseline;gap:.35em;text-decoration:none;color:var(--ink);font-size:1.375rem;line-height:1;letter-spacing:-.035em;white-space:nowrap}
 .brand-name{font-weight:640}
 .brand-health{font-weight:380;color:var(--ink-3);letter-spacing:-.02em}
-.brand-i{position:relative;display:inline-block}
-.brand-i::after{content:"";position:absolute;left:50%;top:-.02em;width:.2em;height:.2em;margin-left:-.1em;border-radius:50%;background:var(--accent)}
 .site-nav{display:flex;gap:var(--sp-5);margin-right:auto}
 .site-nav a{display:inline-flex;align-items:center;min-height:2.75rem;font-size:var(--fs-sm);font-weight:500;color:var(--ink-2);text-decoration:none}
 .header-actions{display:flex;align-items:center;gap:var(--sp-4)}
@@ -123,7 +120,6 @@ main:focus{outline:none}
 
 /* ---------- Первый экран ---------- */
 .hero{padding-block:clamp(2.5rem,6vw,5.5rem) clamp(3rem,7vw,6rem)}
-.hero-grid{display:grid;grid-template-columns:minmax(0,6fr) minmax(0,6fr);gap:clamp(2rem,5vw,4.5rem);align-items:start}
 .hero-copy{padding-top:clamp(0rem,3vw,2.5rem)}
 .hero h1{font-size:clamp(2.75rem,7vw,6rem);line-height:.98;letter-spacing:-.05em;max-width:9em}
 .hero .lead{margin-top:var(--sp-5)}
@@ -200,8 +196,6 @@ a.sheet .sheet-link{color:var(--accent);text-decoration:underline;text-underline
 .index-list dt{font-weight:600}
 .index-list dd{margin:0;color:var(--ink-2)}
 .index-list small{display:block;margin-top:.125rem;font-size:var(--fs-sm);color:var(--ink-3)}
-.how-grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:var(--sp-6) clamp(2rem,6vw,5rem);align-items:start}
-.how-grid h2{position:sticky;top:1.5rem}
 .steps{list-style:none;padding:0;position:relative;display:grid;gap:var(--sp-6)}
 .steps::before{content:"";position:absolute;left:.4375rem;top:.5rem;bottom:.5rem;width:1px;background:var(--line-strong)}
 .steps li{position:relative;padding-left:var(--sp-7)}
@@ -536,14 +530,12 @@ input[type=number],input[type=email],input[type=text],input[type=password],.choi
 .chip,.badge,.skip-link{border-radius:var(--r-pill)}
 .range-zones i,.range-fill{border-radius:var(--r-pill)}
 .range-fill{height:4px;margin-top:-2px}
-.brand-i::after{background:var(--accent)}
-.accent-word{color:var(--accent)}
 .eyebrow{margin-bottom:var(--sp-4);font-size:var(--fs-xs);font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
 .section h2{font-size:clamp(2rem,4.6vw,3.75rem);line-height:1.02;letter-spacing:-.045em}
 .section .lead{margin-top:var(--sp-4);font-weight:300}
 
 /* =====================================================================
-   Adelina Health: редакционный health-tech. Тёплый белый, угольный текст, один зелёный акцент,
+   Del Health: редакционный health-tech. Тёплый белый, угольный текст, один зелёный акцент,
    крупные фотографии и типографика вместо сетки карточек. Движение только transform/opacity/stroke,
    только при prefers-reduced-motion: no-preference.
    ===================================================================== */
@@ -567,15 +559,12 @@ h2{font-size:clamp(2rem,4.6vw,3.75rem);line-height:1.04;letter-spacing:-.04em}
 
 /* Первый экран: текст слева, высокая фотография справа, индекс поверх неё */
 .hero{padding-top:clamp(2rem,5vw,4.5rem)}
-.hero-grid{display:grid;grid-template-columns:minmax(0,6fr) minmax(0,5fr);gap:clamp(2rem,6vw,6rem);align-items:center}
 .hero h1{font-size:clamp(2.75rem,6.4vw,5.75rem);line-height:.98;letter-spacing:-.05em;max-width:9em}
 .hero .lead{max-width:30rem;margin-top:var(--sp-5);font-size:clamp(1.0625rem,1.5vw,1.25rem)}
 .hero-actions{margin-top:var(--sp-6)}
-.hero-media{position:relative}
-.hero-media>picture img{display:block;width:100%;height:auto;aspect-ratio:4/5;object-fit:cover;border-radius:var(--r-lg) var(--r-lg) var(--r-lg) 7rem}
 .score-peek{position:absolute;left:clamp(-3rem,-4vw,-1rem);bottom:clamp(1.5rem,4vw,3rem);margin:0;display:flex;align-items:center;gap:var(--sp-4);padding:var(--sp-4) var(--sp-5) var(--sp-4) var(--sp-4);border-radius:var(--r-lg);background:color-mix(in srgb,var(--sheet) 94%,transparent);box-shadow:0 30px 60px -30px rgba(40,25,5,.45);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
 .score-peek figcaption{display:grid;gap:.125rem}
-.peek-label{font-size:.6875rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.peek-label{font-size:.75rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
 .peek-status{font-size:var(--fs-lg);font-weight:500;letter-spacing:-.02em}
 .peek-note{font-size:var(--fs-sm);color:var(--ink-2)}
 @media (max-width:960px){.hero-grid{grid-template-columns:minmax(0,1fr)}.hero-media{max-width:34rem}.score-peek{left:var(--sp-4)}}
@@ -588,7 +577,6 @@ h2{font-size:clamp(2rem,4.6vw,3.75rem);line-height:1.04;letter-spacing:-.04em}
 @media (prefers-reduced-motion:no-preference){
   .ring-score::before,.score[style*="--v"]::before{animation:sweep 1.3s var(--ease-out) .2s both}
   @keyframes sweep{from{--sweep:0}to{--sweep:1}}
-  .hero-media>picture img{animation:photo-in 1s var(--ease-out) both}
   @keyframes photo-in{from{opacity:0;transform:scale(1.03)}}
 }
 .score[style*="--v"]{width:clamp(8rem,12vw,10.5rem);--ring:8px;font-size:clamp(2.5rem,4.6vw,3.75rem);line-height:1;font-weight:200;letter-spacing:-.05em;align-content:center}
@@ -621,8 +609,6 @@ h2{font-size:clamp(2rem,4.6vw,3.75rem);line-height:1.04;letter-spacing:-.04em}
 .chapter-photo.wide img{aspect-ratio:21/9}
 .chapter-text.split{display:grid;grid-template-columns:minmax(0,6fr) minmax(0,5fr);gap:var(--sp-6);align-items:end}
 .chapter-text.split .chapter-value{margin:0}
-.chapter-mind{grid-template-columns:minmax(0,6fr) minmax(0,5fr)}
-.chapter-mind .chapter-photo img{aspect-ratio:4/3}
 .index-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;margin-top:clamp(3rem,7vw,6rem);border-top:1px solid var(--line-strong)}
 .index-list>div{display:block;padding:var(--sp-5) var(--sp-5) 0 0;border:0}
 .index-list>div+div{padding-left:var(--sp-5);border-left:1px solid var(--line)}
@@ -693,10 +679,7 @@ h2{font-size:clamp(2rem,4.6vw,3.75rem);line-height:1.04;letter-spacing:-.04em}
 .faq-list a{color:var(--accent);text-decoration:underline}
 
 @media (max-width:420px){.footer-grid{grid-template-columns:minmax(0,1fr)}.footer-col a{text-wrap:balance}.instrument-legend{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.instrument-core span{display:none}
 
-.instrument-core span{display:none}
-.level.l3 p:last-child{color:#424245}
 
 h2+.lead{margin-top:var(--sp-4)}
 
@@ -768,12 +751,8 @@ h2+.lead{margin-top:var(--sp-4)}
    Правка выравнивания первого экрана и новый личный кабинет
    ===================================================================== */
 /* Первый экран: колонки равной высоты, текст по центру колонки, ничего не выходит за сетку */
-.hero-grid{align-items:stretch;gap:clamp(2rem,6vw,5.5rem)}
 .hero-copy{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding-block:clamp(.5rem,2vw,2rem)}
 .hero h1{font-size:clamp(2.5rem,5.6vw,5rem);max-width:10em}
-.hero-media{display:flex;min-height:100%}
-.hero-media>picture{display:block;width:100%}
-.hero-media>picture img{height:100%;min-height:26rem;max-height:40rem;aspect-ratio:4/5;border-radius:var(--r-lg)}
 .score-peek{left:var(--sp-4);right:auto;bottom:var(--sp-4)}
 @media (max-width:960px){.hero-media{max-width:34rem;min-height:0}.hero-media>picture img{height:auto;min-height:0;max-height:none}}
 
@@ -868,5 +847,154 @@ h2+.lead{margin-top:var(--sp-4)}
 .settings-back a{display:inline-flex;align-items:center;min-height:2.75rem;text-decoration:none;color:var(--ink-3)}
 .settings-back a::before{content:"←";margin-right:.5rem}
 .settings-section h2{font-size:clamp(1.5rem,2.6vw,2rem);font-weight:400;letter-spacing:-.03em}
-.hero-media{align-self:center;min-height:0;display:block}
-.hero-media>picture img{height:auto;max-height:42rem}
+
+/* =====================================================================
+   Del Health v6 — iPhone-first. Inter, полноэкранное фото, один акцент.
+   Иерархия: Display → H1 → H2 → H3 → body → caption.
+   ===================================================================== */
+:root{--fs-display:clamp(2.5rem,7.2vw,6rem);--r-photo:1.5rem}
+body{font-feature-settings:"cv11","ss03";letter-spacing:-.005em}
+h1,h2,h3{font-weight:500}
+h1{letter-spacing:-.045em}
+h2{font-size:clamp(2rem,5vw,3.75rem);line-height:1.03;letter-spacing:-.042em}
+h3{letter-spacing:-.02em}
+.soft{color:var(--ink-3)}
+.eyebrow{font-size:.75rem;letter-spacing:.12em}
+.lead{max-width:34rem;font-size:clamp(1.0625rem,1.5vw,1.25rem);line-height:1.5;font-weight:400}
+.btn{min-height:3rem;font-weight:500;letter-spacing:-.01em}
+.btn-lg{min-height:3.5rem;padding:0 1.75rem}
+.btn-light{background:#FAF8F4;color:#1F1E1B}
+.btn-ghost{background:none;border-color:rgba(255,255,255,.55);color:#fff}
+@media (hover:hover) and (pointer:fine){.btn-light:hover{background:#fff}.btn-ghost:hover{background:rgba(255,255,255,.14)}}
+
+/* Шапка и мобильное меню */
+.site-header{position:sticky;top:0;z-index:60;background:color-mix(in srgb,var(--paper) 88%,transparent);-webkit-backdrop-filter:saturate(1.4) blur(16px);backdrop-filter:saturate(1.4) blur(16px);border-bottom:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+.header-inner{position:relative;min-height:4rem}
+.brand{font-size:1.25rem;letter-spacing:-.04em;gap:.3em}
+.brand-name{font-weight:650}.brand-health{font-weight:400;color:var(--ink-3);letter-spacing:-.03em}
+.site-nav a,.header-link{font-size:.9375rem;font-weight:500}
+.menu{display:none}
+body:has(.hero) .site-header{position:absolute;inset:0 0 auto 0;background:none;border-bottom:0;-webkit-backdrop-filter:none;backdrop-filter:none;color:#fff;--ink:#fff;--ink-2:rgba(255,255,255,.85);--ink-3:rgba(255,255,255,.7)}
+body:has(.hero) .site-header .btn-primary{background:#FAF8F4;color:#1F1E1B}
+body:has(.hero) .brand{color:#fff}
+@media (max-width:720px){
+  .header-inner{min-height:3.5rem;gap:var(--sp-3);flex-wrap:nowrap;padding-top:env(safe-area-inset-top)}
+  .site-nav,.header-actions .header-link{display:none}
+  .header-actions{margin-left:auto}
+  .header-actions .btn-sm{min-height:2.5rem;padding:0 1rem}
+  .menu{display:block}
+  .menu summary{display:grid;place-items:center;width:2.75rem;height:2.75rem;list-style:none;cursor:pointer;border-radius:50%}
+  .menu summary::-webkit-details-marker{display:none}
+  .menu-icon,.menu-icon::before{content:"";display:block;width:1.25rem;height:1.5px;background:currentColor;border-radius:2px;transition:transform var(--dur-3) var(--ease-out)}
+  .menu-icon{position:relative}
+  .menu-icon::before{position:absolute;top:6px;left:0}
+  .menu-icon::after{content:"";position:absolute;top:-6px;left:0;width:1.25rem;height:1.5px;background:currentColor;border-radius:2px;transition:transform var(--dur-3) var(--ease-out)}
+  .menu[open] .menu-icon{background:transparent}
+  .menu[open] .menu-icon::before{transform:translateY(-6px) rotate(45deg)}
+  .menu[open] .menu-icon::after{transform:translateY(6px) rotate(-45deg)}
+  .menu-panel{position:fixed;inset:3.5rem 0 auto 0;display:grid;gap:.25rem;padding:var(--sp-4) var(--gutter) calc(var(--sp-5) + env(safe-area-inset-bottom));background:#FAF8F4;color:#1F1E1B;box-shadow:0 30px 60px -30px rgba(0,0,0,.4);border-radius:0 0 var(--r-lg) var(--r-lg)}
+  .menu-panel a:not(.btn){display:flex;align-items:center;min-height:3.25rem;font-size:1.25rem;font-weight:500;letter-spacing:-.02em;text-decoration:none;border-bottom:1px solid #E7E2D8}
+  .menu-panel .btn{margin-top:var(--sp-4);width:100%;background:#2F6B4C;color:#fff}
+  body:has(.hero) .site-header{position:absolute}
+}
+
+/* Первый экран: фото на всю ширину, текст и индекс снизу */
+.hero{position:relative;isolation:isolate;display:grid;align-items:end;min-height:min(100svh,56rem);padding:calc(6rem + env(safe-area-inset-top)) 0 clamp(1.75rem,5vw,4rem);overflow:clip;background:#2a1a08;color:#fff}
+.hero-photo{position:absolute;inset:0;z-index:-2;display:block}
+.hero-photo img{width:100%;height:100%;object-fit:cover;object-position:24% 42%}
+.hero::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(24,14,2,.38) 0,rgba(24,14,2,0) 26%),linear-gradient(0deg,rgba(24,14,2,.78) 0,rgba(24,14,2,.28) 46%,rgba(24,14,2,0) 72%)}
+.hero-inner{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,4fr);gap:var(--sp-6) clamp(2rem,5vw,5rem);align-items:end}
+.hero-copy{display:block;padding:0}
+.hero .eyebrow{color:rgba(255,255,255,.82)}
+.hero h1{max-width:12em;font-size:var(--fs-display);line-height:.98;letter-spacing:-.05em;font-weight:500;color:#fff}
+.hero h1 .soft{color:rgba(255,255,255,.7)}
+.hero .lead{margin-top:var(--sp-5);max-width:30rem;color:rgba(255,255,255,.88)}
+.hero-actions{display:flex;flex-wrap:wrap;gap:var(--sp-3);margin-top:var(--sp-6)}
+.hero-note{margin-top:var(--sp-4);font-size:.875rem;color:rgba(255,255,255,.75)}
+.hero-note::before{content:none}
+.hero .score-peek{position:static;justify-self:end;width:min(100%,22rem);margin:0;padding:var(--sp-4) var(--sp-5) var(--sp-4) var(--sp-4);border-radius:var(--r-photo);background:rgba(250,248,244,.94);color:#1F1E1B;box-shadow:0 30px 60px -30px rgba(0,0,0,.55);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.hero .user-card{justify-self:end;margin:0;max-width:26rem}
+.hero .peek-label{color:#6A665D}.hero .peek-note{color:#47443E}
+@media (max-width:960px){.hero-inner{grid-template-columns:minmax(0,1fr)}.hero .score-peek,.hero .user-card{justify-self:stretch;width:100%;max-width:none}}
+@media (max-width:600px){
+  .hero{min-height:100svh;padding-top:calc(5.5rem + env(safe-area-inset-top))}
+  .hero h1{font-size:clamp(2.375rem,10.4vw,3rem)}
+  .hero-actions{flex-direction:column;align-items:stretch}
+  .hero-actions .btn{width:100%}
+  .hero .score-peek{gap:var(--sp-3)}
+}
+
+/* Кольцо индекса */
+.ring-score.big{width:clamp(7.5rem,13vw,10rem);--ring:9px}
+.ring-score.big b{font-size:clamp(2.5rem,5vw,3.5rem);font-weight:300}
+
+/* Подход */
+.approach{padding-block:clamp(4.5rem,10vw,9rem)}
+.statement{max-width:21em;font-size:clamp(1.75rem,4.2vw,3.5rem);line-height:1.1;letter-spacing:-.04em;font-weight:500}
+.flow li{padding-block:var(--sp-5) 0}
+.flow h3{font-size:1.375rem;font-weight:500}
+
+/* Индекс: итог → из чего состоит → шаг */
+.score-story{padding-block:clamp(4.5rem,10vw,9rem);background:var(--sunken)}
+.score-story-grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:clamp(2rem,6vw,6rem);align-items:center}
+.score-story .lead{margin-top:var(--sp-5)}
+.score-demo{margin:0;padding:clamp(1.5rem,4vw,2.5rem);border-radius:var(--r-photo);background:var(--sheet);box-shadow:var(--shadow-sheet)}
+.score-demo-top{display:flex;align-items:center;gap:var(--sp-5);margin-bottom:var(--sp-5)}
+.score-demo-level{font-size:clamp(1.375rem,2.4vw,1.75rem);font-weight:500;letter-spacing:-.03em;line-height:1.1}
+.score-demo-note{margin-top:.25rem;font-size:var(--fs-sm);color:var(--ink-2)}
+.score-demo .rows{border-top:1px solid var(--line)}
+.score-demo-step{margin-top:var(--sp-4);padding:var(--sp-4);border-radius:1rem;background:var(--accent-soft);font-size:var(--fs-sm);line-height:1.5;color:var(--ink)}
+@media (max-width:860px){.score-story-grid{grid-template-columns:minmax(0,1fr)}}
+
+/* Главы: у каждой своя композиция */
+.chapters{background:var(--paper);padding-block:clamp(4.5rem,10vw,9rem)}
+.chapters h2{max-width:13em}
+.chapter-photo img{border-radius:var(--r-photo)}
+.chapter-sleep{grid-template-columns:minmax(0,5fr) minmax(0,6fr)}
+.chapter-sleep .chapter-photo img{aspect-ratio:4/5;object-position:50% 40%}
+.chapter-move .chapter-photo.wide img{aspect-ratio:21/9;object-position:50% 45%}
+.chapter-pair{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:clamp(1.5rem,4vw,3rem);margin-top:clamp(3rem,7vw,6rem);align-items:start}
+.chapter-pair .chapter{display:block;margin-top:0}
+.chapter-food .chapter-photo img{aspect-ratio:16/10}
+.chapter-calm .chapter-photo img{aspect-ratio:4/5;object-position:50% 78%}
+.chapter-pair .chapter-text{margin-top:var(--sp-5)}
+.chapter-value{font-weight:400;letter-spacing:-.045em}
+.index-list{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:clamp(3rem,7vw,6rem)}
+@media (max-width:860px){.chapter-sleep,.chapter-pair,.index-list{grid-template-columns:minmax(0,1fr)}.chapter-move .chapter-photo.wide img{aspect-ratio:4/3}.chapter-sleep .chapter-photo img{aspect-ratio:4/3}}
+
+/* Появление при прокрутке: тихо, один раз, без движения при reduced motion */
+@media (prefers-reduced-motion:no-preference){@supports (animation-timeline:view()){
+  .statement,.flow li,.score-story-copy,.score-demo,.chapter,.index-list>div,.level-list li,.trend-grid>*,.principle-list li,.faq-list details{animation:reveal linear both;animation-timeline:view();animation-range:entry 0% entry 40%}
+  @keyframes reveal{from{opacity:0;transform:translateY(1.25rem)}}
+  .hero-photo img{animation:hero-drift linear both;animation-timeline:scroll(root);animation-range:0 80svh}
+  @keyframes hero-drift{to{transform:translateY(6%) scale(1.04)}}
+}}
+
+/* правка первого экрана: бегунья справа, заголовок короче и в тёмной зоне кадра */
+.hero-photo{transform:scaleX(-1)}
+.hero-photo img{object-position:76% 40%}
+.hero::after{background:linear-gradient(90deg,rgba(24,14,2,.62) 0,rgba(24,14,2,.2) 52%,rgba(24,14,2,0) 78%),linear-gradient(0deg,rgba(24,14,2,.7) 0,rgba(24,14,2,0) 52%),linear-gradient(180deg,rgba(24,14,2,.4) 0,rgba(24,14,2,0) 22%)}
+.hero h1{font-size:clamp(2.5rem,6.2vw,5.5rem);max-width:8em}
+.hero-inner{grid-template-columns:minmax(0,1fr) auto}
+.hero .score-peek{width:19rem}
+@media (max-width:960px){.hero-inner{grid-template-columns:minmax(0,1fr)}.hero .score-peek{width:100%}.hero::after{background:linear-gradient(0deg,rgba(24,14,2,.85) 0,rgba(24,14,2,.45) 52%,rgba(24,14,2,0) 80%),linear-gradient(180deg,rgba(24,14,2,.45) 0,rgba(24,14,2,0) 22%)}}
+
+/* iPhone: фото сверху с бегуньей, текст ниже на затемнении; баннер cookie компактнее */
+@media (max-width:600px){
+  .hero{min-height:0;display:block;padding:calc(58svh + env(safe-area-inset-top)) 0 var(--sp-6);background:#1a1105}
+  .hero-photo{inset:0 0 auto 0;height:74svh}
+  .hero-photo img{object-position:30% 28%}
+  .hero::after{background:linear-gradient(180deg,rgba(24,14,2,.4) 0,rgba(24,14,2,0) 22%),linear-gradient(180deg,rgba(26,17,5,0) 40svh,#1a1105 70svh)}
+  .hero-inner{gap:var(--sp-5)}
+  .hero .lead{font-size:1rem}
+  .cookie-banner{left:.75rem;right:.75rem;bottom:calc(.75rem + env(safe-area-inset-bottom));max-width:none;padding:var(--sp-4);font-size:.8125rem;line-height:1.45;border-radius:1.25rem}
+  .cookie-banner .cookie-actions{margin-top:var(--sp-3)}
+}
+@media (max-width:600px){
+  .hero{padding-top:calc(44svh + env(safe-area-inset-top))}
+  .hero-photo{height:66svh}
+  .hero::after{background:linear-gradient(180deg,rgba(24,14,2,.4) 0,rgba(24,14,2,0) 22%),linear-gradient(180deg,rgba(26,17,5,0) 30svh,#1a1105 58svh)}
+  .hero .lead{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .peek-label{font-size:.75rem}
+}
+.hero .score-peek{width:21rem}

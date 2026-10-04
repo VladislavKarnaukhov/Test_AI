@@ -5,18 +5,19 @@
 <main id="main" tabindex="-1">
 
 <section class="hero">
-<div class="wrap hero-grid">
+<picture class="hero-photo"><source type="image/webp" srcset="{{ static_url('img/run-900.webp') }} 900w, {{ static_url('img/run-1600.webp') }} 1600w, {{ static_url('img/run-2400.webp') }} 2400w" sizes="100vw"><img src="{{ static_url('img/run-1600.webp') }}" width="1600" height="1067" alt="Бегунья в силуэте на фоне заката в парке" fetchpriority="high"></picture>
+<div class="wrap hero-inner">
 <div class="hero-copy">
 {% if current_user and latest %}
 <p class="eyebrow">С возвращением</p>
-<h1>Здравствуйте, <span class="soft">{{ current_user.name }}</span></h1>
-<p class="lead">Ваш последний индекс справа. Через 2–4 недели повторите анкету, и в кабинете появится динамика.</p>
-<div class="hero-actions"><a class="btn btn-primary btn-lg" href="#try" data-metric="hero_start_quiz">Пройти анкету снова</a><a class="btn btn-quiet btn-lg" href="{{ url_for('account.dashboard') }}" data-metric="hero_user_card">Открыть кабинет</a></div>
+<h1>Здравствуйте, {{ current_user.name }}</h1>
+<p class="lead">Ваш последний индекс справа. Повторите анкету через 2–4 недели, и в кабинете появится динамика.</p>
+<div class="hero-actions"><a class="btn btn-light btn-lg" href="#try" data-metric="hero_start_quiz">Пройти анкету снова</a><a class="btn btn-ghost btn-lg" href="{{ url_for('account.dashboard') }}" data-metric="hero_user_card">Открыть кабинет</a></div>
 {% else %}
-<p class="eyebrow">Персональный индекс здоровья</p>
-<h1>Поймите своё здоровье. <span class="soft">Решайте спокойно.</span></h1>
-<p class="lead">Анкета о сне, движении, питании и настроении. Один индекс от 0 до 100, объяснение, из чего он сложился, и понятный шаг на неделю. По рекомендациям ВОЗ.</p>
-<div class="hero-actions"><a class="btn btn-primary btn-lg" href="#try" data-metric="hero_start_quiz">Пройти анкету</a><a class="text-link" href="{{ url_for('main.methodology') }}">Как считается балл</a></div>
+<p class="eyebrow">Del Health · индекс здоровья</p>
+<h1>Здоровье <br>в одном числе</h1>
+<p class="lead">Короткая анкета о сне, движении, питании и настроении, баллы по рекомендациям ВОЗ и один шаг на неделю, чтобы стать лучше. Без диагнозов и давления.</p>
+<div class="hero-actions"><a class="btn btn-light btn-lg" href="#try" data-metric="hero_start_quiz">Узнать свой индекс</a><a class="btn btn-ghost btn-lg" href="{{ url_for('main.methodology') }}">Как это считается</a></div>
 <p class="hero-note">3–4 минуты · Не диагноз и не замена врачу</p>
 {% endif %}
 </div>
@@ -32,21 +33,17 @@
 </details>
 </div>
 {% else %}
-<div class="hero-media">
-<picture><source type="image/webp" srcset="{{ static_url('img/run-900.webp') }} 900w, {{ static_url('img/run-1333.webp') }} 1333w" sizes="(max-width: 960px) 100vw, 46vw"><img src="{{ static_url('img/run-900.webp') }}" width="900" height="1350" alt="Бегунья в парке на закате, силуэт в мягком контровом свете" fetchpriority="high"></picture>
 <figure class="score-peek" aria-label="Пример результата: индекс 82 из 100, высокий уровень">
 <div class="ring-score" style="--v:82"><b>82</b></div>
 <figcaption><span class="peek-label">Пример результата</span><span class="peek-status">Высокий уровень</span><span class="peek-note">Главный потенциал — питание</span></figcaption>
 </figure>
-</div>
 {% endif %}
 </div>
 </section>
 
 <section class="approach" aria-labelledby="approach-title">
 <div class="wrap">
-<p class="eyebrow">Подход</p>
-<h2 class="statement" id="approach-title">Цифры сами по себе ничего не объясняют. Мы переводим ответы в один индекс, показываем, из чего он сложился, и предлагаем один шаг.</h2>
+<h2 class="statement" id="approach-title">Цифры сами по себе ничего не объясняют. <span class="soft">Мы переводим ответы в один индекс, показываем, из чего он сложился, и предлагаем один шаг.</span></h2>
 <ol class="flow">
 <li><span class="num">01</span><h3>Данные</h3><p>Анкета о сне, движении, питании, настроении, никотине и алкоголе. Ответы — данные о здоровье, поэтому расчёт идёт только с вашего согласия.</p></li>
 <li><span class="num">02</span><h3>Объяснение</h3><p>Индекс от 0 до 100 и вклад каждой сферы: что держит результат наверху, а что тянет вниз. Красные флаги показываются над баллом.</p></li>
@@ -55,28 +52,52 @@
 </div>
 </section>
 
+<section class="score-story" aria-labelledby="score-title">
+<div class="wrap score-story-grid">
+<div class="score-story-copy">
+<p class="eyebrow">Индекс здоровья</p>
+<h2 id="score-title">Один балл. <span class="soft">И понятно, из чего он состоит.</span></h2>
+<p class="lead">Шесть сфер на одной шкале от 0 до 100. Вы видите не только итог, но и то, что сильнее всего на него влияет.</p>
+</div>
+<figure class="score-demo" aria-label="Пример: индекс 82, шесть сфер">
+<div class="score-demo-top"><div class="ring-score big" style="--v:82"><b>82</b></div><div><p class="peek-label">Пример</p><p class="score-demo-level">Высокий уровень</p><p class="score-demo-note">Привычки близки к рекомендациям</p></div></div>
+<ul class="rows">
+{%- for key, value in [('sleep', 72), ('activity', 85), ('nutrition', 64), ('mental', 80), ('nicotine', 100), ('alcohol', 90)] %}
+<li class="row{% if key == 'nutrition' %} weakest{% endif %}"><span class="row-name">{{ core_short[key] }}</span><b class="row-val">{{ value }}</b>{{ range_bar(value) }}</li>
+{%- endfor %}
+</ul>
+<p class="score-demo-step"><b>Шаг на неделю:</b> добавьте порцию овощей или фруктов к одному приёму пищи.</p>
+</figure>
+</div>
+</section>
+
 <section class="chapters" aria-labelledby="spheres-title">
 <div class="wrap">
 <p class="eyebrow">Что входит в индекс</p>
-<h2 id="spheres-title">Шесть сфер. У каждой своя норма и свой источник</h2>
+<h2 id="spheres-title">Шесть сфер. <span class="soft">У каждой своя норма и свой источник.</span></h2>
 
 <article class="chapter chapter-sleep">
-<picture class="chapter-photo"><source type="image/webp" srcset="{{ static_url('img/sleep-700.webp') }} 700w, {{ static_url('img/sleep-1000.webp') }} 1000w" sizes="(max-width: 860px) 100vw, 40vw"><img src="{{ static_url('img/sleep-700.webp') }}" width="700" height="1050" loading="lazy" alt="Неубранная кровать с белым бельём в утреннем свете"></picture>
+<picture class="chapter-photo"><source type="image/webp" srcset="{{ static_url('img/sleep-700.webp') }} 700w, {{ static_url('img/sleep-1100.webp') }} 1100w" sizes="(max-width: 860px) 100vw, 40vw"><img src="{{ static_url('img/sleep-700.webp') }}" width="700" height="1050" loading="lazy" alt="Рука на подушке в полосах утреннего света из окна"></picture>
 <div class="chapter-text"><p class="chapter-tag">Сон</p><p class="chapter-value">7–9 часов</p><p>Сколько часов вы спите. Норма для взрослых — 7–9 часов; в расширенном уровне добавляются регулярность и качество сна.</p><small>Источники: AASM, NSF</small></div>
 </article>
 
 <article class="chapter chapter-move">
-<picture class="chapter-photo wide"><source type="image/webp" srcset="{{ static_url('img/mountain-1000.webp') }} 1000w, {{ static_url('img/mountain-1800.webp') }} 1800w, {{ static_url('img/mountain-2340.webp') }} 2340w" sizes="(max-width: 1180px) 100vw, 1180px"><img src="{{ static_url('img/mountain-1800.webp') }}" width="1800" height="1200" loading="lazy" alt="Человек в позе дерева на вершине горы на закате"></picture>
+<picture class="chapter-photo wide"><source type="image/webp" srcset="{{ static_url('img/walk-900.webp') }} 900w, {{ static_url('img/walk-1600.webp') }} 1600w" sizes="(max-width: 1180px) 100vw, 1180px"><img src="{{ static_url('img/walk-1600.webp') }}" width="1600" height="1067" loading="lazy" alt="Женщина идёт по дорожке в парке навстречу закатному солнцу"></picture>
 <div class="chapter-text split"><div><p class="chapter-tag">Движение</p><p class="chapter-value">от 150 минут в неделю</p></div><div><p>Минуты умеренной активности в неделю. Цель ВОЗ — не меньше 150 минут.</p><small>Источники: ВОЗ, Exercise Vital Sign</small></div></div>
 </article>
 
-<article class="chapter chapter-mind">
-<div class="chapter-text"><p class="chapter-tag">Психологическое состояние</p><p class="chapter-value">за две недели</p><p>Настроение и тревога за последние две недели. Это скрининг, а не диагноз; при высоком балле мы советуем обсудить его со специалистом.</p><small>Опросник: PHQ-4</small></div>
-<picture class="chapter-photo"><source type="image/webp" srcset="{{ static_url('img/calm-900.webp') }} 900w, {{ static_url('img/calm-1400.webp') }} 1400w" sizes="(max-width: 860px) 100vw, 52vw"><img src="{{ static_url('img/calm-900.webp') }}" width="900" height="685" loading="lazy" alt="Женщина сидит на деревянной террасе у окна в тёплом вечернем свете"></picture>
+<div class="chapter-pair">
+<article class="chapter chapter-food">
+<picture class="chapter-photo"><source type="image/webp" srcset="{{ static_url('img/food-800.webp') }} 800w, {{ static_url('img/food-1400.webp') }} 1400w" sizes="(max-width: 860px) 100vw, 55vw"><img src="{{ static_url('img/food-800.webp') }}" width="800" height="449" loading="lazy" alt="Миска с ягодами на столе в солнечном свете"></picture>
+<div class="chapter-text"><p class="chapter-tag">Питание</p><p class="chapter-value small">5 порций в день</p><p>Овощи и фрукты, сладкое, переработанное мясо. Ориентир ВОЗ — не меньше пяти порций овощей и фруктов в день.</p><small>Источник: рекомендации ВОЗ</small></div>
 </article>
+<article class="chapter chapter-calm">
+<picture class="chapter-photo"><source type="image/webp" srcset="{{ static_url('img/calm-700.webp') }} 700w, {{ static_url('img/calm-1100.webp') }} 1100w" sizes="(max-width: 860px) 100vw, 40vw"><img src="{{ static_url('img/calm-700.webp') }}" width="700" height="1050" loading="lazy" alt="Апельсины у светлой занавески в мягком свете"></picture>
+<div class="chapter-text"><p class="chapter-tag">Психологическое состояние</p><p class="chapter-value small">за две недели</p><p>Настроение и тревога за последние две недели. Это скрининг, а не диагноз; при высоком балле мы советуем обсудить его со специалистом.</p><small>Опросник: PHQ-4</small></div>
+</article>
+</div>
 
 <dl class="index-list">
-<div><dt>Питание</dt><dd><span class="chapter-value small">5 порций в день</span>Овощи и фрукты, сладкое, переработанное мясо. Ориентир ВОЗ — не меньше пяти порций овощей и фруктов в день.<small>Источник: рекомендации ВОЗ</small></dd></div>
 <div><dt>Никотин</dt><dd><span class="chapter-value small">без никотина</span>Курение, вейпы, курение дома. Чем меньше контакт с никотином, тем выше балл.<small>Источник: Life's Essential 8, AHA</small></dd></div>
 <div><dt>Алкоголь</dt><dd><span class="chapter-value small">как часто и сколько</span>Частота и количество выпитого за приём. Короткий валидированный опросник показывает зону риска.<small>Опросник: AUDIT-C, ВОЗ</small></dd></div>
 </dl>
@@ -219,7 +240,7 @@
 <article class="plan">
 <header><h3>Start</h3><p>Разовый</p></header>
 <p class="price"><b>990</b> <span>₽</span></p>
-<ul class="ticks"><li>Персональный индекс Adelina</li><li>Отчёт по 6 сферам</li><li>3 рекомендации на неделю</li></ul>
+<ul class="ticks"><li>Персональный индекс Del Health</li><li>Отчёт по 6 сферам</li><li>3 рекомендации на неделю</li></ul>
 <button class="btn btn-quiet open" data-plan="Start" data-metric="open_leadform_start">Выбрать Start</button>
 </article>
 <article class="plan plan-featured">
@@ -239,7 +260,7 @@
 <p class="intro">Оставьте e-mail — пришлём ссылку для безопасной оплаты и начнём скоринг.</p>
 <form>
 <label class="field">E-mail<input type="email" name="email" autocomplete="email" placeholder="you@example.com" required></label>
-<label class="consent"><input type="checkbox" name="consent" required><span>Я соглашаюсь на <a href="{{ url_for('main.privacy') }}" target="_blank" rel="noopener">обработку персональных данных</a> в соответствии с политикой Adelina Health</span></label>
+<label class="consent"><input type="checkbox" name="consent" required><span>Я соглашаюсь на <a href="{{ url_for('main.privacy') }}" target="_blank" rel="noopener">обработку персональных данных</a> в соответствии с политикой Del Health</span></label>
 <button class="btn btn-primary" type="submit">Продолжить</button>
 <p class="msg" role="status"></p>
 </form>
