@@ -81,7 +81,7 @@
   <div class="history-head">
     <div>
       <h2>История оценок</h2>
-      <p class="muted">{{ results | length }} {{ results | length | plural('оценка', 'оценки', 'оценок') }}. Нажмите на оценку, чтобы увидеть вклад каждой сферы.</p>
+      <p class="muted">{{ results | length }} {{ results | length | plural('оценка', 'оценки', 'оценок') }}. Нажмите на оценку, чтобы увидеть сферы, свои ответы и полные советы. Любую оценку можно удалить.</p>
     </div>
     <button type="button" class="text-button collapse-all" data-collapse-all hidden>Свернуть все</button>
   </div>
@@ -98,15 +98,41 @@
           {% if r.delta is not none %}<span class="badge {{ 'up' if r.delta > 0 else 'down' if r.delta < 0 else '' }}">{{ '%+d' % r.delta if r.delta else '±0' }}</span>{% else %}<span class="badge first">первая</span>{% endif %}
         </summary>
         <div class="entry-body">
-          <div>
+          <div class="entry-spheres">
             <h3>Сферы</h3>
             {{ rows(r.spheres, None, None, r.sphere_deltas) }}
+            {% if r.flags or not r.current or r.detailed or r.body %}<div class="entry-notes">
+              {% for f in r.flags %}<p class="entry-flag flag-{{ f.level }}"><b>{{ f.title }}.</b> {{ f.text }}</p>{% endfor %}
+              {% if not r.current %}<p class="muted">Посчитано по прежней версии ({{ r.version_label }}): баллы не сравнимы с новыми.</p>{% endif %}
+              {% if r.detailed or r.body %}<p class="muted">{% if r.detailed %}Подробный индекс: {{ r.detailed.total }}. {% endif %}{% if r.body %}Тело и метаболизм: {{ r.body.score }} ({{ r.body.known }} из 4).{% endif %}</p>{% endif %}
+            </div>{% endif %}
           </div>
-          {% if r.flags or not r.current or r.detailed or r.body %}<div class="entry-notes">
-            {% for f in r.flags %}<p class="entry-flag flag-{{ f.level }}"><b>{{ f.title }}.</b> {{ f.text }}</p>{% endfor %}
-            {% if not r.current %}<p class="muted">Посчитано по прежней версии ({{ r.version_label }}): баллы не сравнимы с новыми.</p>{% endif %}
-            {% if r.detailed or r.body %}<p class="muted">{% if r.detailed %}Подробный индекс: {{ r.detailed.total }}. {% endif %}{% if r.body %}Тело и метаболизм: {{ r.body.score }} ({{ r.body.known }} из 4).{% endif %}</p>{% endif %}
-          </div>{% endif %}
+          <div class="entry-more">
+            <details class="sub">
+              <summary>Что вы ответили</summary>
+              <div class="sub-body">
+                {% for group_title, group_rows in r.answer_groups %}{% if r.answer_groups | length > 1 %}<p class="ans-group">{{ group_title }}</p>{% endif %}<dl class="answers-list">{% for question, answer in group_rows %}<dt>{{ question }}</dt><dd>{{ answer }}</dd>{% endfor %}</dl>{% endfor %}
+              </div>
+            </details>
+            <details class="sub">
+              <summary>Полный результат и советы</summary>
+              <div class="sub-body entry-recs">
+                <p class="muted">Итог {{ r.total }}/100. {{ r.level_name }}. {{ r.summary }}</p>
+                {% for group in r.groups %}<p class="rec-sphere">{{ group.sphere_name }}, {{ group.level_name }}</p><ul>{% for rec in group.recs %}<li><b>{{ rec.title }}</b> {{ rec.text }}</li>{% endfor %}</ul>{% endfor %}
+                {% if not r.groups %}<p class="muted">Советы для этой оценки не сохранились.</p>{% endif %}
+              </div>
+            </details>
+            <details class="sub sub-danger">
+              <summary>Удалить оценку</summary>
+              <div class="sub-body">
+                <p class="muted">Оценка и ваши ответы будут удалены безвозвратно. Остальные оценки и график пересчитаются.</p>
+                <form method="post" action="{{ url_for('account.delete_result', result_id=r.id) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn-danger btn-sm" type="submit" data-metric="account_delete_result">Да, удалить оценку</button>
+                </form>
+              </div>
+            </details>
+          </div>
           <button type="button" class="entry-close" data-entry-close hidden>Свернуть</button>
         </div>
       </details>

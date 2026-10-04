@@ -38,7 +38,8 @@ def plural(n, one, few, many):
 
 
 def score_level(total):
-    return "high" if total >= 80 else "mid" if total >= 60 else "low"
+    """Те же пороги, что в методике (LEVELS): 80+ высокий, 50–79 средний, ниже — низкий."""
+    return "high" if total >= 80 else "mid" if total >= 50 else "low"
 
 
 def group_recommendations(recs):
@@ -155,6 +156,20 @@ def change_password():
             db.commit()
             flash("Пароль изменён. На других устройствах нужно будет войти заново.")
     return redirect(url_for("account.settings") + "#password")
+
+
+@bp.post("/results/<int:result_id>/delete")
+@login_required
+def delete_result(result_id):
+    """Удаляет одну оценку текущего клиента вместе с ответами. Чужие оценки не затрагиваются."""
+    db = get_db()
+    cur = db.execute("DELETE FROM score_results WHERE id = ? AND user_id = ?", (result_id, g.user["id"]))
+    db.commit()
+    if cur.rowcount:
+        flash("Оценка удалена вместе с ответами.")
+    else:
+        flash("Такой оценки нет в вашем кабинете.", "error")
+    return redirect(url_for("account.dashboard") + "#history")
 
 
 @bp.post("/delete")
