@@ -15,7 +15,7 @@
 {% macro rows(items, weakest=None, attr=None, deltas=None) -%}
 <ul class="rows">
 {%- for key, name, value in items %}
-<li class="row{% if key == weakest %} weakest{% endif %}"{% if attr %} {{ attr }}="{{ key }}"{% endif %}><span class="row-name">{{ name }}</span><b class="row-val">{{ value if value is not none else '–' }}{% if deltas and deltas.get(key) %}<em class="delta {{ 'up' if deltas[key] > 0 else 'down' }}">{{ '%+d' % deltas[key] }}</em>{% endif %}</b>{{ range_bar(value) }}</li>
+<li class="row tone-{{ 'high' if value is not none and value >= 80 else 'mid' if value is not none and value >= 50 else 'low' }}{% if key == weakest %} weakest{% endif %}"{% if attr %} {{ attr }}="{{ key }}"{% endif %}><span class="row-name">{{ name }}</span><b class="row-val">{{ value if value is not none else '–' }}{% if deltas and deltas.get(key) %}<em class="delta {{ 'up' if deltas[key] > 0 else 'down' }}">{{ '%+d' % deltas[key] }}</em>{% endif %}</b>{{ range_bar(value) }}</li>
 {%- endfor %}
 </ul>
 {%- endmacro %}

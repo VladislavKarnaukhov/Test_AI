@@ -35,6 +35,7 @@
         {% if latest.focus %}<div class="sheet-focus"><b>{{ latest.focus.title if latest.focus.title.startswith('Фокус недели') else 'Фокус недели: ' ~ latest.focus.title }}</b><p>{{ latest.focus.text }}</p></div>{% endif %}
       </div>
       <div class="overview-spheres">
+        <p class="rows-title">Что влияет на индекс</p>
         <div class="total-range">{{ range_bar(latest.total) }}{{ range_axis() }}</div>
         {{ rows(latest.spheres, weakest) }}
         {% if latest.detailed or latest.body %}<div class="extra-scores">{% if latest.detailed %}<p>Подробный индекс (7 сфер): {{ latest.detailed.total }}/100</p>{% endif %}{% if latest.body %}<p>Тело и метаболизм: {{ latest.body.score }}/100 — по {{ latest.body.known }} из 4 показателей</p>{% endif %}</div>{% endif %}

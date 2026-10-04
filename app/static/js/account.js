@@ -105,6 +105,27 @@
   function x(i, n) { return L + (n === 1 ? IW / 2 : i * IW / (n - 1)); }
   function y(v) { return T + (100 - v) * IH / 100; }
   function value(d, key) { return key === 'total' ? d.total : d[key]; }
+  function r1(n) { return Math.round(n * 10) / 10; }
+  // плавная монотонная кривая (Fritsch–Carlson): линия не «перелетает» значения между замерами
+  function curve(xs, ys) {
+    const n = xs.length;
+    if (n < 2) return '';
+    const dx = [], m = [], t = [];
+    for (let i = 0; i < n - 1; i++) { dx[i] = xs[i + 1] - xs[i]; m[i] = (ys[i + 1] - ys[i]) / dx[i]; }
+    t[0] = m[0]; t[n - 1] = m[n - 2];
+    for (let i = 1; i < n - 1; i++) t[i] = m[i - 1] * m[i] <= 0 ? 0 : (m[i - 1] + m[i]) / 2;
+    for (let i = 0; i < n - 1; i++) {
+      if (m[i] === 0) { t[i] = t[i + 1] = 0; continue; }
+      const p = t[i] / m[i], q = t[i + 1] / m[i], s = p * p + q * q;
+      if (s > 9) { const k = 3 / Math.sqrt(s); t[i] = k * p * m[i]; t[i + 1] = k * q * m[i]; }
+    }
+    let d = 'M' + r1(xs[0]) + ',' + r1(ys[0]);
+    for (let i = 0; i < n - 1; i++) {
+      const h = dx[i] / 3;
+      d += ' C' + r1(xs[i] + h) + ',' + r1(ys[i] + t[i] * h) + ' ' + r1(xs[i + 1] - h) + ',' + r1(ys[i + 1] - t[i + 1] * h) + ' ' + r1(xs[i + 1]) + ',' + r1(ys[i + 1]);
+    }
+    return d;
+  }
 
   // ---------- Отрисовка ----------
   function draw() {
@@ -115,7 +136,8 @@
     if (!n) { svg.innerHTML = ''; hideTip(); return; }
 
     let out = '';
-    [0, 25, 50, 75, 100].forEach(function (v) {
+    out += '<defs><linearGradient id="area-grad" x1="0" y1="0" x2="0" y2="1"><stop class="g0" offset="0"/><stop class="g1" offset="1"/></linearGradient></defs>';
+    [0, 50, 100].forEach(function (v) {
       out += '<line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v) + '" y2="' + y(v) + '"/>' +
         '<text class="axis" x="' + (L - 8) + '" y="' + (y(v) + 4) + '" text-anchor="end">' + v + '</text>';
     });
@@ -126,19 +148,18 @@
       }
     });
     if (state.series.total && n > 1) {
-      out += '<path class="area" d="M' + x(0, n) + ',' + y(0) + pts.map(function (d, i) {
-        return ' L' + x(i, n) + ',' + y(d.total);
-      }).join('') + ' L' + x(n - 1, n) + ',' + y(0) + ' Z"/>';
+      const ax = pts.map(function (d, i) { return x(i, n); }), ay = pts.map(function (d) { return y(d.total); });
+      out += '<path class="area" d="' + curve(ax, ay) + ' L' + r1(x(n - 1, n)) + ',' + r1(y(0)) + ' L' + r1(x(0, n)) + ',' + r1(y(0)) + ' Z"/>';
     }
     out += '<line class="guide" y1="' + T + '" y2="' + (T + IH) + '" x1="-10" x2="-10"/>';
     ORDER.slice().reverse().forEach(function (key) {
       if (!state.series[key]) return;
-      const coords = pts.map(function (d, i) { return x(i, n) + ',' + y(value(d, key)); });
-      if (n > 1) out += '<polyline class="line line-' + key + '" pathLength="1" style="stroke:' + COLORS[key] + '" points="' + coords.join(' ') + '"/>';
+      const cx = pts.map(function (d, i) { return x(i, n); }), cy = pts.map(function (d) { return y(value(d, key)); });
+      if (n > 1) out += '<path class="line line-' + key + '" pathLength="1" style="stroke:' + COLORS[key] + '" d="' + curve(cx, cy) + '"/>';
       pts.forEach(function (d, i) {
         const sel = d.id === state.selected ? ' selected' : '';
         out += '<circle class="dot dot-' + key + sel + '" data-id="' + d.id + '" cx="' + x(i, n) + '" cy="' + y(value(d, key)) +
-          '" r="' + (key === 'total' ? 5 : 3.5) + '" style="fill:' + COLORS[key] + '"/>';
+          '" r="' + (key === 'total' ? (i === n - 1 ? 6 : 3.5) : 3) + '" style="fill:' + COLORS[key] + '"/>';
       });
     });
     svg.innerHTML = out;

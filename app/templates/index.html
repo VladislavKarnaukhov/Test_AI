@@ -61,9 +61,10 @@
 </div>
 <figure class="score-demo" aria-label="Пример: индекс 82, шесть сфер">
 <div class="score-demo-top"><div class="ring-score big" style="--v:82"><b>82</b></div><div><p class="peek-label">Пример</p><p class="score-demo-level">Высокий уровень</p><p class="score-demo-note">Привычки близки к рекомендациям</p></div></div>
+<p class="rows-title">Что влияет на индекс</p>
 <ul class="rows">
 {%- for key, value in [('sleep', 72), ('activity', 85), ('nutrition', 64), ('mental', 80), ('nicotine', 100), ('alcohol', 90)] %}
-<li class="row{% if key == 'nutrition' %} weakest{% endif %}"><span class="row-name">{{ core_short[key] }}</span><b class="row-val">{{ value }}</b>{{ range_bar(value) }}</li>
+<li class="row tone-{{ 'high' if value >= 80 else 'mid' if value >= 50 else 'low' }}{% if key == 'nutrition' %} weakest{% endif %}"><span class="row-name">{{ core_short[key] }}</span><b class="row-val">{{ value }}</b>{{ range_bar(value) }}</li>
 {%- endfor %}
 </ul>
 <p class="score-demo-step"><b>Шаг на неделю:</b> добавьте порцию овощей или фруктов к одному приёму пищи.</p>
@@ -217,6 +218,7 @@
 <div class="sheet-cap-row"><span class="sheet-cap">Ваш индекс</span><span class="sheet-date" data-tier-label>методика v{{ method_version }}</span></div>
 <div class="sheet-total"><div class="score"><output data-total aria-hidden="true">0</output><span class="visually-hidden" data-total-sr></span><span>/100</span></div><p class="sheet-summary"><b data-level></b> <span data-summary></span></p></div>
 <div class="total-range" data-total-range>{{ range_bar(0) }}{{ range_axis() }}</div>
+<p class="rows-title">Что повлияло на индекс</p>
 <ul class="rows">
 {%- for key, name in core_short.items() %}
 <li class="row" data-sphere-row="{{ key }}"><span class="row-name">{{ name }}</span><b class="row-val">–</b>{{ range_bar(0) }}</li>

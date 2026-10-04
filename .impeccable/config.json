@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-10-04T14:58:29.042Z",
+        "reason": "user confirmed: redesign brief names Inter as the first-priority typeface (Inter, Geist, SF Pro); Geist has no Cyrillic"
+      }
+    ]
+  }
+}
