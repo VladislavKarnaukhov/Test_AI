@@ -484,3 +484,12 @@ def test_history_offers_answers_full_result_and_delete(user_client):
     html = user_client.get("/account").get_data(as_text=True)
     assert "Что вы ответили" in html and "Полный результат и советы" in html and "Удалить оценку" in html
     assert "/delete" in html and 'data-metric="account_delete_result"' in html
+
+
+def test_choosing_necessary_cookies_keeps_login(user_client):
+    user_client.post("/api/consent", json={"choice": "all"})
+    assert user_client.get("/account").status_code == 200
+    user_client.post("/api/consent", json={"choice": "necessary"})
+    assert user_client.get("/account").status_code == 200      # вход сохранён
+    with user_client.session_transaction() as s:
+        assert "visitor_id" not in s                            # аналитический идентификатор забыт

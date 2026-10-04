@@ -107,8 +107,8 @@ def api_consent():
         if "visitor_id" not in session:
             assign_visitor_id()
     else:
-        # отказ от аналитики: забываем анонимный идентификатор, Flask удалит cookie сессии
-        session.clear()
+        # отказ от аналитики: забываем только анонимный идентификатор; вход в кабинет (session["user_id"]) не трогаем
+        session.pop("visitor_id", None)
 
     db = get_db()
     db.execute(
