@@ -6,7 +6,7 @@
 <main id="main" tabindex="-1" class="wrap account-page">
 
 <header class="account-head">
-  <h1>Здравствуйте, {{ user.name }}</h1>
+  <div><p class="eyebrow">Личный кабинет</p><h1>Здравствуйте, {{ user.name }}</h1></div>
   <div class="account-head-actions">
     <a class="btn btn-primary btn-sm" href="{{ url_for('main.index') }}#try" data-metric="account_retake">Пройти анкету</a>
     <form method="post" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-quiet btn-sm" type="submit">Выйти</button></form>
@@ -27,13 +27,19 @@
   {% set weakest = (latest.breakdown | dictsort(by='value'))[0][0] %}
   <div class="sheet account-score">
     {% if latest.flags %}<div class="flags">{% for f in latest.flags %}<div class="flag flag-{{ f.level }}"><span class="flag-level">{{ {'urgent': 'Срочно', 'warn': 'Важно', 'info': 'К сведению'}[f.level] }}</span><b>{{ f.title }}</b><p>{{ f.text }}</p>{% if f.contacts %}<p class="flag-contacts">Если очень тяжело или есть угроза жизни — звоните 112.</p>{% endif %}</div>{% endfor %}</div>{% endif %}
-    <div class="sheet-cap-row"><span class="sheet-cap">Последняя оценка</span><span class="sheet-date">{{ latest.created_at | msk }}, {{ latest.version_label }}{% if latest.tier_name %}, {{ latest.tier_name | lower }} уровень{% endif %}</span></div>
-    <div class="sheet-total"><div class="score">{{ latest.total }}<span>/100</span></div><p class="sheet-summary">{{ latest.summary }}</p></div>
-    {% if latest.delta is not none %}<p class="delta {{ 'up' if latest.delta > 0 else 'down' if latest.delta < 0 else '' }}">{{ '%+d' % latest.delta if latest.delta else '±0' }} к прошлой оценке</p>{% endif %}
-    <div class="total-range">{{ range_bar(latest.total) }}{{ range_axis() }}</div>
-    {{ rows(latest.spheres, weakest) }}
-    {% if latest.detailed or latest.body %}<div class="extra-scores">{% if latest.detailed %}<p>Подробный индекс (7 сфер): {{ latest.detailed.total }}/100</p>{% endif %}{% if latest.body %}<p>Тело и метаболизм: {{ latest.body.score }}/100 — по {{ latest.body.known }} из 4 показателей</p>{% endif %}</div>{% endif %}
-    {% if latest.focus %}<div class="sheet-focus"><b>{{ latest.focus.title if latest.focus.title.startswith('Фокус недели') else 'Фокус недели: ' ~ latest.focus.title }}</b><p>{{ latest.focus.text }}</p></div>{% endif %}
+    <div class="overview-grid">
+      <div class="overview-main">
+        <div class="sheet-cap-row"><span class="sheet-cap">Последняя оценка</span><span class="sheet-date">{{ latest.created_at | msk }}, {{ latest.version_label }}{% if latest.tier_name %}, {{ latest.tier_name | lower }} уровень{% endif %}</span></div>
+        <div class="sheet-total"><div class="score" style="--v:{{ latest.total }}">{{ latest.total }}<span>/100</span></div><p class="sheet-summary">{{ latest.summary }}</p></div>
+        {% if latest.delta is not none %}<p class="delta {{ 'up' if latest.delta > 0 else 'down' if latest.delta < 0 else '' }}">{{ '%+d' % latest.delta if latest.delta else '±0' }} к прошлой оценке</p>{% endif %}
+        {% if latest.focus %}<div class="sheet-focus"><b>{{ latest.focus.title if latest.focus.title.startswith('Фокус недели') else 'Фокус недели: ' ~ latest.focus.title }}</b><p>{{ latest.focus.text }}</p></div>{% endif %}
+      </div>
+      <div class="overview-spheres">
+        <div class="total-range">{{ range_bar(latest.total) }}{{ range_axis() }}</div>
+        {{ rows(latest.spheres, weakest) }}
+        {% if latest.detailed or latest.body %}<div class="extra-scores">{% if latest.detailed %}<p>Подробный индекс (7 сфер): {{ latest.detailed.total }}/100</p>{% endif %}{% if latest.body %}<p>Тело и метаболизм: {{ latest.body.score }}/100 — по {{ latest.body.known }} из 4 показателей</p>{% endif %}</div>{% endif %}
+      </div>
+    </div>
   </div>
 
   {% if not stats %}
