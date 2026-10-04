@@ -66,10 +66,18 @@
       <button type="button" data-series="total" aria-pressed="true" style="--c:var(--s-total)">Итог</button>{% for key, name in core_short.items() %}<button type="button" data-series="{{ key }}" aria-pressed="false" style="--c:var(--s-{{ key }})">{{ name }}</button>{% endfor %}
     </div>
     <div class="chart-wrap">
-      <svg class="chart" viewBox="0 0 640 260" role="img" aria-label="График индекса Del Health по датам"></svg>
+      <svg class="chart" viewBox="0 0 640 260" role="img" aria-label="График индекса Del Health по датам" aria-describedby="chart-summary"></svg>
       <div class="chart-tip" hidden></div>
       <p class="chart-empty muted" hidden>За выбранный период оценок нет.</p>
       <noscript><p class="muted">Включите JavaScript, чтобы увидеть график. Все оценки в истории ниже.</p></noscript>
+    </div>
+    <p class="visually-hidden" id="chart-summary">Оценок: {{ stats.count }}. Лучшая: {{ stats.best }}, средняя: {{ stats.avg }}{% if stats.change is not none %}, изменение с первой оценки: {{ '%+d' % stats.change if stats.change else '0' }}{% endif %}. Значения по датам — в таблице ниже.</p>
+    <div class="visually-hidden">
+    <table class="chart-table">
+      <caption>Индекс и баллы сфер по датам</caption>
+      <thead><tr><th scope="col">Дата</th><th scope="col">Итог</th>{% for key, name in core_short.items() %}<th scope="col">{{ name }}</th>{% endfor %}</tr></thead>
+      <tbody>{% for p in chart_data.points %}<tr><th scope="row">{{ p.date }}</th><td>{{ p.total }}</td>{% for key in core_short %}<td>{{ p[key] }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+    </table>
     </div>
     <p class="muted chart-hint">Наведите на точку, чтобы увидеть значения. Нажмите, чтобы открыть оценку в истории.</p>
     <script type="application/json" id="history-data">{{ chart_data | tojson }}</script>

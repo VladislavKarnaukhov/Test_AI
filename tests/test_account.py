@@ -311,7 +311,7 @@ def test_settings_forms_redirect_back(user_client):
 
 def test_static_urls_are_versioned(client):
     html = client.get("/").get_data(as_text=True)
-    assert "/static/css/style.css?v=" in html and "/static/js/main.js?v=" in html
+    assert all(f"/static/css/{n}.css?v=" in html for n in ("base", "components", "pages")) and "/static/js/main.js?v=" in html
 
 
 # ---------- История: «Показать ещё» ----------
@@ -493,3 +493,12 @@ def test_choosing_necessary_cookies_keeps_login(user_client):
     assert user_client.get("/account").status_code == 200      # вход сохранён
     with user_client.session_transaction() as s:
         assert "visitor_id" not in s                            # аналитический идентификатор забыт
+
+
+def test_chart_has_text_equivalent(user_client):
+    user_client.post("/api/score", json=VALID)
+    user_client.post("/api/score", json=BETTER)
+    html = user_client.get("/account").get_data(as_text=True)
+    assert 'aria-describedby="chart-summary"' in html and 'id="chart-summary"' in html
+    assert "<caption>Индекс и баллы сфер по датам</caption>" in html
+    assert html.count('<th scope="row">') >= 2                                  # строка таблицы на каждую оценку
