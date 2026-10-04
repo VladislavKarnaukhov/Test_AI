@@ -763,3 +763,110 @@ h2+.lead{margin-top:var(--sp-4)}
 .choices+.q-hint{margin-top:var(--sp-4)}
 .sheet-actions .btn{max-width:100%;white-space:normal;text-align:center;line-height:1.2;padding-block:.75rem}
 @media (max-width:720px){.site-header{position:static}.hero-media>picture img{border-radius:var(--r-lg)}}
+
+/* =====================================================================
+   Правка выравнивания первого экрана и новый личный кабинет
+   ===================================================================== */
+/* Первый экран: колонки равной высоты, текст по центру колонки, ничего не выходит за сетку */
+.hero-grid{align-items:stretch;gap:clamp(2rem,6vw,5.5rem)}
+.hero-copy{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding-block:clamp(.5rem,2vw,2rem)}
+.hero h1{font-size:clamp(2.5rem,5.6vw,5rem);max-width:10em}
+.hero-media{display:flex;min-height:100%}
+.hero-media>picture{display:block;width:100%}
+.hero-media>picture img{height:100%;min-height:26rem;max-height:40rem;aspect-ratio:4/5;border-radius:var(--r-lg)}
+.score-peek{left:var(--sp-4);right:auto;bottom:var(--sp-4)}
+@media (max-width:960px){.hero-media{max-width:34rem;min-height:0}.hero-media>picture img{height:auto;min-height:0;max-height:none}}
+
+/* Вошедший: спокойная карточка вместо стены цифр */
+.hero .user-card{align-self:center;padding:clamp(1.5rem,3vw,2.25rem);max-width:30rem;margin:0 0 0 auto;width:100%}
+.user-card .sheet-cap-row{margin-bottom:var(--sp-5)}
+.user-card .sheet-total{flex-wrap:nowrap;align-items:center;gap:var(--sp-5)}
+.user-card .sheet-summary{max-width:none;font-size:var(--fs-sm);line-height:1.5;color:var(--ink-2)}
+.user-card .sheet-focus{margin-top:var(--sp-5);padding:var(--sp-4);border-radius:var(--r)}
+.user-card .sheet-focus b{font-size:var(--fs-md)}
+.user-card .sheet-focus p{margin-top:.25rem;font-size:var(--fs-sm);color:var(--ink-2)}
+.uc-more{margin-top:var(--sp-4);border-top:1px solid var(--line)}
+.uc-more summary{display:flex;justify-content:space-between;align-items:center;min-height:2.75rem;list-style:none;cursor:pointer;font-size:var(--fs-sm);font-weight:600;color:var(--ink-2)}
+.uc-more summary::-webkit-details-marker{display:none}
+.uc-more summary::after{content:"";width:.5rem;height:.5rem;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg);margin-right:.25rem;transition:transform var(--dur-2) var(--ease-out)}
+.uc-more[open] summary::after{transform:rotate(-135deg)}
+.uc-more .rows{margin-top:var(--sp-2);border-top:0}
+.uc-more .row{padding:var(--sp-3) 0}
+.uc-more .row-val{font-size:var(--fs-lg)}
+@media (max-width:960px){.hero .user-card{margin:0;max-width:34rem}}
+
+/* ---------- Личный кабинет ---------- */
+.account-page{padding-block:clamp(2rem,5vw,4rem) var(--sp-9)}
+.account-head{align-items:flex-end;margin-bottom:var(--sp-6)}
+.account-head h1{font-size:clamp(2.25rem,5vw,4rem);letter-spacing:-.045em;line-height:1}
+.account-head .eyebrow{margin-bottom:var(--sp-3)}
+.account-nav{position:sticky;top:0;z-index:20;gap:var(--sp-6);margin:0 0 var(--sp-7);padding-top:.25rem;background:color-mix(in srgb,var(--paper) 90%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.account-nav a{position:relative;min-height:3rem;color:var(--ink-3)}
+.account-nav a::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform var(--dur-3) var(--ease-out)}
+@media (hover:hover) and (pointer:fine){.account-nav a:hover{color:var(--ink)}.account-nav a:hover::after{transform:scaleX(1)}}
+.panel{margin-top:clamp(3rem,7vw,6rem)}
+.panel>h2,.history-head h2,.dynamics-head h2{font-size:clamp(1.75rem,3.2vw,2.5rem);letter-spacing:-.04em;font-weight:400}
+.panel.boxed{padding:0;background:none;border:0;border-radius:0}
+
+/* Обзор: один лист, слева итог и шаг, справа вклад сфер */
+.account-overview{display:block}
+.account-overview .account-score{padding:clamp(1.5rem,4vw,3.5rem)}
+.account-score .flags{margin-bottom:var(--sp-6)}
+.overview-grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:clamp(2rem,6vw,5rem);align-items:start}
+.overview-main .sheet-cap-row{flex-direction:column;align-items:flex-start;gap:.25rem;border:0;padding:0;margin-bottom:var(--sp-6)}
+.overview-main .sheet-total{flex-wrap:nowrap;align-items:center;gap:var(--sp-5)}
+.overview-main .sheet-summary{max-width:none;font-size:var(--fs-md);line-height:1.5;color:var(--ink-2);font-weight:300}
+.overview-main .delta{display:inline-block;margin-top:var(--sp-4);padding:.25rem .75rem;border-radius:var(--r-pill);background:var(--sunken);font-size:var(--fs-sm)}
+.overview-main .sheet-focus{margin-top:var(--sp-6)}
+.overview-spheres .total-range{display:none}
+.overview-spheres .rows{border-top:1px solid var(--line-strong)}
+.overview-spheres .extra-scores{margin-top:var(--sp-5)}
+@media (max-width:860px){.overview-grid{grid-template-columns:minmax(0,1fr)}.overview-main .sheet-total{flex-direction:column;align-items:flex-start}}
+.account-overview+.panel,.account-overview .dynamics{margin-top:clamp(3rem,7vw,6rem)}
+
+/* Динамика */
+.dynamics-head{align-items:flex-end}
+.segmented{padding:3px;border-radius:var(--r-pill);background:var(--sunken);border:0}
+.segmented button{min-height:2.5rem;padding:0 var(--sp-4);border-radius:var(--r-pill)}
+.stats{margin-top:var(--sp-6);gap:var(--sp-5)}
+.stats>div{padding-top:var(--sp-3);border-top:1px solid var(--line-strong)}
+.stats dd{font-size:clamp(1.75rem,3vw,2.5rem);font-weight:300;letter-spacing:-.04em}
+.series-toggles button{border-radius:var(--r-pill)}
+.chart-wrap{padding:clamp(.5rem,2vw,1.5rem) 0}
+.chart .line-total{stroke:var(--accent)}
+.chart .dot-total{fill:var(--accent)}
+.chart .area{fill:var(--accent);opacity:.08}
+
+/* История: строки на hairline, не рамки */
+.timeline{gap:0;margin-top:var(--sp-5);border-top:1px solid var(--line-strong)}
+.entry{border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;box-shadow:none}
+.entry[open],.entry.selected{border-color:var(--line);box-shadow:none;background:color-mix(in srgb,var(--sunken) 55%,transparent)}
+.entry summary{grid-template-columns:4.5rem minmax(0,1fr) 7rem auto;padding:var(--sp-5) var(--sp-3)}
+.entry-score{font-size:2.5rem;font-weight:200}
+.entry-date em{border-radius:var(--r-pill)}
+.entry-body{padding:0 var(--sp-3) var(--sp-6)}
+@media (max-width:760px){.entry summary{grid-template-columns:3.25rem minmax(0,1fr) auto}.entry summary .range{display:none}.entry-score{font-size:2rem}}
+
+/* Рекомендации: колонки с разделителями */
+.rec-groups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 clamp(2rem,6vw,5rem);margin-top:var(--sp-6)}
+.rec-group{padding:var(--sp-5) 0 var(--sp-6);border-top:1px solid var(--line-strong);background:none;border-radius:0}
+.rec-group header{display:flex;justify-content:space-between;align-items:baseline;gap:var(--sp-3);margin-bottom:var(--sp-3)}
+.rec-group h3{font-size:var(--fs-xl);font-weight:500;letter-spacing:-.03em}
+.rec-group ul{margin:0;padding-left:1.125rem;color:var(--ink-2);line-height:1.6}
+.rec-group li+li{margin-top:var(--sp-3)}
+.rec-group li b{display:block;color:var(--ink)}
+@media (max-width:760px){.rec-groups{grid-template-columns:minmax(0,1fr)}}
+.disclaimer{margin-top:var(--sp-6);font-size:var(--fs-sm);color:var(--ink-3)}
+.answers-list{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.375rem var(--sp-4);align-items:baseline}
+.answers-list dt{grid-column:1;font-size:var(--fs-xs);color:var(--ink-3)}
+.answers-list dd{grid-column:2;margin:0;font-size:var(--fs-sm);font-weight:600;text-align:right}
+.ans-group{grid-column:1/-1}
+/* Настройки: колонка выровнена по общей сетке */
+.settings-page{max-width:none;padding-block:clamp(2rem,5vw,4rem) var(--sp-9)}
+.settings-page>*{max-width:34rem}
+.settings-back{margin-bottom:var(--sp-6)}
+.settings-back a{display:inline-flex;align-items:center;min-height:2.75rem;text-decoration:none;color:var(--ink-3)}
+.settings-back a::before{content:"←";margin-right:.5rem}
+.settings-section h2{font-size:clamp(1.5rem,2.6vw,2rem);font-weight:400;letter-spacing:-.03em}
+.hero-media{align-self:center;min-height:0;display:block}
+.hero-media>picture img{height:auto;max-height:42rem}

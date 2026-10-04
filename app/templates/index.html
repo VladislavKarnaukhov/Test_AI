@@ -7,22 +7,30 @@
 <section class="hero">
 <div class="wrap hero-grid">
 <div class="hero-copy">
+{% if current_user and latest %}
+<p class="eyebrow">С возвращением</p>
+<h1>Здравствуйте, <span class="soft">{{ current_user.name }}</span></h1>
+<p class="lead">Ваш последний индекс справа. Через 2–4 недели повторите анкету, и в кабинете появится динамика.</p>
+<div class="hero-actions"><a class="btn btn-primary btn-lg" href="#try" data-metric="hero_start_quiz">Пройти анкету снова</a><a class="btn btn-quiet btn-lg" href="{{ url_for('account.dashboard') }}" data-metric="hero_user_card">Открыть кабинет</a></div>
+{% else %}
 <p class="eyebrow">Персональный индекс здоровья</p>
 <h1>Поймите своё здоровье. <span class="soft">Решайте спокойно.</span></h1>
 <p class="lead">Анкета о сне, движении, питании и настроении. Один индекс от 0 до 100, объяснение, из чего он сложился, и понятный шаг на неделю. По рекомендациям ВОЗ.</p>
 <div class="hero-actions"><a class="btn btn-primary btn-lg" href="#try" data-metric="hero_start_quiz">Пройти анкету</a><a class="text-link" href="{{ url_for('main.methodology') }}">Как считается балл</a></div>
 <p class="hero-note">3–4 минуты · Не диагноз и не замена врачу</p>
+{% endif %}
 </div>
 {% if latest %}{% set weakest = (latest.breakdown | dictsort(by='value'))[0][0] %}
-<a class="sheet user-card" href="{{ url_for('account.dashboard') }}" data-user-card data-metric="hero_user_card">
+<div class="sheet user-card" data-user-card>
 {% if latest.flags | selectattr('level', 'ne', 'info') | list %}<p class="sheet-flag" data-uc-flag>Есть рекомендация обратиться к специалисту</p>{% else %}<p class="sheet-flag" data-uc-flag hidden></p>{% endif %}
 <div class="sheet-cap-row"><span class="sheet-cap">Ваш индекс</span><span class="sheet-date" data-uc-date>{{ latest.created_at | msk }}</span></div>
 <div class="sheet-total"><div class="score" data-uc-total>{{ latest.total }}<span>/100</span></div><p class="sheet-summary" data-uc-summary>{{ latest.summary }}</p></div>
-<div class="total-range" data-uc-range>{{ range_bar(latest.total) }}{{ range_axis() }}</div>
-{{ rows(latest.spheres, weakest, 'data-uc-sphere') }}
 {% if latest.focus %}<div class="sheet-focus"><b data-uc-tip-title>{{ latest.focus.title }}</b><p data-uc-tip-text>{{ latest.focus.text }}</p></div>{% endif %}
-<p class="sheet-link">Открыть кабинет</p>
-</a>
+<details class="uc-more"><summary>По сферам</summary>
+<div class="total-range" data-uc-range>{{ range_bar(latest.total) }}</div>
+{{ rows(latest.spheres, weakest, 'data-uc-sphere') }}
+</details>
+</div>
 {% else %}
 <div class="hero-media">
 <picture><source type="image/webp" srcset="{{ static_url('img/run-900.webp') }} 900w, {{ static_url('img/run-1333.webp') }} 1333w" sizes="(max-width: 960px) 100vw, 46vw"><img src="{{ static_url('img/run-900.webp') }}" width="900" height="1350" alt="Бегунья в парке на закате, силуэт в мягком контровом свете" fetchpriority="high"></picture>
