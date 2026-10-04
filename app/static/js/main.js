@@ -584,7 +584,7 @@
       resultCard.classList.remove('is-live');
       resultCard.hidden = true;
       quizForm.hidden = false;
-      showStep(0, 'back');
+      showStep(0, 'forward');   // заново с первого вопроса (направление 'back' открыло бы последний вопрос шага)
       focusStep();
       scrollToQuiz();
     });
