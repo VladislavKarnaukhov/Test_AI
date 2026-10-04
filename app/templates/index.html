@@ -21,16 +21,12 @@
 <p class="hero-note">3–4 минуты · Не диагноз и не замена врачу</p>
 {% endif %}
 </div>
-{% if latest %}{% set weakest = (latest.breakdown | dictsort(by='value'))[0][0] %}
+{% if latest %}
 <div class="sheet user-card" data-user-card>
 {% if latest.flags | selectattr('level', 'ne', 'info') | list %}<p class="sheet-flag" data-uc-flag>Есть рекомендация обратиться к специалисту</p>{% else %}<p class="sheet-flag" data-uc-flag hidden></p>{% endif %}
 <div class="sheet-cap-row"><span class="sheet-cap">Ваш индекс</span><span class="sheet-date" data-uc-date>{{ latest.created_at | msk }}</span></div>
 <div class="sheet-total"><div class="score" data-uc-total>{{ latest.total }}<span>/100</span></div><p class="sheet-summary" data-uc-summary>{{ latest.summary }}</p></div>
 {% if latest.focus %}<div class="sheet-focus"><b data-uc-tip-title>{{ latest.focus.title }}</b><p data-uc-tip-text>{{ latest.focus.text }}</p></div>{% endif %}
-<details class="uc-more"><summary>По сферам</summary>
-<div class="total-range" data-uc-range>{{ range_bar(latest.total) }}</div>
-{{ rows(latest.spheres, weakest, 'data-uc-sphere') }}
-</details>
 </div>
 {% else %}
 <figure class="score-peek" aria-label="Пример результата: индекс 82 из 100, высокий уровень">

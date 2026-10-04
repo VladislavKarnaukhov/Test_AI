@@ -93,7 +93,6 @@
           <span class="entry-score">{{ r.total }}</span>
           <span class="entry-main">
             <span class="entry-date">{{ r.date }}{% if loop.first %} <em>последняя</em>{% endif %}{% if not r.current %} <em class="legacy">{{ r.version_label }}</em>{% elif r.tier_name %} <em class="tier-tag">{{ r.tier_name | lower }}</em>{% endif %}{% if r.flags | selectattr('level', 'ne', 'info') | list %} <em class="flagged">к специалисту</em>{% endif %}</span>
-            <span class="entry-summary">{{ r.summary }}</span>
           </span>
           {{ range_bar(r.total) }}
           {% if r.delta is not none %}<span class="badge {{ 'up' if r.delta > 0 else 'down' if r.delta < 0 else '' }}">{{ '%+d' % r.delta if r.delta else '±0' }}</span>{% else %}<span class="badge first">первая</span>{% endif %}
@@ -103,17 +102,11 @@
             <h3>Сферы</h3>
             {{ rows(r.spheres, None, None, r.sphere_deltas) }}
           </div>
-          <div>
-            <h3>Ответы</h3>
-            {% for group_title, group_rows in r.answer_groups %}{% if r.answer_groups | length > 1 %}<p class="ans-group">{{ group_title }}</p>{% endif %}<dl class="answers-list">{% for question, answer in group_rows %}<dt>{{ question }}</dt><dd>{{ answer }}</dd>{% endfor %}</dl>{% endfor %}
-          </div>
-          <div class="entry-recs">
-            <h3>Рекомендации</h3>
+          {% if r.flags or not r.current or r.detailed or r.body %}<div class="entry-notes">
             {% for f in r.flags %}<p class="entry-flag flag-{{ f.level }}"><b>{{ f.title }}.</b> {{ f.text }}</p>{% endfor %}
             {% if not r.current %}<p class="muted">Посчитано по прежней версии ({{ r.version_label }}): баллы не сравнимы с новыми.</p>{% endif %}
             {% if r.detailed or r.body %}<p class="muted">{% if r.detailed %}Подробный индекс: {{ r.detailed.total }}. {% endif %}{% if r.body %}Тело и метаболизм: {{ r.body.score }} ({{ r.body.known }} из 4).{% endif %}</p>{% endif %}
-            {% for group in r.groups[:2] %}<p class="rec-sphere">{{ group.sphere_name }}, {{ group.level_name }}</p><ul>{% for rec in group.recs %}<li><b>{{ rec.title }}</b> {{ rec.text }}</li>{% endfor %}</ul>{% endfor %}
-          </div>
+          </div>{% endif %}
           <button type="button" class="entry-close" data-entry-close hidden>Свернуть</button>
         </div>
       </details>
@@ -127,12 +120,12 @@
 
 <section class="panel" id="recommendations">
   <h2>Рекомендации</h2>
-  <p class="muted">Все советы по последней оценке от {{ latest.created_at | msk }}, начиная со сферы, которая сильнее всего влияет на итог.</p>
+  <p class="muted">Три приоритета по оценке от {{ latest.created_at | msk }}, начиная со сферы, которая сильнее всего влияет на итог.</p>
   <div class="rec-groups">
-  {% for group in latest.groups %}
+  {% for group in latest.groups[:3] %}
     <article class="rec-group level-{{ group.level }}">
       <header><h3>{{ group.sphere_name }}</h3>{% set sc = latest.breakdown.get(group.sphere) %}{% if latest.detailed %}{% set sc = latest.detailed.domains.get(group.sphere, sc) %}{% endif %}<span class="chip">{% if sc is not none %}{{ sc }}, {% endif %}{{ group.level_name }}</span></header>
-      <ul>{% for rec in group.recs %}<li><b>{{ rec.title }}</b>{{ rec.text }}</li>{% endfor %}</ul>
+      <ul>{% for rec in group.recs[:2] %}<li><b>{{ rec.title }}</b>{{ rec.text }}</li>{% endfor %}</ul>
     </article>
   {% endfor %}
   </div>

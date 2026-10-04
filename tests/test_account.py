@@ -159,7 +159,7 @@ def test_dashboard_history(user_client):
     last_id = data["points"][1]["id"]
     assert 'id="entry-{}" data-id="{}" open'.format(last_id, last_id) in html
     assert "+22" in html                                           # изменение к прошлой
-    assert "6–7" in html and "Бросил(а)" in html                   # ответы словами
+    assert "Бросил(а)" not in html and "answers-list" not in html  # подробные ответы в кабинете не показываются
     assert "Фокус недели: На один день без сладких напитков больше" in html
     recs = html.split('id="recommendations"')[1]
     assert recs.index("Питание") < recs.index("Сон")
@@ -264,7 +264,7 @@ def test_home_shows_latest_score_for_logged_in_user(user_client):
     assert "data-user-card" in html
     assert '<div class="score" data-uc-total>91<span>/100</span></div>' in html
     assert "На один день без сладких напитков больше" in html     # фокус недели по самой слабой сфере
-    assert html.count('data-uc-sphere=') == 6                     # 6 сфер ядра
+    assert "data-uc-sphere" not in html                           # карточка на главной без разбивки по сферам
     assert ">82<span>/100</span>" not in html                     # демо-карточка скрыта
 
 
@@ -354,7 +354,7 @@ def test_legacy_results_marked_and_not_compared(user_client, app):
     assert [d["total"] for d in data["points"]] == [69]          # на графике только v2.0
     assert "старая методика" in html
     assert "к прошлой оценке" not in html                        # 69 не сравнивается с 66 старой формулы
-    assert "5–6 часов" in html                                   # ответы старой анкеты словами
+    assert "answers-list" not in html                            # ответы анкеты в кабинете не показываются
 
 
 def test_only_legacy_results_show_chart_placeholder(user_client, app):
@@ -436,4 +436,4 @@ def test_extended_result_in_dashboard(user_client):
     user_client.post("/api/score", json=with_consent(extended()))
     html = user_client.get("/account").get_data(as_text=True)
     assert "Подробный индекс (7 сфер)" in html and "Тело и метаболизм: 90/100 — по 4 из 4 показателей" in html
-    assert "170 см" in html and "расширенный" in html
+    assert "170 см" not in html and "расширенный" in html

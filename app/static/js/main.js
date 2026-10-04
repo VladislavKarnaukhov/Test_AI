@@ -617,3 +617,48 @@
     el.dataset.tone = toneOf(v);
   });
 })();
+
+/* Движение: появление строк и набор длины полосок при показе на экране, счёт чисел. Только без «меньше движения». */
+(function () {
+  'use strict';
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+  if (reduce.matches || !('IntersectionObserver' in window)) return;
+  document.documentElement.classList.add('js-motion');
+
+  const seen = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      e.target.classList.add('is-in');
+      seen.unobserve(e.target);
+    });
+  }, { threshold: 0.25 });
+  document.querySelectorAll('.rows').forEach(function (r) {
+    // строки результата анкеты показываются после расчёта и анимируются сами; остальные ждут появления в окне
+    if (r.closest('.score-card')) r.classList.add('is-in'); else seen.observe(r);
+  });
+
+  function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+  function count(textNode, to) {
+    const t0 = performance.now(), dur = 900;
+    (function tick(now) {
+      const k = Math.min(1, (now - t0) / dur);
+      textNode.nodeValue = String(Math.round(to * easeOut(k)));
+      if (k < 1) requestAnimationFrame(tick);
+    })(t0);
+  }
+  const numbers = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      numbers.unobserve(e.target);
+      const tn = e.target.firstChild;
+      if (!tn || tn.nodeType !== 3) return;
+      const to = parseInt(tn.nodeValue, 10);
+      if (isNaN(to) || to <= 0) return;
+      tn.nodeValue = '0';
+      count(tn, to);
+    });
+  }, { threshold: 0.6 });
+  document.querySelectorAll('.ring-score b, .stats dd[data-stat=count], .stats dd[data-stat=best], .stats dd[data-stat=avg], .user-card .score[data-uc-total], .account-score .score').forEach(function (el) {
+    if (!el.closest('.score-card')) numbers.observe(el);
+  });
+})();
