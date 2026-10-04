@@ -184,7 +184,7 @@ def validate(answers):
     if errors:
         raise ScoringError(errors)
     if clean["age"] == "under18":
-        raise ScoringError({"age": "Анкета VitaScore рассчитана на взрослых — от 18 лет."}, code="age_restricted")
+        raise ScoringError({"age": "Анкета Del Health рассчитана на взрослых — от 18 лет."}, code="age_restricted")
     return clean
 
 

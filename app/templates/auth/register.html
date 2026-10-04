@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Регистрация — Adelina Health{% endblock %}
+{% block title %}Регистрация — Del Health{% endblock %}
 {% block content %}
 {% include "_header.html" %}
 <main id="main" tabindex="-1" class="wrap auth-page">
@@ -15,9 +15,9 @@
 <label class="field">Пароль<input type="password" name="password" minlength="8" maxlength="128" autocomplete="new-password" required{% if errors.password %} aria-invalid="true"{% endif %}></label>
 <label class="field">Пароль ещё раз<input type="password" name="password_confirm" minlength="8" maxlength="128" autocomplete="new-password" required></label>
 {% if errors.password %}<p class="field-error">{{ errors.password }}</p>{% else %}<p class="auth-hint">Не короче 8 символов.</p>{% endif %}
-<label class="consent"><input type="checkbox" name="terms"{% if form.get('terms') == 'on' %} checked{% endif %}><span>Я принимаю <a href="{{ url_for('main.terms') }}" target="_blank" rel="noopener">пользовательское соглашение</a> Adelina Health</span></label>
+<label class="consent"><input type="checkbox" name="terms"{% if form.get('terms') == 'on' %} checked{% endif %}><span>Я принимаю <a href="{{ url_for('main.terms') }}" target="_blank" rel="noopener">пользовательское соглашение</a> Del Health</span></label>
 {% if errors.terms %}<p class="field-error">{{ errors.terms }}</p>{% endif %}
-<label class="consent"><input type="checkbox" name="consent"{% if form.get('consent') == 'on' %} checked{% endif %}><span>Я соглашаюсь на <a href="{{ url_for('main.privacy') }}" target="_blank" rel="noopener">обработку персональных данных</a> в соответствии с политикой Adelina Health</span></label>
+<label class="consent"><input type="checkbox" name="consent"{% if form.get('consent') == 'on' %} checked{% endif %}><span>Я соглашаюсь на <a href="{{ url_for('main.privacy') }}" target="_blank" rel="noopener">обработку персональных данных</a> в соответствии с политикой Del Health</span></label>
 {% if errors.consent %}<p class="field-error">{{ errors.consent }}</p>{% endif %}
 <button class="btn btn-primary" type="submit">Создать кабинет</button>
 <p class="auth-switch">Уже есть кабинет? <a href="{{ url_for('auth.login', next=next_url) }}">Войти</a></p>

@@ -2,7 +2,7 @@
 <html lang="ru" data-policy-version="{{ policy_version }}">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{% block title %}Adelina Health — индекс здоровья{% endblock %}</title>
+<title>{% block title %}Del Health — индекс здоровья{% endblock %}</title>
 <!-- Yandex.Metrika counter: загружается только после согласия на аналитические cookie -->
 <script>
 window.vsLoadMetrika=function(){
@@ -21,11 +21,11 @@ if(ck('vs_consent')==='all'&&ck('vs_consent_v')==='{{ policy_version }}')window.
 <!-- /Yandex.Metrika counter -->
 <meta name="description" content="{% block description %}Индекс здоровья по шести сферам и один понятный шаг на неделю. Расчёт по рекомендациям ВОЗ и валидированным опросникам.{% endblock %}">
 <meta name="color-scheme" content="light dark">
-<meta name="theme-color" content="#F3F5F7" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#0B131B" media="(prefers-color-scheme: dark)">
-<meta property="og:site_name" content="Adelina Health"><meta property="og:type" content="website"><meta property="og:locale" content="ru_RU">
-<meta property="og:title" content="{% block og_title %}Adelina Health{% endblock %}"><meta property="og:description" content="Индекс здоровья по шести сферам и один понятный шаг на неделю."><meta property="og:image" content="{{ url_for('static', filename='img/run-900.webp', _external=True) }}">
+<meta name="theme-color" content="#FAF8F4" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#14120F" media="(prefers-color-scheme: dark)">
+<meta property="og:site_name" content="Del Health"><meta property="og:type" content="website"><meta property="og:locale" content="ru_RU">
+<meta property="og:title" content="{% block og_title %}Del Health{% endblock %}"><meta property="og:description" content="Индекс здоровья по шести сферам и один понятный шаг на неделю."><meta property="og:image" content="{{ url_for('static', filename='img/run-900.webp', _external=True) }}">
 <link rel="icon" type="image/svg+xml" href="{{ static_url('favicon.svg') }}">
-<link rel="preload" as="font" type="font/woff2" crossorigin href="{{ static_url('fonts/Onest-cyrillic.woff2') }}">
+<link rel="preload" as="font" type="font/woff2" crossorigin href="{{ static_url('fonts/Inter-cyrillic.woff2') }}">
 <link rel="stylesheet" href="{{ static_url('css/style.css') }}">
 </head>
 <body>
@@ -35,12 +35,12 @@ if(ck('vs_consent')==='all'&&ck('vs_consent_v')==='{{ policy_version }}')window.
 {% from "_components.html" import brand %}
 <footer>
 <div class="wrap footer-grid">
-<div class="footer-brand">{{ brand('#' if request.endpoint == 'main.index' else url_for('main.index')) }}<p>Ваши данные остаются вашими.</p><small>Adelina Health не заменяет консультацию врача.</small></div>
+<div class="footer-brand">{{ brand('#' if request.endpoint == 'main.index' else url_for('main.index')) }}<p>Ваши данные остаются вашими.</p><small>Del Health не заменяет консультацию врача.</small><small class="credits">Фотографии: <a href="https://unsplash.com">Unsplash</a> (McCarthy Beckan, Amel Majanovic, Merri J, Aliona Zahrai, Emma Simpson).</small></div>
 <nav class="footer-col" aria-label="Сервис"><h2 class="footer-title">Сервис</h2><a href="{{ url_for('account.dashboard') if current_user else url_for('auth.login') }}">Личный кабинет</a>{% if current_user %}<a href="{{ url_for('account.settings') }}#profile">Мои данные</a><a href="{{ url_for('account.settings') }}#password">Сменить пароль</a><a href="{{ url_for('account.settings') }}#delete">Удалить аккаунт</a>{% endif %}<a href="{{ url_for('main.methodology') }}">Методика</a></nav>
 <nav class="footer-col" aria-label="Документы"><h2 class="footer-title">Документы</h2><a href="{{ url_for('main.terms') }}">Пользовательское соглашение</a><a href="{{ url_for('main.privacy') }}">Политика обработки данных</a><a href="{{ url_for('main.health_consent') }}">Согласие на данные о здоровье</a><button type="button" class="link-button" data-cookie-settings>Настройки cookie</button></nav>
 </div>
 </footer>
-<div class="cookie-banner" role="region" aria-label="Согласие на cookie" hidden><p>Мы используем cookie. Необходимые нужны для работы сайта. Аналитические (Яндекс.Метрика и наша статистика посещений) помогают улучшать Adelina Health, их мы включим только с вашего согласия. Подробнее в <a href="{{ url_for('main.privacy') }}">политике обработки персональных данных</a>.</p><div class="cookie-actions"><button type="button" class="btn btn-primary btn-sm" data-consent="all">Принять все</button><button type="button" class="btn btn-quiet btn-sm" data-consent="necessary">Только необходимые</button></div></div>
+<div class="cookie-banner" role="region" aria-label="Согласие на cookie" hidden><p>Мы используем cookie. Необходимые нужны для работы сайта. Аналитические (Яндекс.Метрика и наша статистика посещений) помогают улучшать Del Health, их мы включим только с вашего согласия. Подробнее в <a href="{{ url_for('main.privacy') }}">политике обработки персональных данных</a>.</p><div class="cookie-actions"><button type="button" class="btn btn-primary btn-sm" data-consent="all">Принять все</button><button type="button" class="btn btn-quiet btn-sm" data-consent="necessary">Только необходимые</button></div></div>
 <script src="{{ static_url('js/main.js') }}"></script>
 {% block scripts %}{% endblock %}
 

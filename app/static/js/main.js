@@ -403,7 +403,7 @@
       }
       if (onlyQ) return true;
       if (step === steps[0] && value('age') === 'under18') {
-        quizError.textContent = 'Анкета Adelina Health рассчитана на взрослых — от 18 лет.';
+        quizError.textContent = 'Анкета Del Health рассчитана на взрослых — от 18 лет.';
         return false;
       }
       if (step === steps[0] && !consent.checked) {
@@ -619,4 +619,14 @@
     });
   });
   select(0, false);
+})();
+
+/* Мобильное меню: закрывается по выбору пункта, по Escape и по клику вне панели */
+(function () {
+  'use strict';
+  const menu = document.querySelector('.site-header .menu');
+  if (!menu) return;
+  menu.addEventListener('click', function (e) { if (e.target.closest('.menu-panel a')) menu.open = false; });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && menu.open) { menu.open = false; menu.querySelector('summary').focus(); } });
+  document.addEventListener('click', function (e) { if (menu.open && !menu.contains(e.target)) menu.open = false; });
 })();
