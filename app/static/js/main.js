@@ -216,14 +216,22 @@
   }
 
   // ---------- Шкалы: положение отметки и заливки задаёт CSS-переменная --v (0–100) ----------
-  function setRange(node, v) { if (node) node.style.setProperty('--v', v); }
+  // уровень по зонам LE8: 80+ высокий, 50–79 средний, ниже — низкий; цвет и слово-статус берутся из него
+  function toneOf(v) { return v >= 80 ? 'high' : v >= 50 ? 'mid' : 'low'; }
+  function setRange(node, v) {
+    if (!node) return;
+    node.style.setProperty('--v', v);
+    const row = node.closest('.row');
+    if (row) { row.classList.remove('tone-high', 'tone-mid', 'tone-low'); row.classList.add('tone-' + toneOf(v)); }
+  }
+  function setRing(el, v) { if (el) { el.style.setProperty('--v', v); el.dataset.tone = toneOf(v); } }
 
   // ---------- Лист последнего балла на главной (для вошедших) ----------
   function updateUserCard(r) {
     const card = document.querySelector('[data-user-card]');
     if (!card) return;
     card.querySelector('[data-uc-total]').firstChild.nodeValue = r.total;
-    card.querySelector('[data-uc-total]').style.setProperty('--v', r.total);
+    setRing(card.querySelector('[data-uc-total]'), r.total);
     card.querySelector('[data-uc-summary]').textContent = r.summary;
     card.querySelector('[data-uc-date]').textContent = 'только что';
     setRange(card.querySelector('[data-uc-range] .range'), r.total);
@@ -505,7 +513,7 @@
       resultCard.querySelector('[data-level]').textContent = r.level_name + '.';
       resultCard.querySelector('[data-summary]').textContent = r.summary.replace(r.level_name + '. ', '');
       setRange(resultCard.querySelector('[data-total-range] .range'), r.total);
-      resultCard.querySelector('.score').style.setProperty('--v', r.total);
+      setRing(resultCard.querySelector('.score'), r.total);
       const ft = r.focus.title;
       resultCard.querySelector('[data-focus-title]').textContent = ft.indexOf('Фокус недели') === 0 ? ft : 'Фокус недели: ' + ft;
       resultCard.querySelector('[data-tip]').textContent = r.focus.text;
@@ -586,47 +594,26 @@
 })();
 
 
-/* Кольцо балла на карточке вошедшего: значение берём из самого числа */
-(function () {
-  const el = document.querySelector('[data-uc-total]');
-  if (el && !el.style.getPropertyValue('--v')) el.style.setProperty('--v', parseInt(el.textContent, 10) || 0);
-})();
-
-/* Разбор сфер: вкладки с управлением стрелками (без JS все панели видны списком) */
+/* Кольцо индекса: тонкая дуга с закруглёнными концами (SVG добавляется в конец, чтобы текст числа остался первым узлом) */
 (function () {
   'use strict';
-  const root = document.querySelector('[data-tabs]');
-  if (!root) return;
-  const tabs = Array.from(root.querySelectorAll('[role=tab]'));
-  const panels = tabs.map(function (t) { return document.getElementById(t.getAttribute('aria-controls')); });
-  function select(i, focus) {
-    tabs.forEach(function (t, k) {
-      const on = k === i;
-      t.setAttribute('aria-selected', on ? 'true' : 'false');
-      t.tabIndex = on ? 0 : -1;
-      panels[k].hidden = !on;
+  const NS = 'http://www.w3.org/2000/svg';
+  function toneOf(v) { return v >= 80 ? 'high' : v >= 50 ? 'mid' : 'low'; }
+  document.querySelectorAll('.ring-score, .score').forEach(function (el) {
+    if (el.closest('.entry') || el.querySelector('.ring-svg')) return;
+    const svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('class', 'ring-svg');
+    svg.setAttribute('viewBox', '0 0 100 100');
+    svg.setAttribute('aria-hidden', 'true');
+    ['ring-track', 'ring-arc'].forEach(function (cls) {
+      const c = document.createElementNS(NS, 'circle');
+      c.setAttribute('class', cls); c.setAttribute('cx', '50'); c.setAttribute('cy', '50'); c.setAttribute('r', '45'); c.setAttribute('pathLength', '100');
+      svg.appendChild(c);
     });
-    if (focus) tabs[i].focus();
-  }
-  root.setAttribute('data-ready', '');
-  tabs.forEach(function (t, i) {
-    t.addEventListener('click', function () { select(i, false); });
-    t.addEventListener('keydown', function (e) {
-      const k = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 }[e.key];
-      if (k) { e.preventDefault(); select((i + k + tabs.length) % tabs.length, true); }
-      else if (e.key === 'Home') { e.preventDefault(); select(0, true); }
-      else if (e.key === 'End') { e.preventDefault(); select(tabs.length - 1, true); }
-    });
+    el.appendChild(svg);
+    el.classList.add('has-ring');
+    let v = parseFloat(el.style.getPropertyValue('--v'));
+    if (isNaN(v)) { v = parseInt(el.textContent, 10); if (isNaN(v)) v = 0; el.style.setProperty('--v', v); }
+    el.dataset.tone = toneOf(v);
   });
-  select(0, false);
-})();
-
-/* Мобильное меню: закрывается по выбору пункта, по Escape и по клику вне панели */
-(function () {
-  'use strict';
-  const menu = document.querySelector('.site-header .menu');
-  if (!menu) return;
-  menu.addEventListener('click', function (e) { if (e.target.closest('.menu-panel a')) menu.open = false; });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && menu.open) { menu.open = false; menu.querySelector('summary').focus(); } });
-  document.addEventListener('click', function (e) { if (menu.open && !menu.contains(e.target)) menu.open = false; });
 })();
