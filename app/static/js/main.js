@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  const METRIKA_ID = 112820979;
+  const METRIKA_ID = 113394370;
 
   // ---------- Согласие на cookie ----------
   const CONSENT_COOKIE = 'vs_consent';

@@ -19,10 +19,12 @@ app/
   account.py       /account — личный кабинет: история оценок, рекомендации, профиль, удаление
   templates/       base.html (head, Метрика, баннер cookie, футер, виджет), _header.html, index.html,
                    privacy.html, auth/ (вход, регистрация), account/ (кабинет)
-  static/css/      style.css
+  static/css/      base.css (токены, типографика, кнопки, шапка, формы) → components.css (лист и кольцо индекса,
+                   анкета, график, история) → pages.css (главная, кабинет, вход, документы); порядок подключения важен
   static/js/       main.js — анкета, форма e-mail, track() → Метрика + /api/event;
                    account.js — интерактивный график и история в кабинете
-tests/             pytest: test_scoring.py, test_api.py
+tests/             pytest: test_scoring.py, test_api.py, test_account.py
+tools/ui_audit.py  аудит интерфейса: наложения текста и выход за край на ширинах 320–1440 px (нужен Chrome)
 run.py             локальный запуск
 reports.sql        готовые отчёты по источникам, устройствам и странам
 ```

@@ -2,7 +2,7 @@
 {% block title %}Регистрация — Del Health{% endblock %}
 {% block content %}
 {% include "_header.html" %}
-<main id="main" tabindex="-1" class="wrap auth-page">
+<main id="main" tabindex="-1" class="wrap auth-page ym-hide-content ym-disable-keys">
 <form class="sheet auth-card" method="post" action="{{ url_for('auth.register') }}" novalidate>
 <h1>Создайте кабинет</h1>
 <p class="auth-note">В кабинете сохраняются анкеты, пройденные после входа: динамика оценок, все рекомендации и ваши данные.</p>

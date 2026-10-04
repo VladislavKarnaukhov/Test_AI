@@ -174,7 +174,7 @@
 <p class="beta-note">Бета-версия методики v{{ method_version }}: построена на рекомендациях ВОЗ, таблицах Life's Essential 8 и валидированных опросниках, проходит проверку. Это не медицинская консультация и не диагноз. <a href="{{ url_for('main.methodology') }}">Как считается балл</a></p>
 </div>
 
-<div class="blank">
+<div class="blank ym-hide-content ym-disable-keys">
 <ol class="rail" data-rail aria-label="Шаги анкеты" hidden></ol>
 <div class="blank-main">
 <form class="quiz-form" novalidate>
@@ -251,7 +251,7 @@
 </section>
 </main>
 
-<dialog id="dialog" aria-labelledby="dialog-title">
+<dialog id="dialog" class="ym-hide-content ym-disable-keys" aria-labelledby="dialog-title">
 <button class="close" type="button" aria-label="Закрыть">×</button>
 <h2 id="dialog-title">Ваш выбор: <span></span></h2>
 <p class="intro">Оставьте e-mail — пришлём ссылку для безопасной оплаты и начнём скоринг.</p>

@@ -2,7 +2,7 @@
 {% block title %}Вход — Del Health{% endblock %}
 {% block content %}
 {% include "_header.html" %}
-<main id="main" tabindex="-1" class="wrap auth-page">
+<main id="main" tabindex="-1" class="wrap auth-page ym-hide-content ym-disable-keys">
 <form class="sheet auth-card" method="post" action="{{ url_for('auth.login') }}" novalidate>
 <h1>Вход</h1>
 {% if next_url and 'try' in next_url %}<p class="auth-note">После входа пройдите анкету: результат сохранится в кабинете.</p>{% endif %}

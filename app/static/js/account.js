@@ -205,11 +205,21 @@
     guide.setAttribute('x2', x(i, n));
     svg.querySelectorAll('.dot').forEach(function (c) { c.classList.toggle('hover', Number(c.dataset.id) === d.id); });
 
-    let html = '<p class="tip-date">' + d.date + '</p><p class="tip-total">' + d.total + '<span>/100</span></p><ul>';
+    // подсказка собирается через DOM и textContent: данные не попадают в разметку как HTML
+    function el(tag, cls, text) { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; }
+    tip.textContent = '';
+    tip.appendChild(el('p', 'tip-date', d.date));
+    const total = el('p', 'tip-total', String(d.total));
+    total.appendChild(el('span', '', '/100'));
+    tip.appendChild(total);
+    const list = el('ul');
     ORDER.slice(1).forEach(function (k) {
-      html += '<li><i style="background:' + COLORS[k] + '"></i>' + NAMES[k] + '<b>' + d[k] + '</b></li>';
+      const li = el('li');
+      const dot = el('i'); dot.style.background = COLORS[k];
+      li.appendChild(dot); li.appendChild(document.createTextNode(NAMES[k])); li.appendChild(el('b', '', String(d[k])));
+      list.appendChild(li);
     });
-    tip.innerHTML = html + '</ul>';
+    tip.appendChild(list);
     tip.hidden = false;
     const rect = svg.getBoundingClientRect();
     const px = x(i, n) * rect.width / W;
