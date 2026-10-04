@@ -1072,3 +1072,113 @@ body:has(.hero) .brand{color:#fff}
 
 @media (max-width:359px){.header-actions .btn-sm{display:none}}
 @media (max-width:960px){.hero .score-peek{width:100%}}
+
+/* =====================================================================
+   Правки вёрстки (по результатам аудита наложений) и спокойный профиль
+   ===================================================================== */
+.sheet-summary{min-width:0}
+.user-card .sheet-total,.score-card .sheet-total{flex-wrap:nowrap}
+.user-card .sheet-summary,.score-card .sheet-summary{flex:1 1 0}
+@media (max-width:520px){
+  .user-card .sheet-total{flex-direction:column;align-items:flex-start;gap:var(--sp-4)}
+  .user-card .sheet-summary,.score-card .sheet-summary,.overview-main .sheet-summary{flex:0 0 auto}
+  .score-card .sheet-cap-row{flex-direction:column;align-items:flex-start;gap:.25rem}
+}
+@media (max-width:860px){.overview-main .sheet-summary{flex:0 0 auto}}
+.user-card .sheet-focus{margin-bottom:0}
+.rec-group header{flex-wrap:wrap}
+.rec-group .chip{white-space:normal}
+.entry summary{align-items:center}
+.entry-main{gap:.375rem}
+.entry-notes{display:grid;gap:var(--sp-3);align-content:start}
+.entry-notes .muted{margin:0}
+.entry-body{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+@media (max-width:760px){.entry-body{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:380px){.account-nav{gap:var(--sp-4)}.account-nav a{font-size:.875rem}}
+.score-card:focus,.score-card:focus-visible,.blank:focus,.quiz-step legend:focus-visible,main:focus-visible{outline:none}
+
+/* Цвет уровня: яркий для заливок (кольцо, полоски), тёмный для текста (контраст ≥ 4.5:1) */
+:root{--fill-high:var(--accent);--fill-mid:#D39A2C;--fill-low:#D5583A}
+@media (prefers-color-scheme:dark){:root{--fill-mid:#E3B25A;--fill-low:#F0896B}}
+.tone-high,[data-tone=high]{--fill:var(--fill-high)}
+.tone-mid,[data-tone=mid]{--fill:var(--fill-mid)}
+.tone-low,[data-tone=low]{--fill:var(--fill-low)}
+.ring-arc{stroke:var(--fill,var(--accent))}
+.range-fill,.row.weakest .range-fill{background:var(--fill,var(--accent))}
+.score-card .rows-title,.user-card .rows-title{margin-top:var(--sp-7)}
+.score-card .sheet-summary{margin-bottom:0}
+
+/* =====================================================================
+   Движение. Только transform/opacity, ease-out cubic-bezier(.23,1,.32,1), реакции интерфейса
+   до 300 мс, ступени 60–80 мс, hover только для мыши, всё внутри prefers-reduced-motion: no-preference.
+   ===================================================================== */
+@media (prefers-reduced-motion:no-preference){
+  /* Вход первого экрана: фото оседает, текст появляется ступенями */
+  .hero-photo img{animation:photo-settle 1.4s var(--ease-out) both}
+  @keyframes photo-settle{from{transform:scale(1.07)}}
+  .hero .hero-copy>*,.hero .score-peek,.hero .user-card{animation:rise .8s var(--ease-out) both}
+  .hero .hero-copy>:nth-child(1){animation-delay:.1s}
+  .hero .hero-copy>:nth-child(2){animation-delay:.18s}
+  .hero .hero-copy>:nth-child(3){animation-delay:.26s}
+  .hero .hero-copy>:nth-child(4){animation-delay:.34s}
+  .hero .hero-copy>:nth-child(5){animation-delay:.42s}
+  .hero .score-peek,.hero .user-card{animation-delay:.5s}
+  @keyframes rise{from{opacity:0;transform:translateY(1.25rem)}}
+
+  /* Меню */
+  .menu[open] .menu-panel{animation:panel-drop .24s var(--ease-out) both}
+  @keyframes panel-drop{from{opacity:0;transform:translateY(-.5rem)}}
+
+  /* Строки и полоски факторов появляются, когда блок виден на экране (класс .is-in ставит JS) */
+  .js-motion .rows:not(.is-in) .range-fill{transform:scaleX(0)}
+  .js-motion .rows .range-fill{transition:transform .9s var(--ease-out)}
+  .rows .row:nth-child(2) .range-fill{transition-delay:.06s}.rows .row:nth-child(3) .range-fill{transition-delay:.12s}
+  .rows .row:nth-child(4) .range-fill{transition-delay:.18s}.rows .row:nth-child(5) .range-fill{transition-delay:.24s}
+  .rows .row:nth-child(6) .range-fill{transition-delay:.3s}.rows .row:nth-child(7) .range-fill{transition-delay:.36s}
+  .js-motion .rows:not(.is-in) .row{opacity:0;transform:translateY(.5rem)}
+  .js-motion .rows .row{transition:opacity .5s var(--ease-out),transform .5s var(--ease-out)}
+  .rows .row:nth-child(2){transition-delay:.05s}.rows .row:nth-child(3){transition-delay:.1s}.rows .row:nth-child(4){transition-delay:.15s}
+  .rows .row:nth-child(5){transition-delay:.2s}.rows .row:nth-child(6){transition-delay:.25s}.rows .row:nth-child(7){transition-delay:.3s}
+
+  /* Результат анкеты: итог, затем шаг и действия */
+  .score-card.is-live .sheet-total,.score-card.is-live .sheet-focus,.score-card.is-live .sheet-actions{animation:rise .7s var(--ease-out) both}
+  .score-card.is-live .sheet-total{animation-delay:.05s}.score-card.is-live .sheet-focus{animation-delay:.45s}.score-card.is-live .sheet-actions{animation-delay:.55s}
+
+  /* Кабинет: обзор появляется блоками */
+  .account-head{animation:rise .5s var(--ease-out) both}
+  .overview-main{animation:rise .6s var(--ease-out) .06s both}
+  .overview-spheres{animation:rise .6s var(--ease-out) .14s both}
+
+  /* Раскрывающиеся блоки: высота плавно, содержимое проявляется (где браузер умеет ::details-content) */
+  @supports (interpolate-size:allow-keywords){
+    .faq-list details,.entry{interpolate-size:allow-keywords}
+    .faq-list details::details-content,.entry::details-content{block-size:0;overflow:clip;opacity:0;transition:block-size .32s var(--ease-out),opacity .24s var(--ease-out),content-visibility .32s allow-discrete}
+    .faq-list details[open]::details-content,.entry[open]::details-content{block-size:auto;opacity:1}
+  }
+
+  /* Нажатия */
+  .btn{transition:transform var(--dur-1) var(--ease-out),background-color var(--dur-2),color var(--dur-2),border-color var(--dur-2),box-shadow var(--dur-2)}
+  .btn:active{transform:scale(.97)}
+  .choice span{transition:background-color var(--dur-1),border-color var(--dur-1),box-shadow var(--dur-1),transform var(--dur-1) var(--ease-out)}
+  .choice:active span{transform:scale(.985)}
+  .chapter-photo{overflow:clip;border-radius:var(--r-photo)}
+  .chapter-photo img{transition:transform .9s var(--ease-out)}
+  .site-nav a,.account-nav a,.footer-col a{transition:color var(--dur-2)}
+}
+/* Наведение (только мышь) */
+@media (hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference){
+  .btn-primary:hover,.btn-light:hover{transform:translateY(-1px)}
+  .chapter:hover .chapter-photo img{transform:scale(1.035)}
+  .entry-score{transition:transform var(--dur-3) var(--ease-out)}
+  .entry summary:hover .entry-score{transform:translateX(2px)}
+  .faq-list summary:hover::after{transform:scale(1.08)}
+  .faq-list details[open] summary:hover::after{transform:rotate(45deg) scale(1.08)}
+}
+
+/* Переходы между страницами: мягкое перекрытие; при «меньше движения» мгновенно */
+@view-transition{navigation:auto}
+::view-transition-old(root){animation:.18s cubic-bezier(.23,1,.32,1) both vt-out}
+::view-transition-new(root){animation:.28s cubic-bezier(.23,1,.32,1) both vt-in}
+@keyframes vt-out{to{opacity:0}}
+@keyframes vt-in{from{opacity:0}}
+@media (prefers-reduced-motion:reduce){::view-transition-old(root),::view-transition-new(root){animation:none}}
