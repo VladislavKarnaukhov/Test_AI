@@ -319,6 +319,33 @@
       rail.hidden = false;
     }
 
+    // один вопрос на экране: показ — только представление, ответы и расчёт не затрагиваются
+    let curQ = null;
+    function stepQs(step) { return Array.prototype.filter.call(step.querySelectorAll('.q[data-q]'), function (q) { return !q.hidden; }); }
+    function applyFocus() {
+      const list = visibleSteps();
+      const step = list[current];
+      const qs = stepQs(step);
+      if (!curQ || qs.indexOf(curQ) < 0) curQ = qs[0];
+      const qi = qs.indexOf(curQ);
+      step.querySelectorAll('.q[data-q]').forEach(function (q) { q.classList.toggle('q-off', q !== curQ); });
+      const lastInStep = qi === qs.length - 1;
+      step.querySelectorAll('.consent, .terms-note').forEach(function (n) { n.classList.toggle('q-off', !lastInStep); });
+      const lastStep = current === list.length - 1;
+      prevBtn.hidden = current === 0 && qi === 0;
+      nextBtn.hidden = lastStep && lastInStep;
+      submitBtn.hidden = !(lastStep && lastInStep);
+      let before = 0, total = 0;
+      list.forEach(function (st, n) { const k = stepQs(st).length; if (n < current) before += k; total += k; });
+      const pos = before + qi + 1;
+      stepLabel.textContent = 'Вопрос ' + pos + ' из ' + total + ' · ' + step.dataset.title;
+      stepBar.style.setProperty('--f', (pos / total).toFixed(3));
+    }
+    function focusQuestion() {
+      const t = curQ && curQ.querySelector('.q-text');
+      if (t) { t.tabIndex = -1; t.focus({ preventScroll: true }); }
+    }
+
     // direction: 'forward' | 'back' | undefined (без анимации: первая отрисовка, смена уровня)
     function showStep(i, direction) {
       updateVisibility();
@@ -334,11 +361,8 @@
           active.removeEventListener('animationend', done);
         });
       }
-      prevBtn.hidden = current === 0;
-      nextBtn.hidden = current === list.length - 1;
-      submitBtn.hidden = current !== list.length - 1;
-      stepLabel.textContent = 'Шаг ' + (current + 1) + ' из ' + list.length + ' · ' + active.dataset.title;
-      stepBar.style.setProperty('--f', ((current + 1) / list.length).toFixed(3));
+      curQ = direction === 'back' ? stepQs(active).slice(-1)[0] : stepQs(active)[0];
+      applyFocus();
       renderRail(list);
       quizError.textContent = '';
     }
@@ -354,11 +378,11 @@
     }
 
     // все обязательные видимые вопросы шага отвечены, числа в допустимых границах
-    function checkStep() {
+    function checkStep(onlyQ) {
       const step = visibleSteps()[current];
       let firstBad = null, message = 'Ответьте на все вопросы этого шага.';
       step.querySelectorAll('.q[data-q]').forEach(function (q) {
-        if (q.hidden) return;
+        if (q.hidden || (onlyQ && q !== onlyQ)) return;
         const v = value(q.dataset.q);
         let bad = v === null && !q.hasAttribute('data-optional');
         if (v !== null && q.dataset.kind === 'number') {
@@ -377,6 +401,7 @@
         firstBad.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return false;
       }
+      if (onlyQ) return true;
       if (step === steps[0] && value('age') === 'under18') {
         quizError.textContent = 'Анкета Adelina Health рассчитана на взрослых — от 18 лет.';
         return false;
@@ -399,17 +424,33 @@
       }
       if (t === consent) consent.closest('.consent').classList.toggle('missing', !consent.checked);
       quizError.textContent = '';
-      if (t.name === 'tier') showStep(current);
+      if (t.name === 'tier') showStep(current); else if (t.type === 'radio' || t.type === 'number') applyFocus();
     });
 
     nextBtn.addEventListener('click', function () {
+      const qs = stepQs(visibleSteps()[current]);
+      const qi = qs.indexOf(curQ);
+      if (qi < qs.length - 1) {
+        if (!checkStep(curQ)) return;
+        curQ = qs[qi + 1];
+        applyFocus();
+        quizError.textContent = '';
+        focusQuestion();
+        scrollToQuiz();
+        return;
+      }
       if (!checkStep()) return;
       track('quiz_step', { step: current + 2, tier: tier() });
       showStep(current + 1, 'forward');
       focusStep();
       scrollToQuiz();
     });
-    prevBtn.addEventListener('click', function () { showStep(current - 1, 'back'); focusStep(); scrollToQuiz(); });
+    prevBtn.addEventListener('click', function () {
+      const qs = stepQs(visibleSteps()[current]);
+      const qi = qs.indexOf(curQ);
+      if (qi > 0) { curQ = qs[qi - 1]; applyFocus(); quizError.textContent = ''; focusQuestion(); scrollToQuiz(); return; }
+      showStep(current - 1, 'back'); focusStep(); scrollToQuiz();
+    });
 
     function el(tag, cls, text) {
       const node = document.createElement(tag);
@@ -511,7 +552,7 @@
       const label = submitBtn.textContent;
       submitBtn.disabled = true;
       submitBtn.classList.add('is-loading');
-      submitBtn.textContent = 'Считаем';
+      submitBtn.textContent = 'Считаем индекс';
       postJSON('/api/score', payload).then(function (r) {
         if (r.ok) return showResult(r.data);
         const d = r.data || {};
