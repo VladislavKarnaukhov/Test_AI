@@ -117,7 +117,7 @@
             <details class="sub">
               <summary>Полный результат и советы</summary>
               <div class="sub-body entry-recs">
-                <p class="muted">Итог {{ r.total }}/100. {{ r.level_name }}. {{ r.summary }}</p>
+                <p class="muted">Итог {{ r.total }}/100. {{ r.summary }}</p>
                 {% for group in r.groups %}<p class="rec-sphere">{{ group.sphere_name }}, {{ group.level_name }}</p><ul>{% for rec in group.recs %}<li><b>{{ rec.title }}</b> {{ rec.text }}</li>{% endfor %}</ul>{% endfor %}
                 {% if not r.groups %}<p class="muted">Советы для этой оценки не сохранились.</p>{% endif %}
               </div>

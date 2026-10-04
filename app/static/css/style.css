@@ -1224,7 +1224,6 @@ details.sub[open]>summary::after{transform:rotate(-135deg)}
 .sub-danger>summary{color:var(--tone-low)}
 .btn-danger{background:var(--tone-low);color:#fff;border-color:transparent}
 @media (hover:hover) and (pointer:fine){.btn-danger:hover{filter:brightness(.92)}}
-.answers-list{max-height:22rem;overflow:auto;padding-right:var(--sp-2)}
 @media (prefers-reduced-motion:no-preference){
   @supports (interpolate-size:allow-keywords){
     details.sub{interpolate-size:allow-keywords}
