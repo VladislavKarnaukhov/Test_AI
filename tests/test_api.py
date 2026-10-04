@@ -329,3 +329,11 @@ def test_reports_sql_runs(consented, app):
     assert len(results) == 6
     assert ("telegram", 1, 1, 100.0) in results[0]
     assert results[1] == [("launch", "Telegram", "social", 1, 0, 1)]
+
+
+def test_metrika_counter_id_and_webvisor_masking(client, user_client=None):
+    """Новый счётчик Метрики; страницы с данными о здоровье и личными данными скрыты от Вебвизора."""
+    html = client.get("/").get_data(as_text=True)
+    assert "id=113394370" in html and "ym(113394370,'init'" in html and "112820979" not in html
+    assert "ym-hide-content" in html                                   # анкета и результат
+    assert "ym-hide-content" in client.get("/login").get_data(as_text=True)
