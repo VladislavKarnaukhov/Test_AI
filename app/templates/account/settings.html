@@ -26,11 +26,43 @@
   </form>
 </section>
 
+<section class="settings-section" id="health-sync" data-health-sync data-csrf="{{ csrf_token() }}"
+         data-connected="{{ 'true' if health.connected else 'false' }}">
+  <h2>Данные из приложений здоровья</h2>
+  <p class="settings-meta">Шаги, сон, тренировки и пульс из Health Connect (Google Fit, Samsung Health, Garmin и др.). Только чтение, только в приложении Del Health для Android.</p>
+  <p data-hs-web class="muted">Подключение доступно в приложении Del Health для Android.</p>
+  <div data-hs-app hidden>
+    {% if health.connected %}
+    <p>Подключено {{ health.connected_at | msk }}{% if health.last_sync_at %}, последняя синхронизация {{ health.last_sync_at | msk("%d.%m.%Y %H:%M") }}{% endif %}.</p>
+    <button class="btn btn-quiet btn-sm" type="button" data-hs-sync>Синхронизировать сейчас</button>
+    {% else %}
+    <label class="consent"><input type="checkbox" data-hs-consent><span>Даю <a href="{{ url_for('main.health_consent') }}#wearables" target="_blank" rel="noopener">согласие на обработку данных из приложений здоровья</a></span></label>
+    <button class="btn btn-quiet btn-sm" type="button" data-hs-connect disabled>Подключить Health Connect</button>
+    {% endif %}
+    <p class="settings-meta" role="status" data-hs-status></p>
+  </div>
+  {% if health.days %}
+  <div class="table-wrap"><table class="data-table">
+    <thead><tr><th>Дата</th><th>Шаги</th><th>Сон, мин</th><th>Тренировки, мин</th><th>Пульс</th></tr></thead>
+    <tbody>{% for d in health.days %}
+      <tr><td>{{ d.date }}</td><td>{{ d.steps if d.steps is not none else "—" }}</td><td>{{ d.sleep_minutes if d.sleep_minutes is not none else "—" }}</td>
+          <td>{{ d.exercise_minutes if d.exercise_minutes is not none else "—" }}</td><td>{{ d.heart_rate_avg | round | int if d.heart_rate_avg is not none else "—" }}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% endif %}
+  {% if health.connected %}
+  <form method="post" action="{{ url_for('health_sync.disconnect') }}" class="settings-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn btn-quiet btn-sm" type="submit">Отключить и удалить данные из приложений здоровья</button>
+  </form>
+  {% endif %}
+</section>
+
 <section class="settings-section" id="delete">
   <h2>Удалить аккаунт</h2>
   <details class="danger-zone" id="delete-form">
     <summary>Удалить аккаунт и все данные</summary>
-    <p>Будут удалены профиль, все оценки и заявки. Отменить нельзя.</p>
+    <p>Будут удалены профиль, все оценки, заявки и данные из приложений здоровья. Отменить нельзя.</p>
     <form method="post" action="{{ url_for('account.delete_account') }}" class="settings-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <label class="field">Пароль для подтверждения<input type="password" name="password" autocomplete="current-password" required></label>
@@ -40,3 +72,4 @@
 </section>
 </main>
 {% endblock %}
+{% block scripts %}<script src="{{ static_url('js/health-sync.js') }}"></script>{% endblock %}
