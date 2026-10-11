@@ -6,6 +6,7 @@ from werkzeug.security import check_password_hash
 
 from .auth import (NAME_MAX, check_csrf, hash_password, login_user, login_required, logout_user,
                    validate_password)
+from . import health_sync
 from .db import get_db
 from .results import SELECT_COLUMNS, present
 from .scoring import CORE_DOMAINS, DOMAIN_SHORT, METHOD_VERSION
@@ -120,7 +121,7 @@ def dashboard():
 @bp.get("/settings")
 @login_required
 def settings():
-    return render_template("account/settings.html", user=g.user)
+    return render_template("account/settings.html", user=g.user, health=health_sync.overview(g.user["id"]))
 
 
 @bp.post("/profile")
@@ -182,6 +183,8 @@ def delete_account():
     db = get_db()
     db.execute("DELETE FROM score_results WHERE user_id = ?", (user["id"],))
     db.execute("DELETE FROM leads WHERE user_id = ?", (user["id"],))
+    db.execute("DELETE FROM health_sync_days WHERE user_id = ?", (user["id"],))
+    db.execute("DELETE FROM health_connections WHERE user_id = ?", (user["id"],))
     db.execute("DELETE FROM login_attempts WHERE email = ?", (user["email"],))
     visitor_id = session.get("visitor_id")
     if visitor_id:

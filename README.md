@@ -16,6 +16,7 @@ app/
   db.py            SQLite: get_db(), init_db(), log_event()
   routes.py        GET /, /privacy; POST /api/score, /api/lead, /api/event, /api/consent, /api/visitor
   auth.py          /register, /login, /logout; CSRF, лимит попыток входа
+  health_sync.py   данные из Health Connect от приложения Android: /api/health-sync[/connect], /account/health/disconnect
   account.py       /account — личный кабинет: история оценок, рекомендации, профиль, удаление
   templates/       base.html (head, Метрика, баннер cookie, футер, виджет), _header.html, index.html,
                    privacy.html, auth/ (вход, регистрация), account/ (кабинет)

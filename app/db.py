@@ -78,6 +78,23 @@ CREATE TABLE IF NOT EXISTS login_attempts (
     success INTEGER NOT NULL,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+CREATE TABLE IF NOT EXISTS health_connections (
+    user_id INTEGER PRIMARY KEY REFERENCES users(id),
+    source TEXT NOT NULL,
+    consent_version TEXT NOT NULL,
+    connected_at TEXT NOT NULL DEFAULT (datetime('now')),
+    last_sync_at TEXT
+);
+CREATE TABLE IF NOT EXISTS health_sync_days (
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    date TEXT NOT NULL,
+    steps INTEGER,
+    sleep_minutes INTEGER,
+    exercise_minutes INTEGER,
+    heart_rate_avg REAL,
+    synced_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (user_id, date)
+);
 CREATE INDEX IF NOT EXISTS idx_login_attempts_email ON login_attempts(email, created_at);
 CREATE INDEX IF NOT EXISTS idx_events_visitor ON events(visitor_id);
 CREATE INDEX IF NOT EXISTS idx_events_name ON events(name);
