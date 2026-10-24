@@ -187,8 +187,8 @@
 .account-score .flags{margin-bottom:var(--sp-6)}
 .account-overview+.panel{margin-top:clamp(3rem,7vw,6rem)}
 @media (max-width:380px){
-.account-nav{gap:var(--sp-4)}
-.account-nav a{font-size:.875rem}
+.account-nav{gap:var(--sp-3)}
+.account-nav a{font-size:.8125rem}
 }
 @media (prefers-reduced-motion:no-preference){
 .account-head{animation:rise .5s var(--ease-out) both}
@@ -558,3 +558,7 @@ details.sub[open]>summary::after{transform:rotate(-135deg)}
 .atable th,.atable td{padding:.625rem .75rem .625rem 0;text-align:left;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
 .atable th{font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
 @media (max-width:860px){.akpis{grid-template-columns:repeat(2,minmax(0,1fr))}.agrid{grid-template-columns:minmax(0,1fr)}.afunnel li{grid-template-columns:minmax(0,1fr) 3rem;gap:.25rem var(--sp-3)}.afunnel .af-bar{grid-column:1/-1;order:3}.afunnel .af-pct{grid-column:1/-1;order:4}}
+
+/* plans — бесплатно и Plus */
+.plan-status{align-self:start;padding:.5rem 1rem;border-radius:var(--r-pill);background:var(--accent-soft);color:var(--accent);font-weight:600;font-size:var(--fs-sm)}
+.plans-note{margin-top:var(--sp-5);max-width:36rem}

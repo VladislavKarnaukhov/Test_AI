@@ -37,7 +37,7 @@ def create_app(config=None):
         if analytics_allowed() and "visitor_id" not in session:
             assign_visitor_id()
 
-    from . import account, admin, auth, health_sync, routes
+    from . import account, admin, auth, health_sync, plus, routes
 
     @app.before_request
     def load_user():
@@ -54,7 +54,7 @@ def create_app(config=None):
     @app.context_processor
     def inject_globals():
         return {"policy_version": POLICY_VERSION, "current_user": g.get("user"),
-                "csrf_token": auth.csrf_token, "is_admin": admin.is_admin(g.get("user")), "static_url": static_url, "method_version": METHOD_VERSION}
+                "csrf_token": auth.csrf_token, "is_admin": admin.is_admin(g.get("user")), "is_plus": plus.is_plus(g.get("user")), "plus_price": plus.PRICE_RUB, "static_url": static_url, "method_version": METHOD_VERSION}
 
     app.add_template_filter(account.to_msk, "msk")
     app.add_template_filter(account.plural, "plural")
@@ -62,6 +62,8 @@ def create_app(config=None):
     app.register_blueprint(auth.bp)
     app.register_blueprint(account.bp)
     app.register_blueprint(admin.bp)
+    app.register_blueprint(plus.bp)
+    app.cli.add_command(plus.send_reminders_command)
     app.register_blueprint(health_sync.bp)
 
     return app

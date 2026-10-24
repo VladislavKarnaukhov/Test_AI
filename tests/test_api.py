@@ -92,15 +92,15 @@ def test_score_non_json(client):
 
 def test_lead_ok(consented, query):
     client = consented
-    res = client.post("/api/lead", json={"email": " user@example.com ", "plan": "Balance", "consent": True})
+    res = client.post("/api/lead", json={"email": " user@example.com ", "plan": "Plus", "consent": True})
     assert res.status_code == 200
     assert query("SELECT email, plan, policy_version FROM leads") == [
-        {"email": "user@example.com", "plan": "Balance", "policy_version": POLICY_VERSION}]
+        {"email": "user@example.com", "plan": "Plus", "policy_version": POLICY_VERSION}]
     assert [e["name"] for e in query("SELECT name FROM events")] == ["lead_submitted"]
 
 
 def test_lead_bad_email(client, query):
-    res = client.post("/api/lead", json={"email": "not-an-email", "plan": "Start", "consent": True})
+    res = client.post("/api/lead", json={"email": "not-an-email", "plan": "Plus", "consent": True})
     assert res.status_code == 400
     assert "email" in res.get_json()["fields"]
     assert query("SELECT * FROM leads") == []
@@ -144,9 +144,9 @@ def test_event_requires_name(consented, query):
 # ---------- Согласие на обработку данных и cookie ----------
 
 def test_lead_requires_consent(client, query):
-    for payload in ({"email": "a@b.co", "plan": "Start"},
-                    {"email": "a@b.co", "plan": "Start", "consent": False},
-                    {"email": "a@b.co", "plan": "Start", "consent": "yes"}):
+    for payload in ({"email": "a@b.co", "plan": "Plus"},
+                    {"email": "a@b.co", "plan": "Plus", "consent": False},
+                    {"email": "a@b.co", "plan": "Plus", "consent": "yes"}):
         res = client.post("/api/lead", json=payload)
         assert res.status_code == 400
         assert "consent" in res.get_json()["fields"]
@@ -154,7 +154,7 @@ def test_lead_requires_consent(client, query):
 
 
 def test_lead_without_cookie_consent_saves_lead_but_no_events(client, query):
-    res = client.post("/api/lead", json={"email": "a@b.co", "plan": "Start", "consent": True})
+    res = client.post("/api/lead", json={"email": "a@b.co", "plan": "Plus", "consent": True})
     assert res.status_code == 200
     assert query("SELECT email, visitor_id FROM leads") == [{"email": "a@b.co", "visitor_id": None}]
     assert query("SELECT * FROM events") == []
@@ -317,7 +317,7 @@ def test_visitor_ignored_without_consent(client, query):
 
 def test_reports_sql_runs(consented, app):
     consented.post("/api/visitor", json=CONTEXT)
-    consented.post("/api/lead", json={"email": "a@b.co", "plan": "Balance", "consent": True})
+    consented.post("/api/lead", json={"email": "a@b.co", "plan": "Plus", "consent": True})
     consented.post("/api/score", json=VALID)
     sql = (Path(__file__).parent.parent / "reports.sql").read_text(encoding="utf-8")
     body = "\n".join(l for l in sql.splitlines() if not l.startswith((".", "--")))
@@ -328,7 +328,7 @@ def test_reports_sql_runs(consented, app):
         conn.close()
     assert len(results) == 6
     assert ("telegram", 1, 1, 100.0) in results[0]
-    assert results[1] == [("launch", "Telegram", "social", 1, 0, 1)]
+    assert results[1] == [("launch", "Telegram", "social", 1, 1, 0)]
 
 
 def test_metrika_counter_id_and_webvisor_masking(client, user_client=None):

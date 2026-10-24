@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Вы отписались — Del Health{% endblock %}
+{% block content %}
+{% include "_header.html" %}
+<main id="main" tabindex="-1" class="wrap auth-page">
+<div class="sheet auth-card">
+<h1>Вы отписались</h1>
+<p class="auth-note">Напоминания о повторе анкеты больше не придут. Включить их снова можно в настройках профиля.</p>
+<a class="btn btn-primary" href="{{ url_for('main.index') }}">На главную</a>
+</div>
+</main>
+{% endblock %}

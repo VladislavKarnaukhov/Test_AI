@@ -257,22 +257,23 @@
 
 <section class="section" id="plans" aria-labelledby="plans-title">
 <div class="wrap">
-<h2 id="plans-title">Тарифы</h2>
-<p class="lead">Начните с разового скоринга или выберите регулярную поддержку.</p>
+<h2 id="plans-title">Бесплатно и Plus</h2>
+<p class="lead">Индекс, шаг на неделю, кабинет с историей и графиком бесплатны всегда. Plus помогает довести изменения до конца.</p>
 <div class="plans">
 <article class="plan">
-<header><h3>Start</h3><p>Разовый</p></header>
-<p class="price"><b>990</b> <span>₽</span></p>
-<ul class="ticks"><li>Персональный индекс Del Health</li><li>Отчёт по 6 сферам</li><li>3 рекомендации на неделю</li></ul>
-<button class="btn btn-quiet open" data-plan="Start" data-metric="open_leadform_start">Выбрать Start</button>
+<header><h3>Бесплатно</h3><p>Для знакомства с индексом</p></header>
+<p class="price"><b>0</b> <span>₽</span></p>
+<ul class="ticks"><li>Индекс по 6 сферам и красные флаги</li><li>Один шаг на неделю</li><li>Кабинет: история и график</li><li>Подставленные ответы про никотин и алкоголь</li></ul>
+<a class="btn btn-quiet" href="#try" data-metric="plan_free_start">Пройти анкету</a>
 </article>
 <article class="plan plan-featured">
-<header><h3>Balance</h3><p>Для устойчивых изменений</p></header>
-<p class="price"><b>1 490</b> <span>₽ / месяц</span></p>
-<ul class="ticks"><li>Всё из Start</li><li>Еженедельная динамика</li><li>Новые персональные фокусы</li><li>История прогресса</li></ul>
-<button class="btn btn-primary open" data-plan="Balance" data-metric="open_leadform_balance">Выбрать Balance</button>
+<header><h3>Plus</h3><p>Для устойчивых изменений</p></header>
+<p class="price"><b>{{ plus_price }}</b> <span>₽ / месяц</span></p>
+<ul class="ticks"><li>Всё бесплатное</li><li>План на месяц: три шага с отметками «сделано»</li><li>Сравнение оценок: первая, прошлая, сейчас, лучшая</li><li>Напоминание по e-mail, когда пора повторить анкету</li></ul>
+{% if is_plus %}<p class="plan-status">Plus активен</p>{% else %}<button class="btn btn-primary open" data-plan="Plus" data-metric="open_leadform_plus">Хочу Plus</button>{% endif %}
 </article>
 </div>
+<p class="muted plans-note">Это образовательный сервис, не медицинская услуга: без диагнозов и консультаций врача.</p>
 </div>
 </section>
 </main>
@@ -280,7 +281,7 @@
 <dialog id="dialog" class="ym-hide-content ym-disable-keys" aria-labelledby="dialog-title">
 <button class="close" type="button" aria-label="Закрыть">×</button>
 <h2 id="dialog-title">Ваш выбор: <span></span></h2>
-<p class="intro">Оставьте e-mail — пришлём ссылку для безопасной оплаты и начнём скоринг.</p>
+<p class="intro">Оставьте e-mail — напишем, как оплатить 99 ₽ за месяц, и откроем Plus в вашем кабинете. Онлайн-оплату подключаем: пока доступ открываем вручную.</p>
 <form>
 <label class="field">E-mail<input type="email" name="email" autocomplete="email" placeholder="you@example.com" required></label>
 <label class="consent"><input type="checkbox" name="consent" required><span>Я соглашаюсь на <a href="{{ url_for('main.privacy') }}" target="_blank" rel="noopener">обработку персональных данных</a> в соответствии с политикой Del Health</span></label>

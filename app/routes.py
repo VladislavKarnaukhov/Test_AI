@@ -16,7 +16,7 @@ from .visitor import classify_source, guess_country, parse_user_agent, referrer_
 
 bp = Blueprint("main", __name__)
 
-PLANS = {"Start", "Balance"}
+PLANS = {"Plus"}
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 EVENT_NAME_RE = re.compile(r"^[A-Za-z0-9_.:-]{1,64}$")
 LANGUAGE_RE = re.compile(r"^[A-Za-z]{2,3}(-[A-Za-z0-9]{1,8}){0,3}$")
@@ -203,7 +203,7 @@ def api_lead():
     if not email or len(email) > 254 or not EMAIL_RE.match(email):
         errors["email"] = "введите корректный e-mail"
     if plan not in PLANS:
-        errors["plan"] = "допустимые значения: Start, Balance"
+        errors["plan"] = "допустимое значение: Plus"
     if data.get("consent") is not True:
         errors["consent"] = "нужно согласие на обработку персональных данных"
     if errors:
