@@ -16,7 +16,7 @@ def test_index_renders_and_logs_page_view(consented, query):
     html = res.get_data(as_text=True)
     assert "Рассчитать балл" in html
     assert "mc.yandex.ru/metrika" in html
-    assert "widget.aistudio.yandexcloud.net" in html
+    assert "widget.aistudio.yandexcloud.net" not in html                  # чат-бот убран
 
     events = query("SELECT name, path, visitor_id FROM events")
     assert [e["name"] for e in events] == ["page_view"]

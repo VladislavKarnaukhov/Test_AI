@@ -574,15 +574,13 @@ a.sheet:hover{transform:translateY(-2px)}
 .ring-score.big.has-ring b{font-size:clamp(2.75rem,5vw,3.75rem)}
 .ring-arc{stroke:var(--fill,var(--accent))}
 .ring-svg circle{fill:none}
-.ring-ticks{stroke:var(--zone-2);stroke-width:2.6;stroke-dasharray:.3 1.3667;opacity:.9}
-.ring-track{stroke:var(--zone-1);stroke-width:4.5}
-.ring-arc{stroke-width:4.5}
+.ring-track{stroke:var(--zone-1);stroke-width:5;opacity:.7}
+.ring-arc{stroke-width:5}
 .ring-knob{transform-box:view-box;transform-origin:50% 50%;transform:rotate(calc(var(--v,0)*3.6deg*var(--sweep,1)));transition:transform .9s var(--ease-out)}
 .ring-knob circle{fill:var(--sheet);stroke:var(--fill,var(--accent));stroke-width:2;transition:stroke .3s}
 @media (prefers-reduced-motion:no-preference){
 .ring-knob{animation:sweep 1.4s var(--ease-out) .15s both}
 }
-.ring-score:not(.big) .ring-ticks{display:none}
 .ring-score:not(.big) .ring-knob circle{r:3}
 .has-ring .ring-svg{filter:drop-shadow(0 6px 10px color-mix(in srgb,var(--fill,var(--accent)) 12%,transparent))}
 

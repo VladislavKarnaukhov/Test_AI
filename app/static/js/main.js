@@ -594,7 +594,7 @@
 })();
 
 
-/* Кольцо индекса — «циферблат»: 60 тонких рисок, дуга с закруглёнными концами и бегунок на её конце.
+/* Кольцо индекса: мягкая дуга с закруглёнными концами и бегунок на её конце.
    SVG добавляется в конец элемента, чтобы текст числа остался первым узлом (его обновляет остальной код). */
 (function () {
   'use strict';
@@ -611,13 +611,12 @@
     svg.setAttribute('class', 'ring-svg');
     svg.setAttribute('viewBox', '0 0 100 100');
     svg.setAttribute('aria-hidden', 'true');
-    svg.appendChild(circle('ring-ticks', '47.5'));
-    svg.appendChild(circle('ring-track', '41'));
-    svg.appendChild(circle('ring-arc', '41'));
+    svg.appendChild(circle('ring-track', '44'));
+    svg.appendChild(circle('ring-arc', '44'));
     const knob = document.createElementNS(NS, 'g');
     knob.setAttribute('class', 'ring-knob');
     const dot = document.createElementNS(NS, 'circle');
-    dot.setAttribute('cx', '91'); dot.setAttribute('cy', '50'); dot.setAttribute('r', '3.4');
+    dot.setAttribute('cx', '94'); dot.setAttribute('cy', '50'); dot.setAttribute('r', '3.4');
     knob.appendChild(dot);
     svg.appendChild(knob);
     el.appendChild(svg);
