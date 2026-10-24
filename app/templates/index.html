@@ -223,7 +223,7 @@
 {% if q.kind == 'number' %}<label class="q-text" for="q-{{ q.id }}">{{ q.text }}{% if q.optional %} <em>необязательно</em>{% endif %}</label>
 <div class="number-field"><input id="q-{{ q.id }}" type="number" name="{{ q.id }}" inputmode="decimal" min="{{ q.min }}" max="{{ q.max }}" step="{{ q.step }}"><span>{{ q.unit }}</span></div>
 {% else %}<p class="q-text" id="q-{{ q.id }}">{{ q.text }}{% if q.optional %} <em>необязательно</em>{% endif %}</p>{% if q.hint %}<p class="q-hint">{{ q.hint }}</p>{% endif %}{% if prefill.get(q.id) is not none %}<p class="q-prefill">Из вашей анкеты от {{ prefill_dates[q.id] }}. Если что-то изменилось — выберите другой ответ.</p>{% endif %}
-<div class="choices {{ 'yesno' if yesno else 'chips-short' if maxlen <= 3 else 'chips-mid' if maxlen <= 16 else 'chips-long' }}" role="radiogroup" aria-labelledby="q-{{ q.id }}">{% for value, label in (q.options | sort(attribute='1') if yesno else q.options) %}<label class="choice"><input type="radio" name="{{ q.id }}" value="{{ value }}"{% if prefill.get(q.id) == value %} checked{% endif %}><span>{{ label }}</span></label>{% endfor %}</div>
+{% set n = labels | length %}<div class="choices {{ 'yesno' if yesno else 'chips-short' if maxlen <= 3 else ('chips-mid ' ~ ('opts-pair' if n == 2 else 'opts-stack' if n == 3 else 'opts-scale')) if maxlen <= 16 else 'chips-long' }}" style="--rows:{{ (n + 1) // 2 }}" role="radiogroup" aria-labelledby="q-{{ q.id }}">{% for value, label in (q.options | sort(attribute='1') if yesno else q.options) %}<label class="choice"><input type="radio" name="{{ q.id }}" value="{{ value }}"{% if prefill.get(q.id) == value %} checked{% endif %}><span>{{ label }}</span></label>{% endfor %}</div>
 {% endif %}
 </div>
 {% endfor %}
