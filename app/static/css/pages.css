@@ -388,10 +388,10 @@
 .chapter-sleep{grid-template-columns:minmax(0,5fr) minmax(0,6fr)}
 .chapter-sleep .chapter-photo img{aspect-ratio:4/5;object-position:50% 40%}
 .chapter-move .chapter-photo.wide img{aspect-ratio:21/9;object-position:50% 45%}
-.chapter-pair{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:clamp(1.5rem,4vw,3rem);margin-top:clamp(3rem,7vw,6rem);align-items:start}
+.chapter-pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(1.5rem,4vw,3rem);margin-top:clamp(3rem,7vw,6rem);align-items:start}
 .chapter-pair .chapter{display:block;margin-top:0}
-.chapter-food .chapter-photo img{aspect-ratio:16/10}
-.chapter-calm .chapter-photo img{aspect-ratio:4/5;object-position:50% 78%}
+.chapter-pair .chapter-photo img{height:clamp(16rem,30vw,26rem);aspect-ratio:auto}
+.chapter-calm .chapter-photo img{object-position:50% 78%}
 .chapter-pair .chapter-text{margin-top:var(--sp-5)}
 .chapter-value{font-weight:400;letter-spacing:-.045em}
 @media (max-width:860px){
@@ -504,7 +504,7 @@
 /* 00-root */
 body:has(.hero) .site-header{position:absolute;inset:0 0 auto 0;background:none;border-bottom:0;-webkit-backdrop-filter:none;backdrop-filter:none;color:#fff;--ink:#fff;--ink-2:rgba(255,255,255,.85);--ink-3:rgba(255,255,255,.7)}
 body:has(.hero) .site-header .btn-primary{background:#FAF8F4;color:#1F1E1B}
-body:has(.hero) .brand{color:#fff}
+body:has(.hero) .site-header .brand{color:#fff}
 @media (max-width:720px){
 body:has(.hero) .site-header{position:absolute}
 }

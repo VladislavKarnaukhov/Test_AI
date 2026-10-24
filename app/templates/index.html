@@ -119,11 +119,35 @@
 
 <section class="trend" aria-labelledby="trend-title">
 <div class="wrap trend-grid">
+{% if trend %}
+<div>
+<p class="eyebrow">Ваша динамика</p>
+<h2 id="trend-title">{% if trend | length > 1 %}{{ 'Растёт' if trend[-1].total > trend[0].total else 'Снижается' if trend[-1].total < trend[0].total else 'Держится на уровне' }}: {{ trend[0].total }} → {{ trend[-1].total }}{% else %}Первый замер сделан{% endif %}</h2>
+<p class="lead">{% if trend | length > 1 %}Это ваши {{ trend | length }} {{ trend | length | plural('оценка', 'оценки', 'оценок') }} по действующей методике. Повторите анкету через 2–4 недели, чтобы увидеть, что изменилось.{% else %}Повторите анкету через 2–4 недели, и здесь появится линия вашего индекса.{% endif %}</p>
+<a class="btn btn-primary" href="{{ url_for('account.dashboard') }}#dynamics">Открыть кабинет</a>
+</div>
+{%- set n = trend | length -%}
+<figure class="chart-demo" aria-label="Ваша динамика индекса">
+<svg viewBox="0 0 520 280" role="img" aria-hidden="true">
+<g class="grid">{% for v in [0, 25, 50, 75, 100] %}<line x1="40" x2="500" y1="{{ 220 - v * 2 }}" y2="{{ 220 - v * 2 }}"/>{% endfor %}</g>
+<g class="axis">{% for v in [0, 25, 50, 75, 100] %}<text x="{{ 22 if v < 100 else 8 }}" y="{{ 224 - v * 2 }}">{{ v }}</text>{% endfor %}</g>
+{%- set pts = [] -%}
+{%- for t in trend %}{% set _ = pts.append((60 + (420 * loop.index0 / (n - 1) if n > 1 else 210), 220 - t.total * 2)) %}{% endfor %}
+{% if n > 1 %}<path class="area" d="M{{ pts[0][0] }} {{ pts[0][1] }}{% for p in pts[1:] %} L{{ '%.0f' % p[0] }} {{ p[1] }}{% endfor %} L{{ pts[-1][0] | round | int }} 220 L60 220 Z"/>
+<path class="line" d="M{{ pts[0][0] }} {{ pts[0][1] }}{% for p in pts[1:] %} L{{ '%.0f' % p[0] }} {{ p[1] }}{% endfor %}"/>{% endif %}
+<g class="pts">{% for p in pts %}<circle {% if loop.last %}class="last" r="7"{% else %}r="5"{% endif %} cx="{{ '%.0f' % p[0] }}" cy="{{ p[1] }}"/>{% endfor %}</g>
+<g class="axis">{% for t in trend %}{% if n <= 6 or loop.index0 % 2 == 0 or loop.last %}<text x="{{ '%.0f' % pts[loop.index0][0] }}" y="266" text-anchor="middle">{{ t.label }}</text>{% endif %}{% endfor %}</g>
+<text class="label" x="{{ [pts[-1][0] | round | int, 470] | min }}" y="{{ pts[-1][1] - 16 }}" text-anchor="end">{{ trend[-1].total }}</text>
+</svg>
+<ul class="visually-hidden">{% for t in trend %}<li>{{ t.label }}: {{ t.total }} из 100</li>{% endfor %}</ul>
+<figcaption>Индекс по датам прохождения анкеты (последние {{ n }}).</figcaption>
+</figure>
+{% else %}
 <div>
 <p class="eyebrow">Динамика</p>
 <h2 id="trend-title">Один замер — снимок. Несколько — траектория</h2>
 <p class="lead">Проходите анкету раз в 2–4 недели. В личном кабинете балл по каждой сфере складывается в линию, и видно, что действительно помогло.</p>
-<a class="btn btn-primary" href="{{ url_for('auth.register') }}">Создать личный кабинет</a>
+{% if current_user %}<a class="btn btn-primary" href="#try">Пройти анкету</a>{% else %}<a class="btn btn-primary" href="{{ url_for('auth.register') }}">Создать личный кабинет</a>{% endif %}
 </div>
 <figure class="chart-demo" aria-label="Пример динамики индекса: от 58 до 82 за пять замеров">
 <svg viewBox="0 0 520 280" role="img" aria-hidden="true">
@@ -137,6 +161,7 @@
 </svg>
 <figcaption>Пример динамики. Цифры иллюстративные, не данные реального человека.</figcaption>
 </figure>
+{% endif %}
 </div>
 </section>
 

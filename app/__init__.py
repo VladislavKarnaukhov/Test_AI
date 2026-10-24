@@ -54,7 +54,7 @@ def create_app(config=None):
     @app.context_processor
     def inject_globals():
         return {"policy_version": POLICY_VERSION, "current_user": g.get("user"),
-                "csrf_token": auth.csrf_token, "static_url": static_url, "method_version": METHOD_VERSION}
+                "csrf_token": auth.csrf_token, "is_admin": admin.is_admin(g.get("user")), "static_url": static_url, "method_version": METHOD_VERSION}
 
     app.add_template_filter(account.to_msk, "msk")
     app.add_template_filter(account.plural, "plural")

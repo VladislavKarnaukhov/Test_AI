@@ -27,14 +27,23 @@ EVENT_LABELS = {
 }
 
 
+DEFAULT_ADMINS = ("karnaukhovvlad@gmail.com",)
+
+
 def admin_emails():
-    return {e.strip().lower() for e in os.environ.get("ADMIN_EMAILS", "").split(",") if e.strip()}
+    """Администраторы: встроенный список + переменная окружения ADMIN_EMAILS (через запятую)."""
+    extra = {e.strip().lower() for e in os.environ.get("ADMIN_EMAILS", "").split(",") if e.strip()}
+    return extra | set(DEFAULT_ADMINS)
+
+
+def is_admin(user):
+    return bool(user) and user["email"].lower() in admin_emails()
 
 
 @bp.before_request
 def only_admin():
     # посторонним — 404, чтобы не раскрывать существование раздела
-    if g.user is None or g.user["email"].lower() not in admin_emails():
+    if not is_admin(g.user):
         abort(404)
 
 
