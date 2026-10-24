@@ -18,7 +18,7 @@ app/
   auth.py          /register, /login, /logout; CSRF, лимит попыток входа
   health_sync.py   данные из Health Connect от приложения Android: /api/health-sync[/connect], /account/health/disconnect
   account.py       /account — личный кабинет: история оценок, рекомендации, профиль, удаление
-  templates/       base.html (head, Метрика, баннер cookie, футер, виджет), _header.html, index.html,
+  templates/       base.html (head, Метрика, баннер cookie, футер), _header.html, index.html,
                    privacy.html, auth/ (вход, регистрация), account/ (кабинет)
   static/css/      base.css (токены, типографика, кнопки, шапка, формы) → components.css (лист и кольцо индекса,
                    анкета, график, история) → pages.css (главная, кабинет, вход, документы); порядок подключения важен

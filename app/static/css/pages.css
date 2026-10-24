@@ -107,7 +107,6 @@
 .hero .hero-copy>:nth-child(5){animation-delay:.42s}
 .hero .score-peek, .hero .user-card{animation-delay:.5s}
 }
-.hero .score-peek .ring-ticks{display:none}
 .hero .ring-score .ring-track, .hero .score-peek .ring-track{stroke:rgba(31,30,27,.1)}
 
 /* row */
