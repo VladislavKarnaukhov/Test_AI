@@ -543,3 +543,27 @@ def test_admin_dashboard_shows_aggregates_without_personal_data(app, monkeypatch
     assert "boss@example.com" not in html.split("<main", 1)[1]            # e-mail в отчёте нет
     for period in ("7", "90", "all", "bogus"):
         assert c.get(f"/admin?period={period}").status_code == 200
+
+
+def test_owner_is_admin_by_default_and_sees_analytics_tab(app):
+    c = app.test_client()
+    register(c, email="KarnaukhovVlad@gmail.com", name="Влад")
+    assert c.get("/admin").status_code == 200
+    assert 'class="nav-admin"' in c.get("/").get_data(as_text=True)          # вкладка «Аналитика» в шапке
+
+
+def test_regular_user_has_no_analytics_tab(user_client):
+    assert "/admin" not in user_client.get("/").get_data(as_text=True)
+    assert user_client.get("/admin").status_code == 404
+
+
+def test_home_trend_shows_current_users_scores_only(user_client, app):
+    guest = app.test_client()
+    assert "Пример динамики" in guest.get("/").get_data(as_text=True)         # гостю — пример
+    user_client.post("/api/score", json=VALID)                                # 69
+    user_client.post("/api/score", json=BETTER)                               # 91
+    html = user_client.get("/").get_data(as_text=True)
+    assert "Ваша динамика" in html and "69 → 91" in html and "Пример динамики" not in html
+    other = app.test_client()
+    register(other, email="boris@example.com", name="Борис")
+    assert "Ваша динамика" not in other.get("/").get_data(as_text=True)       # у нового нет чужих данных

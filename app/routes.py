@@ -6,6 +6,7 @@ from flask import Blueprint, g, jsonify, render_template, request, session
 from . import assign_visitor_id
 from .consent import (CONSENT_ALL, CONSENT_CHOICES, CONSENT_COOKIE, CONSENT_MAX_AGE,
                       CONSENT_VERSION_COOKIE, POLICY_VERSION, analytics_allowed)
+from .account import to_msk
 from .db import get_db, log_event, to_json
 from .results import SELECT_COLUMNS, present
 from . import scoring
@@ -63,11 +64,19 @@ def _history_for(user_id):
     return history
 
 
+def _user_trend(user_id, limit=12):
+    """Баллы текущего пользователя по действующей методике (в других версиях баллы не сравнимы), старые → новые."""
+    rows = get_db().execute(
+        "SELECT total, created_at FROM score_results WHERE user_id = ? AND method_version = ?"
+        " ORDER BY created_at DESC, id DESC LIMIT ?", (user_id, scoring.METHOD_VERSION, limit)).fetchall()
+    return [{"total": r["total"], "label": to_msk(r["created_at"], "%d.%m")} for r in reversed(rows)]
+
+
 @bp.get("/")
 def index():
     log_event("page_view")
     latest = _latest_score(g.user["id"]) if g.user else None
-    return render_template("index.html", latest=latest, quiz=scoring.public_questions(), tiers=scoring.TIERS,
+    return render_template("index.html", latest=latest, trend=_user_trend(g.user["id"]) if g.user else [], quiz=scoring.public_questions(), tiers=scoring.TIERS,
                            tier_names=scoring.TIER_NAMES, tier_info=scoring.TIER_INFO,
                            core_short={k: scoring.DOMAIN_SHORT[k] for k in scoring.CORE_DOMAINS})
 
