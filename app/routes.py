@@ -72,11 +72,41 @@ def _user_trend(user_id, limit=12):
     return [{"total": r["total"], "label": to_msk(r["created_at"], "%d.%m")} for r in reversed(rows)]
 
 
+PREFILL_GROUPS = (("nic1", re.compile(r"^nic\d+$")), ("a1", re.compile(r"^a\d+$")))
+
+
+def _prefill_answers(user_id):
+    """Ответы про никотин и алкоголь из прошлых анкет v2.0 этого пользователя — подставляются в новую анкету.
+
+    Привычки меняются редко, поэтому человеку не нужно вводить их заново; все ответы группы берутся из одной
+    (самой свежей) анкеты, где группа заполнена, чтобы не смешивать несогласованные ответы. Пользователь может
+    изменить любой ответ; расчёт и проверки на сервере не меняются.
+    """
+    rows = get_db().execute(
+        "SELECT answers, created_at FROM score_results WHERE user_id = ? AND method_version = ?"
+        " ORDER BY created_at DESC, id DESC LIMIT 20", (user_id, scoring.METHOD_VERSION)).fetchall()
+    prefill, dates = {}, {}
+    for anchor, pattern in PREFILL_GROUPS:
+        for row in rows:
+            try:
+                answers = json.loads(row["answers"])
+            except ValueError:
+                continue
+            if anchor in answers:
+                group = {k: str(v) for k, v in answers.items() if pattern.match(k)}
+                prefill.update(group)
+                dates.update({k: to_msk(row["created_at"]) for k in group})
+                break
+    return prefill, dates
+
+
 @bp.get("/")
 def index():
     log_event("page_view")
     latest = _latest_score(g.user["id"]) if g.user else None
-    return render_template("index.html", latest=latest, trend=_user_trend(g.user["id"]) if g.user else [], quiz=scoring.public_questions(), tiers=scoring.TIERS,
+    prefill, prefill_dates = _prefill_answers(g.user["id"]) if g.user else ({}, {})
+    return render_template("index.html", latest=latest, trend=_user_trend(g.user["id"]) if g.user else [],
+                           prefill=prefill, prefill_dates=prefill_dates, quiz=scoring.public_questions(), tiers=scoring.TIERS,
                            tier_names=scoring.TIER_NAMES, tier_info=scoring.TIER_INFO,
                            core_short={k: scoring.DOMAIN_SHORT[k] for k in scoring.CORE_DOMAINS})
 

@@ -444,9 +444,15 @@
 .chart-demo .label{fill:var(--ink);font-size:22px;font-weight:300;font-family:var(--font)}
 .chart-demo figcaption{margin-top:var(--sp-3);font-size:var(--fs-xs);color:var(--ink-3)}
 @media (prefers-reduced-motion:no-preference){
-@supports (animation-timeline:view()){
-.chart-demo .line{animation:draw linear both;animation-timeline:view();animation-range:entry 10% cover 45%}
-}}
+.js-motion .chart-demo .line{stroke-dasharray:100;stroke-dashoffset:0;transition:stroke-dashoffset 1.8s var(--ease-out) .15s}
+.js-motion .chart-demo:not(.is-in) .line{stroke-dashoffset:100}
+.js-motion .chart-demo .area,.js-motion .chart-demo .label{transition:opacity .9s var(--ease-out) 1.1s}
+.js-motion .chart-demo:not(.is-in) .area,.js-motion .chart-demo:not(.is-in) .label{opacity:0}
+.js-motion .chart-demo .area{opacity:.1}
+.js-motion .chart-demo:not(.is-in) .area{opacity:0}
+.js-motion .chart-demo .pts circle{transform-box:fill-box;transform-origin:center;transition:opacity .45s var(--ease-out),transform .45s var(--ease-out);transition-delay:calc(.15s + var(--i,0)*.28s)}
+.js-motion .chart-demo:not(.is-in) .pts circle{opacity:0;transform:scale(.4)}
+}
 
 /* principle */
 .principle-list{list-style:none;margin:var(--sp-7) 0 0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 clamp(2rem,6vw,5rem)}

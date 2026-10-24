@@ -426,7 +426,7 @@
       const t = e.target;
       if (t.type === 'radio' || t.type === 'number') {
         const q = t.closest('.q');
-        if (q) q.classList.remove('missing');
+        if (q) { q.classList.remove('missing'); const note = q.querySelector('.q-prefill'); if (note) note.remove(); }
         updateVisibility(true);
         if (t.type === 'radio') track('quiz_answer', { question: t.name, value: t.name === 'tier' ? t.value : 'set' });
       }
@@ -642,7 +642,8 @@
       seen.unobserve(e.target);
     });
   }, { threshold: 0.25 });
-  document.querySelectorAll('.rows').forEach(function (r) {
+  document.querySelectorAll('.chart-demo .pts circle').forEach(function (c, i) { c.style.setProperty('--i', i); });
+  document.querySelectorAll('.rows, .chart-demo').forEach(function (r) {
     // строки результата анкеты показываются после расчёта и анимируются сами; остальные ждут появления в окне
     if (r.closest('.score-card')) r.classList.add('is-in'); else seen.observe(r);
   });
