@@ -28,8 +28,8 @@
 </section>
 
 <section class="apanel"><h2>Воронка</h2>
-<p class="muted">Уникальные посетители, согласившиеся на аналитические cookie. Регистрации и заявки без согласия сюда не попадают, их полные числа — в карточках выше.</p>
-<ol class="afunnel">{% for s in d.funnel %}<li><span class="af-name">{{ s.label }}</span><span class="af-bar"><i style="--w:{{ s.of_top }}%"></i></span><b>{{ s.n }}</b><span class="af-pct">{{ s.of_top }}%{% if not loop.first %} <small>({{ s.of_prev }}% от пред.)</small>{% endif %}</span></li>{% endfor %}</ol>
+<p class="muted">Уникальные посетители, согласившиеся на аналитические cookie. Каждый шаг — те, кто прошёл и предыдущий, поэтому числа только убывают. Регистрации и заявки тех, кто не принял cookie, сюда не попадают: их полные числа — в карточках выше.</p>
+<ol class="afunnel">{% for s in d.funnel %}<li><span class="af-name">{{ s.label }}</span><span class="af-bar"><i style="--w:{{ s.of_top }}%"></i></span><b>{{ s.n }}</b><span class="af-pct">{{ s.of_top }}%{% if not loop.first %} <small>({{ s.of_prev }}% от предыдущего)</small>{% endif %}</span></li>{% endfor %}</ol>
 {% if d.quiz_drop %}<h3>Где уходят из анкеты</h3><p class="muted">Сколько человек дошло до шага (по событию quiz_step).</p>{{ bars(d.quiz_drop, 'n', 'step') }}{% endif %}
 </section>
 

@@ -84,22 +84,31 @@ def collect(period):
     visitors = _one(f"SELECT count(*) FROM visitors WHERE 1=1{fv}", a)
     views = _one(f"SELECT count(*) FROM events WHERE name='page_view'{f}", a)
 
-    # ---- воронка по уникальным посетителям (только согласившиеся на аналитику)
-    def uniq(name_sql):
-        return _one(f"SELECT count(DISTINCT visitor_id) FROM events WHERE visitor_id IS NOT NULL AND {name_sql}{f}", a)
+    # ---- воронка: вложенные группы уникальных посетителей (только согласившиеся на аналитику).
+    # Каждый шаг — те, кто прошёл и предыдущий шаг, поэтому числа не растут и проценты не превышают 100%.
+    def who(name_sql):
+        return {r[0] for r in get_db().execute(
+            f"SELECT DISTINCT visitor_id FROM events WHERE visitor_id IS NOT NULL AND {name_sql}{f}", a)}
+    base = {r[0] for r in get_db().execute(f"SELECT DISTINCT visitor_id FROM events WHERE visitor_id IS NOT NULL{f}", a)}
+    base |= {r[0] for r in get_db().execute(f"SELECT visitor_id FROM visitors WHERE 1=1{fv}", a)}
+    s_start = base & who("name='quiz_answer'")
+    s_step = s_start & who("name='quiz_step'")
+    s_result = s_step & who("name='score_calculated'")
+    s_reg = s_result & who("name='account_registered'")
+    s_lead = s_result & who("name='lead_submitted'")
     funnel_raw = [
-        ("Посетители (с согласием на cookie)", visitors),
-        ("Начали анкету", uniq("name='quiz_answer'")),
-        ("Дошли до 2-го вопроса и дальше", uniq("name='quiz_step'")),
-        ("Получили результат", uniq("name='score_calculated'")),
-        ("Зарегистрировались", uniq("name='account_registered'")),
-        ("Оставили заявку на тариф", uniq("name='lead_submitted'")),
+        ("Посетители (с согласием на cookie)", len(base), None),
+        ("Начали анкету", len(s_start), 0),
+        ("Перешли к следующему вопросу", len(s_step), 1),
+        ("Получили результат", len(s_result), 2),
+        ("…из них зарегистрировались", len(s_reg), 3),
+        ("…из них оставили заявку на тариф", len(s_lead), 3),
     ]
-    funnel = []
     top = funnel_raw[0][1]
-    for i, (label, n) in enumerate(funnel_raw):
-        prev = funnel_raw[i - 1][1] if i else n
-        funnel.append({"label": label, "n": n, "of_top": _pct(n, top), "of_prev": _pct(n, prev) if i else 100.0})
+    funnel = []
+    for label, n, prev_i in funnel_raw:
+        prev = funnel_raw[prev_i][1] if prev_i is not None else n
+        funnel.append({"label": label, "n": n, "of_top": _pct(n, top), "of_prev": _pct(n, prev) if prev_i is not None else 100.0})
 
     # ---- ежедневные ряды
     end = datetime.now(timezone.utc).replace(tzinfo=None)
@@ -197,7 +206,7 @@ def collect(period):
             {"label": "Средний индекс", "value": avg or "—", "hint": "методика v2.0"},
             {"label": "Регистрации", "value": users, "hint": f"всего аккаунтов {registered}"},
             {"label": "Заявки на тариф", "value": leads, "hint": "по e-mail"},
-            {"label": "Конверсия в результат", "value": f"{_pct(funnel_raw[3][1], visitors)}%", "hint": "посетитель → расчёт"},
+            {"label": "Конверсия в результат", "value": f"{_pct(funnel_raw[3][1], funnel_raw[0][1])}%", "hint": "посетитель → расчёт"},
             {"label": "Согласие на аналитику", "value": f"{_pct(consent.get('all', 0), consent_total)}%", "hint": f"ответов {consent_total}"},
         ],
         "funnel": funnel, "daily": daily, "tiers": tiers, "levels": levels, "histogram": histogram,
