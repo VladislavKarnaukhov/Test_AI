@@ -275,6 +275,7 @@ a.sheet:hover{transform:translateY(-2px)}
 
 /* chips */
 .chips-short{grid-template-columns:repeat(auto-fill,minmax(3.5rem,1fr))}
+.yesno{grid-template-columns:repeat(2,minmax(0,1fr))}
 .chips-mid{grid-template-columns:repeat(auto-fit,minmax(min(100%,8.5rem),1fr))}
 .chips-long{grid-template-columns:repeat(auto-fit,minmax(min(100%,15rem),1fr))}
 .chips-short .choice span{justify-content:center;padding-inline:.25rem;font-size:var(--fs-md);font-variant-numeric:tabular-nums}
