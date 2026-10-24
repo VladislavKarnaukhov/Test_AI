@@ -26,6 +26,20 @@
   </form>
 </section>
 
+<section class="settings-section" id="plus">
+  <h2>Del Health Plus</h2>
+  {% if is_plus %}
+  <p class="muted">Активен до {{ user['plus_until'] | msk }}.</p>
+  <form method="post" action="{{ url_for('plus.set_reminders') }}" class="settings-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label class="consent"><input type="checkbox" name="reminders" {% if user['reminders_opt_in'] %}checked{% endif %}><span class="consent-text"><span>Присылать мне на {{ user['email'] }} напоминание, когда пора повторить анкету (не чаще двух писем после каждой оценки). Письма отправляет сервис Brevo. Отписаться можно по ссылке в письме или здесь.</span></span></label>
+    <button class="btn btn-quiet btn-sm" type="submit">Сохранить</button>
+  </form>
+  {% else %}
+  <p class="muted">Plus: {{ plus_price }} ₽ в месяц — план на месяц, сравнение оценок и напоминания по e-mail. <a class="text-link" href="{{ url_for('main.index') }}#plans">Подробнее</a></p>
+  {% endif %}
+</section>
+
 <section class="settings-section" id="health-sync" data-health-sync data-csrf="{{ csrf_token() }}"
          data-connected="{{ 'true' if health.connected else 'false' }}">
   <h2>Данные из приложений здоровья</h2>

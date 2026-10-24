@@ -19,13 +19,27 @@
 {% include "_header.html" %}
 <main id="main" tabindex="-1" class="wrap admin-page">
 <header class="admin-head">
-  <div><p class="eyebrow">Только для администратора</p><h1>Аналитика</h1><p class="muted">Обновлено {{ generated }} (МСК). Только агрегаты: без e-mail и ответов анкеты.</p></div>
+  <div><p class="eyebrow">Только для администратора</p><h1>Аналитика</h1><p class="muted">Обновлено {{ generated }} (МСК). Отчёты — только агрегаты, без ответов анкеты; e-mail виден лишь в заявках на Plus ниже.</p></div>
   <nav class="segmented" aria-label="Период">{% for k, label in periods.items() %}<a href="?period={{ k }}" class="seg{% if d.period == k %} on{% endif %}" {% if d.period == k %}aria-current="true"{% endif %}>{{ label }}</a>{% endfor %}</nav>
 </header>
 
 <section class="akpis" aria-label="Ключевые показатели">
 {% for k in d.kpi %}<div class="akpi"><span class="akpi-label">{{ k.label }}</span><b class="akpi-value">{{ k.value }}</b><span class="akpi-hint">{{ k.hint }}</span></div>{% endfor %}
 </section>
+
+<section class="apanel" id="plus-admin"><h2>Del Health Plus</h2>
+<dl class="adl"><div><dt>Активных подписок</dt><dd>{{ d.plus.active }}</dd></div><div><dt>С включёнными напоминаниями</dt><dd>{{ d.plus.reminders_on }}</dd></div><div><dt>Напоминаний отправлено (за период)</dt><dd>{{ d.plus.reminders_sent }}</dd></div><div><dt>Шагов плана отмечено (за период)</dt><dd>{{ d.plus.steps_done }}</dd></div></dl>
+<h3>Заявки на Plus</h3>
+<div class="atable-wrap"><table class="atable"><thead><tr><th>E-mail</th><th>Когда (UTC)</th><th>Статус</th></tr></thead><tbody>{% for r in d.plus_requests %}<tr><td>{{ r.email }}</td><td>{{ r.at }}</td><td>{{ r.state }}</td></tr>{% else %}<tr><td colspan="3" class="muted">Заявок пока нет</td></tr>{% endfor %}</tbody></table></div>
+<h3>Выдать или снять доступ</h3>
+<p class="muted">Пока онлайн-оплаты нет: после перевода 99 ₽ откройте доступ по e-mail пользователя. Срок продлевается от текущего конца.</p>
+<form method="post" action="{{ url_for('admin.plus_access') }}" class="admin-plus-form">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<label class="field">E-mail пользователя<input type="email" name="email" required autocomplete="off"></label>
+<label class="field">Дней<input type="number" name="days" value="30" min="1" max="400"></label>
+<button class="btn btn-primary btn-sm" type="submit" name="action" value="grant">Выдать</button>
+<button class="btn btn-quiet btn-sm" type="submit" name="action" value="revoke">Снять</button>
+</form></section>
 
 <section class="apanel"><h2>Воронка</h2>
 <p class="muted">Уникальные посетители, согласившиеся на аналитические cookie. Каждый шаг — те, кто прошёл и предыдущий, поэтому числа только убывают. Регистрации и заявки тех, кто не принял cookie, сюда не попадают: их полные числа — в карточках выше.</p>

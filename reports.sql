@@ -16,8 +16,8 @@ GROUP BY v.source ORDER BY leads DESC, visitors DESC;
 .print === Заявки по UTM-кампаниям ===
 SELECT coalesce(v.utm_campaign, '-') AS campaign, v.utm_source, coalesce(v.utm_medium, '-') AS medium,
        count(l.id) AS leads,
-       sum(l.plan = 'Start') AS start,
-       sum(l.plan = 'Balance') AS balance
+       sum(l.plan = 'Plus') AS plus,
+       sum(l.plan IN ('Start', 'Balance')) AS old_plans
 FROM leads l JOIN visitors v ON v.visitor_id = l.visitor_id
 WHERE v.utm_source IS NOT NULL
 GROUP BY 1, 2, 3 ORDER BY leads DESC;

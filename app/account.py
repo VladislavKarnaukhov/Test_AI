@@ -7,6 +7,7 @@ from werkzeug.security import check_password_hash
 from .auth import (NAME_MAX, check_csrf, hash_password, login_user, login_required, logout_user,
                    validate_password)
 from . import health_sync
+from . import plus
 from .db import get_db
 from .results import SELECT_COLUMNS, present
 from .scoring import CORE_DOMAINS, DOMAIN_SHORT, METHOD_VERSION
@@ -106,8 +107,12 @@ def dashboard():
     user = g.user
     results = _load_results(user["id"])
     latest = results[-1] if results else None
+    plus_on = plus.is_plus(user)
     return render_template(
         "account/dashboard.html",
+        plan=plus.plan_for(user["id"], latest) if plus_on and latest and latest["current"] else [],
+        compare=plus.compare_rows(results) if plus_on else None,
+        plus_until=to_msk(user["plus_until"]) if plus_on else None,
         user=user,
         results=list(reversed(results)),
         latest=latest,
@@ -165,6 +170,9 @@ def delete_result(result_id):
     """Удаляет одну оценку текущего клиента вместе с ответами. Чужие оценки не затрагиваются."""
     db = get_db()
     cur = db.execute("DELETE FROM score_results WHERE id = ? AND user_id = ?", (result_id, g.user["id"]))
+    if cur.rowcount:
+        db.execute("DELETE FROM plan_steps WHERE result_id = ? AND user_id = ?", (result_id, g.user["id"]))
+        db.execute("DELETE FROM reminders WHERE result_id = ? AND user_id = ?", (result_id, g.user["id"]))
     db.commit()
     if cur.rowcount:
         flash("Оценка удалена вместе с ответами.")
@@ -183,6 +191,8 @@ def delete_account():
     db = get_db()
     db.execute("DELETE FROM score_results WHERE user_id = ?", (user["id"],))
     db.execute("DELETE FROM leads WHERE user_id = ?", (user["id"],))
+    db.execute("DELETE FROM plan_steps WHERE user_id = ?", (user["id"],))
+    db.execute("DELETE FROM reminders WHERE user_id = ?", (user["id"],))
     db.execute("DELETE FROM health_sync_days WHERE user_id = ?", (user["id"],))
     db.execute("DELETE FROM health_connections WHERE user_id = ?", (user["id"],))
     db.execute("DELETE FROM login_attempts WHERE email = ?", (user["email"],))

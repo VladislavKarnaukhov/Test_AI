@@ -95,6 +95,21 @@ CREATE TABLE IF NOT EXISTS health_sync_days (
     synced_at TEXT NOT NULL DEFAULT (datetime('now')),
     PRIMARY KEY (user_id, date)
 );
+CREATE TABLE IF NOT EXISTS plan_steps (
+    result_id INTEGER NOT NULL,
+    idx INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    done_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (result_id, idx)
+);
+CREATE TABLE IF NOT EXISTS reminders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    result_id INTEGER NOT NULL,
+    sent_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_plan_steps_user ON plan_steps(user_id);
+CREATE INDEX IF NOT EXISTS idx_reminders_user ON reminders(user_id, result_id);
 CREATE INDEX IF NOT EXISTS idx_login_attempts_email ON login_attempts(email, created_at);
 CREATE INDEX IF NOT EXISTS idx_events_visitor ON events(visitor_id);
 CREATE INDEX IF NOT EXISTS idx_events_name ON events(name);
@@ -146,7 +161,9 @@ MIGRATIONS = [
     ("score_results", "health_consent_version", "TEXT"),  # редакция политики, по которой дано согласие
     ("score_results", "tier", "TEXT"),                  # уровень анкеты v2.0: short / medium / extended
     ("score_results", "details", "TEXT"),               # v2.0: уточнённые сферы, подробный индекс, тело, скрининги
-    ("users", "terms_version", "TEXT"),                 # редакция пользовательского соглашения при регистрации
+    ("users", "terms_version", "TEXT"),
+    ("users", "plus_until", "TEXT"),                    # Del Health Plus действует до (UTC); NULL — бесплатный доступ
+    ("users", "reminders_opt_in", "INTEGER NOT NULL DEFAULT 0"),  # согласие на напоминания по e-mail (только Plus)                 # редакция пользовательского соглашения при регистрации
 ]
 
 

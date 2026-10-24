@@ -8,8 +8,10 @@ import json
 import os
 from datetime import datetime, timedelta, timezone
 
-from flask import Blueprint, abort, g, render_template, request
+from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
 
+from . import plus
+from .auth import check_csrf
 from .db import get_db
 from .scoring import DOMAIN_SHORT, TIER_NAMES
 
@@ -197,7 +199,21 @@ def collect(period):
     quiz_drop = _rows(
         f"SELECT json_extract(payload,'$.step') step, count(DISTINCT visitor_id) n FROM events WHERE name='quiz_step'{f} GROUP BY 1 ORDER BY step", a)
 
+    now = datetime.now(timezone.utc).replace(tzinfo=None).strftime("%Y-%m-%d %H:%M:%S")
+    plus_stats = {
+        "active": _one("SELECT count(*) FROM users WHERE plus_until > ?", (now,)),
+        "reminders_on": _one("SELECT count(*) FROM users WHERE plus_until > ? AND reminders_opt_in = 1", (now,)),
+        "reminders_sent": _one(f"SELECT count(*) FROM reminders WHERE 1=1{f.replace('created_at','sent_at')}", a),
+        "steps_done": _one(f"SELECT count(*) FROM plan_steps WHERE 1=1{f.replace('created_at','done_at')}", a),
+    }
+    requests = _rows(
+        "SELECT l.email, substr(l.created_at,1,16) AS at, u.id AS uid, u.plus_until FROM leads l "
+        "LEFT JOIN users u ON lower(u.email) = lower(l.email) WHERE l.plan = 'Plus' ORDER BY l.created_at DESC LIMIT 20")
+    for r in requests:
+        r["state"] = ("Plus активен" if r["plus_until"] and r["plus_until"] > now else "нет аккаунта" if r["uid"] is None else "ждёт доступа")
     return {
+        "plus_requests": requests,
+        "plus": plus_stats,
         "period": period,
         "kpi": [
             {"label": "Посетители", "value": visitors, "hint": "с согласием на аналитику"},
@@ -218,6 +234,27 @@ def collect(period):
         "countries": top_visitors("country", label="?"), "languages": top_visitors("language"),
         "pages": pages, "clicks": clicks, "quiz_drop": quiz_drop,
     }
+
+
+@bp.post("/plus")
+def plus_access():
+    """Выдать или снять Del Health Plus по e-mail (пока нет онлайн-оплаты)."""
+    check_csrf()
+    email = request.form.get("email", "").strip().lower()
+    row = get_db().execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
+    if row is None:
+        flash("Пользователь с таким e-mail не найден.", "error")
+    elif request.form.get("action") == "revoke":
+        plus.revoke(row["id"])
+        flash("Plus снят.")
+    else:
+        try:
+            days = max(1, min(int(request.form.get("days", "30")), 400))
+        except ValueError:
+            days = 30
+        until = plus.grant(row["id"], days)
+        flash(f"Plus выдан до {until[:10]}.")
+    return redirect(url_for("admin.dashboard") + "#plus-admin")
 
 
 @bp.after_request

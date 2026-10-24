@@ -118,7 +118,7 @@ def test_guest_results_are_never_attached(client, query):
     client.set_cookie("vs_consent_v", POLICY_VERSION)
     client.get("/")
     client.post("/api/score", json=VALID)
-    client.post("/api/lead", json={"email": "anna@example.com", "plan": "Start", "consent": True})
+    client.post("/api/lead", json={"email": "anna@example.com", "plan": "Plus", "consent": True})
     register(client)
     client.post("/logout", data={"csrf_token": csrf(client, "/account")})
     login(client)
@@ -140,7 +140,7 @@ def test_guest_score_has_login_cta_data(client):
 def test_logged_in_results_and_leads_are_linked(user_client, query):
     data = user_client.post("/api/score", json=VALID).get_json()
     assert data["saved_to_account"] is True
-    user_client.post("/api/lead", json={"email": "anna@example.com", "plan": "Balance", "consent": True})
+    user_client.post("/api/lead", json={"email": "anna@example.com", "plan": "Plus", "consent": True})
     assert query("SELECT user_id, recommendations FROM score_results")[0]["user_id"] == 1
     assert query("SELECT user_id FROM leads") == [{"user_id": 1}]
 
@@ -220,7 +220,7 @@ def test_export_removed(user_client):
 
 def test_delete_account(user_client, query):
     user_client.post("/api/score", json=VALID)
-    user_client.post("/api/lead", json={"email": "anna@example.com", "plan": "Start", "consent": True})
+    user_client.post("/api/lead", json={"email": "anna@example.com", "plan": "Plus", "consent": True})
     token = csrf(user_client, "/account")
     user_client.post("/account/delete", data={"csrf_token": token, "password": "wrong"})
     assert len(query("SELECT * FROM users")) == 1
@@ -620,3 +620,165 @@ def test_prefill_uses_latest_result_and_does_not_change_scoring(user_client):
     first = user_client.post("/api/score", json=VALID).get_json()["total"]
     again = user_client.post("/api/score", json=VALID).get_json()["total"]
     assert first == again == 69                                                # расчёт прежний
+
+
+# ---------- Del Health Plus ----------
+
+import sqlite3 as _sqlite3
+from datetime import datetime as _dt, timedelta as _td
+
+
+def _user_id(query, email="anna@example.com"):
+    return query("SELECT id FROM users WHERE email = ?", email)[0]["id"]
+
+
+def _make_plus(app, query, email="anna@example.com", days=30):
+    conn = _sqlite3.connect(app.config["DATABASE_PATH"])
+    until = (_dt.utcnow() + _td(days=days)).strftime("%Y-%m-%d %H:%M:%S")
+    conn.execute("UPDATE users SET plus_until = ? WHERE email = ?", (until, email))
+    conn.commit()
+    conn.close()
+
+
+def test_free_user_sees_locked_plus_and_cannot_use_it(user_client):
+    user_client.post("/api/score", json=VALID)
+    html = user_client.get("/account").get_data(as_text=True)
+    assert "plus-locked" in html and "План на месяц" in html and "plan-steps" not in html
+    r = user_client.post("/account/plan/1/0", data={"csrf_token": csrf(user_client, "/account")})
+    assert r.status_code == 302 and "#plus" in r.headers["Location"]          # платная функция закрыта
+    r = user_client.post("/account/reminders", data={"csrf_token": csrf(user_client, "/account"), "reminders": "on"})
+    assert r.status_code == 302
+
+
+def test_plus_user_gets_plan_with_toggle_and_compare(user_client, app, query):
+    user_client.post("/api/score", json=VALID)
+    user_client.post("/api/score", json=BETTER)
+    _make_plus(app, query)
+    html = user_client.get("/account").get_data(as_text=True)
+    assert "План на месяц" in html and html.count('<li class="plan-step') == 3 and "Сравнение оценок" in html
+    assert "plus-locked" not in html and "<th scope=\"row\">Итог</th>" in html
+    rid = int(re.search(r'/account/plan/(\d+)/0', html).group(1))
+    token = csrf(user_client, "/account")
+    user_client.post(f"/account/plan/{rid}/0", data={"csrf_token": token})
+    assert "is-done" in user_client.get("/account").get_data(as_text=True)
+    user_client.post(f"/account/plan/{rid}/0", data={"csrf_token": token})    # повторное нажатие снимает отметку
+    assert "is-done" not in user_client.get("/account").get_data(as_text=True)
+    assert user_client.post(f"/account/plan/{rid}/9", data={"csrf_token": token}).status_code == 404
+    assert user_client.post(f"/account/plan/{rid}/0").status_code == 400      # без CSRF
+
+
+def test_plan_steps_are_per_user_and_removed_with_result(user_client, app, query):
+    user_client.post("/api/score", json=VALID)
+    _make_plus(app, query)
+    rid = int(re.search(r'/account/plan/(\d+)/0', user_client.get("/account").get_data(as_text=True)).group(1))
+    user_client.post(f"/account/plan/{rid}/1", data={"csrf_token": csrf(user_client, "/account")})
+    other = app.test_client()
+    register(other, email="boris@example.com", name="Борис")
+    _make_plus(app, query, "boris@example.com")
+    assert other.post(f"/account/plan/{rid}/0", data={"csrf_token": csrf(other, "/account")}).status_code == 404
+    user_client.post(f"/account/results/{rid}/delete", data={"csrf_token": csrf(user_client, "/account")})
+    assert query("SELECT count(*) AS n FROM plan_steps")[0]["n"] == 0
+
+
+def test_plus_expired_is_free_again(user_client, app, query):
+    user_client.post("/api/score", json=VALID)
+    _make_plus(app, query, days=-1)
+    assert "plus-locked" in user_client.get("/account").get_data(as_text=True)
+
+
+def test_admin_grants_and_revokes_plus(app, query, monkeypatch):
+    monkeypatch.setenv("ADMIN_EMAILS", "boss@example.com")
+    user = app.test_client()
+    register(user, email="anna@example.com")
+    boss = app.test_client()
+    register(boss, email="boss@example.com", name="Босс")
+    tok = csrf(boss, "/admin")
+    assert user.post("/admin/plus", data={"csrf_token": "x", "email": "anna@example.com"}).status_code == 404   # не админ
+    boss.post("/admin/plus", data={"csrf_token": tok, "email": "anna@example.com", "days": "30", "action": "grant"})
+    assert query("SELECT plus_until FROM users WHERE email = 'anna@example.com'")[0]["plus_until"]
+    boss.post("/admin/plus", data={"csrf_token": tok, "email": "anna@example.com", "days": "30", "action": "grant"})
+    first = query("SELECT plus_until FROM users WHERE email = 'anna@example.com'")[0]["plus_until"]
+    assert first > (_dt.utcnow() + _td(days=58)).strftime("%Y-%m-%d %H:%M:%S")      # повторная выдача продлевает срок
+    boss.post("/admin/plus", data={"csrf_token": tok, "email": "anna@example.com", "action": "revoke"})
+    assert query("SELECT plus_until FROM users WHERE email = 'anna@example.com'")[0]["plus_until"] is None
+    assert boss.post("/admin/plus", data={"email": "anna@example.com"}).status_code == 400               # без CSRF
+
+
+def test_reminders_sent_only_to_opted_in_plus_users_and_capped(app, query):
+    from app import plus as plusmod
+    c = app.test_client()
+    register(c)
+    c.post("/api/score", json=VALID)
+    _make_plus(app, query)
+    conn = _sqlite3.connect(app.config["DATABASE_PATH"])
+    old = (_dt.utcnow() - _td(days=30)).strftime("%Y-%m-%d %H:%M:%S")
+    conn.execute("UPDATE score_results SET created_at = ?", (old,))
+    conn.commit()
+    sent = []
+    def fake(to, name, subject, html, text, unsubscribe_url=None):
+        sent.append((to, subject, text, unsubscribe_url)); return True, "id"
+    with app.test_request_context(base_url="https://example.test"):
+        assert plusmod.send_due_reminders("https://example.test", send=fake) == (0, 0, 0)      # напоминания не включены
+        conn.execute("UPDATE users SET reminders_opt_in = 1"); conn.commit()
+        assert plusmod.send_due_reminders("https://example.test", send=fake, dry_run=True) == (0, 0, 1)
+        assert plusmod.send_due_reminders("https://example.test", send=fake) == (1, 0, 0)
+        assert plusmod.send_due_reminders("https://example.test", send=fake) == (0, 0, 0)      # повтор не раньше чем через 14 дней
+        conn.execute("UPDATE reminders SET sent_at = ?", (old,)); conn.commit()
+        assert plusmod.send_due_reminders("https://example.test", send=fake) == (1, 0, 0)      # второй и последний
+        conn.execute("UPDATE reminders SET sent_at = ?", (old,)); conn.commit()
+        assert plusmod.send_due_reminders("https://example.test", send=fake) == (0, 0, 0)      # лимит 2 на оценку
+    assert sent[0][0] == "anna@example.com" and "/unsubscribe/" in sent[0][3] and "индекс 69" in sent[0][2]
+    conn.close()
+
+
+def test_failed_send_is_not_recorded_and_unsubscribe_works(app, query):
+    from app import plus as plusmod
+    c = app.test_client()
+    register(c)
+    c.post("/api/score", json=VALID)
+    _make_plus(app, query)
+    conn = _sqlite3.connect(app.config["DATABASE_PATH"])
+    conn.execute("UPDATE score_results SET created_at = datetime('now', '-30 days')")
+    conn.execute("UPDATE users SET reminders_opt_in = 1")
+    conn.commit()
+    with app.test_request_context(base_url="https://example.test"):
+        assert plusmod.send_due_reminders("https://example.test", send=lambda *a, **k: (False, "boom")) == (0, 1, 0)
+        assert query("SELECT count(*) AS n FROM reminders")[0]["n"] == 0                       # неудача не засчитана
+        token = plusmod.unsubscribe_token(_user_id(query))
+    assert app.test_client().get("/unsubscribe/bad-token").status_code == 404
+    assert app.test_client().get(f"/unsubscribe/{token}").status_code == 200                    # без входа
+    assert query("SELECT reminders_opt_in FROM users")[0]["reminders_opt_in"] == 0
+    conn.close()
+
+
+def test_mailer_without_keys_does_not_send(monkeypatch):
+    from app import mailer
+    monkeypatch.delenv("BREVO_API_KEY", raising=False)
+    assert mailer.send_email("a@b.co", "A", "s", "<p>x</p>", "x") == (False, "BREVO_API_KEY / BREVO_SENDER_EMAIL не заданы")
+
+
+def test_mailer_builds_brevo_request_and_hides_key(monkeypatch):
+    import json
+    from app import mailer
+    monkeypatch.setenv("BREVO_API_KEY", "secret-key"); monkeypatch.setenv("BREVO_SENDER_EMAIL", "no-reply@example.test")
+    captured = {}
+    class Resp:
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+        def read(self): return b'{"messageId": "<abc>"}'
+    def fake_urlopen(req, timeout=0):
+        captured["url"], captured["headers"], captured["body"] = req.full_url, dict(req.header_items()), json.loads(req.data)
+        return Resp()
+    monkeypatch.setattr(mailer.urllib.request, "urlopen", fake_urlopen)
+    ok, info = mailer.send_email("a@b.co", "Анна", "Тема", "<p>x</p>", "x", unsubscribe_url="https://e.test/u")
+    assert (ok, info) == (True, "<abc>") and captured["url"] == mailer.API_URL
+    assert captured["headers"]["Api-key"] == "secret-key" and captured["body"]["to"] == [{"email": "a@b.co", "name": "Анна"}]
+    assert captured["body"]["headers"] == {"List-Unsubscribe": "<https://e.test/u>"}
+
+
+def test_home_shows_free_and_plus_plans(client, user_client=None):
+    html = client.get("/").get_data(as_text=True)
+    assert "Бесплатно и Plus" in html and "99" in html and 'data-plan="Plus"' in html
+    assert "Start" not in html and "Balance" not in html
+    res = client.post("/api/lead", json={"email": "a@b.co", "plan": "Start", "consent": True})
+    assert res.status_code == 400                                              # старые тарифы больше не принимаются
