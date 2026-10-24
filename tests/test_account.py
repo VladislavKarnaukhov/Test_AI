@@ -567,3 +567,26 @@ def test_home_trend_shows_current_users_scores_only(user_client, app):
     other = app.test_client()
     register(other, email="boris@example.com", name="Борис")
     assert "Ваша динамика" not in other.get("/").get_data(as_text=True)       # у нового нет чужих данных
+
+
+def test_funnel_is_nested_and_never_exceeds_100_percent(app, monkeypatch):
+    import sqlite3
+    monkeypatch.setenv("ADMIN_EMAILS", "boss@example.com")
+    conn = sqlite3.connect(app.config["DATABASE_PATH"])
+    # v1 прошёл всё; v2 дошёл до результата без события quiz_step (потерян); v3 зарегистрировался, не начав анкету
+    rows = [("v1", n) for n in ("page_view", "quiz_answer", "quiz_step", "score_calculated", "account_registered", "lead_submitted")]
+    rows += [("v2", n) for n in ("page_view", "quiz_answer", "score_calculated")]
+    rows += [("v3", n) for n in ("page_view", "account_registered")]
+    for vid, name in rows:
+        conn.execute("INSERT INTO events (visitor_id, name, path) VALUES (?, ?, '/')", (vid, name))
+    conn.commit()
+    conn.close()
+    c = app.test_client()
+    register(c, email="boss@example.com", name="Босс")
+    with app.test_request_context():
+        from app.admin import collect
+        d = collect("all")
+    ns = [s["n"] for s in d["funnel"]]
+    assert ns == [3, 2, 1, 1, 1, 1]                                 # v2 отсеян на шаге «следующий вопрос», v3 не начинал
+    assert all(s["of_top"] <= 100 and s["of_prev"] <= 100 for s in d["funnel"])
+    assert all(a >= b for a, b in zip(ns[:4], ns[1:4]))             # основная цепочка не растёт
