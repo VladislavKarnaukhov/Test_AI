@@ -590,3 +590,33 @@ def test_funnel_is_nested_and_never_exceeds_100_percent(app, monkeypatch):
     assert ns == [3, 2, 1, 1, 1, 1]                                 # v2 отсеян на шаге «следующий вопрос», v3 не начинал
     assert all(s["of_top"] <= 100 and s["of_prev"] <= 100 for s in d["funnel"])
     assert all(a >= b for a, b in zip(ns[:4], ns[1:4]))             # основная цепочка не растёт
+
+
+# ---------- Предзаполнение никотина и алкоголя ----------
+
+def _checked(html, name):
+    return re.findall(rf'<input type="radio" name="{name}" value="([^"]*)" checked>', html)
+
+
+def test_prefill_nicotine_and_alcohol_from_previous_result(user_client, app):
+    user_client.post("/api/score", json=VALID)           # nic1=former, nic2=1_5, nic3=no, nic4=no, a1=2, a2=1, a3=0
+    html = user_client.get("/").get_data(as_text=True)
+    assert _checked(html, "nic1") == ["former"] and _checked(html, "nic2") == ["1_5"]
+    assert _checked(html, "a1") == ["2"] and _checked(html, "a2") == ["1"] and _checked(html, "a3") == ["0"]
+    assert "Из вашей анкеты от" in html and html.count("data-prefilled") >= 7
+    assert _checked(html, "sl1") == [] and _checked(html, "age") == []        # остальные вопросы не трогаем
+    guest = app.test_client().get("/").get_data(as_text=True)
+    assert "data-prefilled" not in guest and _checked(guest, "nic1") == []    # гость — без подстановки
+    other = app.test_client()
+    register(other, email="boris@example.com", name="Борис")
+    assert _checked(other.get("/").get_data(as_text=True), "nic1") == []      # чужие ответы не попадают
+
+
+def test_prefill_uses_latest_result_and_does_not_change_scoring(user_client):
+    user_client.post("/api/score", json=VALID)
+    user_client.post("/api/score", json={**VALID, "nic1": "never", "a1": "0", "a2": None, "a3": None})
+    html = user_client.get("/").get_data(as_text=True)
+    assert _checked(html, "nic1") == ["never"] and _checked(html, "a1") == ["0"]
+    first = user_client.post("/api/score", json=VALID).get_json()["total"]
+    again = user_client.post("/api/score", json=VALID).get_json()["total"]
+    assert first == again == 69                                                # расчёт прежний

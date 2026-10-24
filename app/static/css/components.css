@@ -262,6 +262,7 @@ a.sheet:hover{transform:translateY(-2px)}
 .q-text{max-width:none;margin-bottom:var(--sp-5);font-size:clamp(1.5rem,3.2vw,2.25rem);font-weight:400;line-height:1.14;letter-spacing:-.03em}
 .q-text:focus{outline:none}
 .q-text em{font-size:var(--fs-sm);letter-spacing:0}
+.q-prefill{margin:-.25rem 0 var(--sp-4);font-size:var(--fs-sm);color:var(--accent)}
 .q-hint{margin:-.5rem 0 var(--sp-5);font-size:var(--fs-sm);color:var(--ink-3)}
 @media (prefers-reduced-motion:no-preference){
 .q:not(.q-off){animation:q-in .3s var(--ease-out)}
