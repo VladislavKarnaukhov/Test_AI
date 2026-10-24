@@ -502,3 +502,44 @@ def test_chart_has_text_equivalent(user_client):
     assert 'aria-describedby="chart-summary"' in html and 'id="chart-summary"' in html
     assert "<caption>Индекс и баллы сфер по датам</caption>" in html
     assert html.count('<th scope="row">') >= 2                                  # строка таблицы на каждую оценку
+
+
+# ---------- Аналитический дашборд /admin ----------
+
+def _seed_analytics(app):
+    import sqlite3
+    conn = sqlite3.connect(app.config["DATABASE_PATH"])
+    conn.execute("INSERT INTO visitors (visitor_id, source, device_type, os, browser, country, language) VALUES ('v1','yandex','mobile','iOS','Safari','RU','ru')")
+    conn.execute("INSERT INTO visitors (visitor_id, source, utm_source, utm_campaign, device_type, os, browser, country, language) VALUES ('v2','direct','tg','spring','desktop','macOS','Chrome','RU','ru')")
+    for name, vid, payload in [("page_view", "v1", None), ("quiz_answer", "v1", '{"question":"tier"}'), ("quiz_step", "v1", '{"step":2}'),
+                               ("score_calculated", "v1", '{"total":69,"tier":"short","weakest":"nutrition","flags":["sleep_3plus"]}'),
+                               ("page_view", "v2", None), ("hero_start_quiz", "v2", None)]:
+        conn.execute("INSERT INTO events (visitor_id, name, path, payload) VALUES (?, ?, '/', ?)", (vid, name, payload))
+    conn.execute("INSERT INTO cookie_consents (visitor_id, choice, policy_version) VALUES ('v1','all','x')")
+    conn.commit()
+    conn.close()
+
+
+def test_admin_hidden_from_everyone_but_listed_admins(client, app, monkeypatch):
+    monkeypatch.setenv("ADMIN_EMAILS", "boss@example.com")
+    assert client.get("/admin").status_code == 404                        # гость
+    register(client)                                                       # anna@example.com — не админ
+    assert client.get("/admin").status_code == 404
+    monkeypatch.setenv("ADMIN_EMAILS", "")
+    assert client.get("/admin").status_code == 404                        # список пуст — закрыто для всех
+
+
+def test_admin_dashboard_shows_aggregates_without_personal_data(app, monkeypatch):
+    monkeypatch.setenv("ADMIN_EMAILS", "boss@example.com, other@example.com")
+    c = app.test_client()
+    register(c, email="boss@example.com", name="Босс")
+    c.post("/api/score", json=VALID)
+    _seed_analytics(app)
+    r = c.get("/admin")
+    html = r.get_data(as_text=True)
+    assert r.status_code == 200 and "Воронка" in html and "Откуда приходят" in html
+    assert r.headers["X-Robots-Tag"].startswith("noindex") and "no-store" in r.headers["Cache-Control"]
+    assert "yandex" in html and "iOS" in html and "Питание" in html       # источники, устройства, слабая сфера
+    assert "boss@example.com" not in html.split("<main", 1)[1]            # e-mail в отчёте нет
+    for period in ("7", "90", "all", "bogus"):
+        assert c.get(f"/admin?period={period}").status_code == 200

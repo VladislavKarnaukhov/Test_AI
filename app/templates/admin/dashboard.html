@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Аналитика — Del Health{% endblock %}
+{% macro bars(rows, key='n', label='name', total=None) -%}
+{%- set mx = (rows | map(attribute=key) | max) if rows else 0 -%}
+<ul class="abars">{% for r in rows %}<li><span class="abar-name">{{ r[label] }}</span><span class="abar-track"><i style="--w:{{ (100 * r[key] / mx) if mx else 0 }}%"></i></span><b>{{ r[key] }}{% if total %} <small>{{ '%.0f' % (100 * r[key] / total) }}%</small>{% endif %}</b></li>{% else %}<li class="muted">Данных пока нет</li>{% endfor %}</ul>
+{%- endmacro %}
+{% macro line(days, values, id) -%}
+{%- set w = 640 -%}{%- set h = 160 -%}{%- set mx = ([values | max, 1] | max) -%}{%- set n = values | length -%}
+<svg class="aline" viewBox="0 0 {{ w }} {{ h + 22 }}" role="img" aria-label="{{ id }}">
+<line class="ag" x1="0" x2="{{ w }}" y1="{{ h }}" y2="{{ h }}"/><line class="ag dash" x1="0" x2="{{ w }}" y1="{{ h/2 }}" y2="{{ h/2 }}"/>
+<text class="at" x="0" y="12">{{ mx }}</text>
+{%- set pts = [] -%}
+{%- for v in values %}{% set _ = pts.append('%.1f,%.1f' % ((w * loop.index0 / (n - 1)) if n > 1 else w/2, h - (h - 8) * v / mx)) %}{% endfor %}
+{% if n > 1 %}<polygon class="aarea" points="0,{{ h }} {{ pts | join(' ') }} {{ w }},{{ h }}"/><polyline class="al" points="{{ pts | join(' ') }}"/>{% endif %}
+<text class="at" x="0" y="{{ h + 16 }}">{{ days[0][5:] }}</text><text class="at" x="{{ w }}" y="{{ h + 16 }}" text-anchor="end">{{ days[-1][5:] }}</text>
+</svg>
+{%- endmacro %}
+{% block content %}
+{% include "_header.html" %}
+<main id="main" tabindex="-1" class="wrap admin-page">
+<header class="admin-head">
+  <div><p class="eyebrow">Только для администратора</p><h1>Аналитика</h1><p class="muted">Обновлено {{ generated }} (МСК). Только агрегаты: без e-mail и ответов анкеты.</p></div>
+  <nav class="segmented" aria-label="Период">{% for k, label in periods.items() %}<a href="?period={{ k }}" class="seg{% if d.period == k %} on{% endif %}" {% if d.period == k %}aria-current="true"{% endif %}>{{ label }}</a>{% endfor %}</nav>
+</header>
+
+<section class="akpis" aria-label="Ключевые показатели">
+{% for k in d.kpi %}<div class="akpi"><span class="akpi-label">{{ k.label }}</span><b class="akpi-value">{{ k.value }}</b><span class="akpi-hint">{{ k.hint }}</span></div>{% endfor %}
+</section>
+
+<section class="apanel"><h2>Воронка</h2>
+<p class="muted">Уникальные посетители, согласившиеся на аналитические cookie. Регистрации и заявки без согласия сюда не попадают, их полные числа — в карточках выше.</p>
+<ol class="afunnel">{% for s in d.funnel %}<li><span class="af-name">{{ s.label }}</span><span class="af-bar"><i style="--w:{{ s.of_top }}%"></i></span><b>{{ s.n }}</b><span class="af-pct">{{ s.of_top }}%{% if not loop.first %} <small>({{ s.of_prev }}% от пред.)</small>{% endif %}</span></li>{% endfor %}</ol>
+{% if d.quiz_drop %}<h3>Где уходят из анкеты</h3><p class="muted">Сколько человек дошло до шага (по событию quiz_step).</p>{{ bars(d.quiz_drop, 'n', 'step') }}{% endif %}
+</section>
+
+<section class="agrid">
+<div class="apanel"><h2>Посетители по дням</h2>{{ line(d.daily.days, d.daily.visitors, 'Посетители по дням') }}</div>
+<div class="apanel"><h2>Рассчитанные анкеты по дням</h2>{{ line(d.daily.days, d.daily.scores, 'Анкеты по дням') }}</div>
+<div class="apanel"><h2>Регистрации по дням</h2>{{ line(d.daily.days, d.daily.users, 'Регистрации по дням') }}</div>
+<div class="apanel"><h2>Заявки на тариф по дням</h2>{{ line(d.daily.days, d.daily.leads, 'Заявки по дням') }}</div>
+</section>
+
+<section class="apanel"><h2>Результаты анкеты</h2>
+<div class="agrid">
+<div><h3>Распределение индекса</h3>{{ bars(d.histogram, 'n', 'label') }}</div>
+<div><h3>Уровни</h3>{{ bars(d.levels, 'n', 'label') }}<h3>Глубина анкеты</h3>{{ bars(d.tiers) }}</div>
+<div><h3>Средний балл по сферам</h3>{{ bars(d.sphere_avg, 'v', 'name') }}</div>
+<div><h3>Самая слабая сфера</h3>{{ bars(d.weakest) }}<h3>Красные флаги</h3>{{ bars(d.flags) }}</div>
+</div></section>
+
+<section class="agrid">
+<div class="apanel"><h2>Аккаунты и возврат</h2>
+<dl class="adl"><div><dt>Всего аккаунтов</dt><dd>{{ d.retention.registered }}</dd></div><div><dt>Прошли анкету в аккаунте</dt><dd>{{ d.retention.with_scores }}</dd></div><div><dt>Вернулись (≥ 2 оценок)</dt><dd>{{ d.retention.repeat }} <small>{{ d.retention.repeat_pct }}%</small></dd></div><div><dt>Входов за период</dt><dd>{{ d.retention.logins }}</dd></div></dl></div>
+<div class="apanel"><h2>Тарифы</h2>{{ bars(d.plans, 'n', 'plan') }}<h3>Согласие на cookie</h3>{{ bars([{'name': 'Принять все', 'n': d.consent.get('all', 0)}, {'name': 'Только необходимые', 'n': d.consent.get('necessary', 0)}]) }}</div>
+</section>
+
+<section class="apanel"><h2>Откуда приходят</h2>
+<div class="atable-wrap"><table class="atable"><thead><tr><th>Источник</th><th>Посетители</th><th>Анкеты</th><th>Конв.</th><th>Заявки</th></tr></thead><tbody>{% for s in d.sources %}<tr><td>{{ s.name }}</td><td>{{ s.visitors }}</td><td>{{ s.scores }}</td><td>{{ s.conv }}%</td><td>{{ s.leads }}</td></tr>{% else %}<tr><td colspan="5" class="muted">Данных пока нет</td></tr>{% endfor %}</tbody></table></div>
+<h3>UTM-кампании</h3>{{ bars(d.campaigns, 'n', 'campaign') }}
+</section>
+
+<section class="agrid">
+<div class="apanel"><h2>Устройства</h2>{{ bars(d.devices) }}<h3>Операционные системы</h3>{{ bars(d.os) }}</div>
+<div class="apanel"><h2>Браузеры</h2>{{ bars(d.browsers) }}<h3>Страны (примерно)</h3>{{ bars(d.countries) }}<h3>Языки</h3>{{ bars(d.languages) }}</div>
+<div class="apanel"><h2>Страницы</h2>{{ bars(d.pages) }}</div>
+<div class="apanel"><h2>Клики по кнопкам</h2>{{ bars(d.clicks, 'n', 'label') }}</div>
+</section>
+</main>
+{% endblock %}
