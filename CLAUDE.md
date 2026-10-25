@@ -35,6 +35,7 @@
 - app/health_sync.py и static/js/health-sync.js — данные из Health Connect от Android-приложения (отдельное согласие в
   health_connections, JSON API с заголовком X-CSRF-Token). В расчёт индекса не попадают; удаляются при отключении и удалении аккаунта.
 - app/plus.py, app/mailer.py — Del Health Plus (99 ₽/мес): план на месяц, сравнение, напоминания через Brevo (CLI `flask send-reminders`); доступ users.plus_until, выдаёт админ на /admin. Платное проверять на сервере (plus_required), письма только с согласием (users.reminders_opt_in) и ссылкой отписки. Бесплатно остаются индекс, шаг на неделю, кабинет, история, график.
+- app/engage.py — недельный ритм: журнал активности (DAU/WAU/MAU), шаг недели, «пульс» (самооценка 1–5, не входит в индекс), недельное письмо (CLI `flask send-weekly`, users.weekly_opt_in). Пульс — отдельное согласие (users.pulse_consent_at, текст в /consent/health#pulse); данные только по g.user["id"], удаляются вместе с аккаунтом.
 - app/admin.py — дашборд /admin (ADMIN_EMAILS): только агрегаты, без e-mail и ответов анкеты; 404 для посторонних.
 - app/account.py и static/js/account.js — личный кабинет: интерактивная история, рекомендации, профиль, удаление.
 - app/templates/, app/static/css/, app/static/js/ — фронтенд. CSS в трёх файлах, подключаются по порядку: base.css → components.css → pages.css. Новое правило пишется в нужный файл рядом с родственными (по семейству класса), а не «поверх» в конец; переопределение собственных правил дописыванием в конец запрещено — правьте исходное правило.

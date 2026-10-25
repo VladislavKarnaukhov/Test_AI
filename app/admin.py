@@ -10,7 +10,7 @@ from datetime import datetime, timedelta, timezone
 
 from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
 
-from . import plus
+from . import engage, plus
 from .auth import check_csrf
 from .db import get_db
 from .scoring import DOMAIN_SHORT, TIER_NAMES
@@ -211,7 +211,12 @@ def collect(period):
         "LEFT JOIN users u ON lower(u.email) = lower(l.email) WHERE l.plan = 'Plus' ORDER BY l.created_at DESC LIMIT 20")
     for r in requests:
         r["state"] = ("Plus активен" if r["plus_until"] and r["plus_until"] > now else "нет аккаунта" if r["uid"] is None else "ждёт доступа")
+    activity = engage.activity_block(days)
+    activity["pulses"] = _one(f"SELECT count(*) FROM pulses WHERE 1=1{f}", a)
+    activity["weekly_on"] = _one("SELECT count(*) FROM users WHERE weekly_opt_in = 1")
+    activity["weekly_sent"] = _one(f"SELECT count(*) FROM weekly_mail WHERE 1=1{f.replace('created_at','sent_at')}", a)
     return {
+        "activity": activity,
         "plus_requests": requests,
         "plus": plus_stats,
         "period": period,

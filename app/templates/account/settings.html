@@ -26,6 +26,20 @@
   </form>
 </section>
 
+<section class="settings-section" id="weekly">
+  <h2>Письма и недельные отметки</h2>
+  <form method="post" action="{{ url_for('engage.set_weekly_mail') }}" class="settings-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label class="consent"><input type="checkbox" name="weekly" {% if user['weekly_opt_in'] %}checked{% endif %}><span class="consent-text"><span>Присылать на {{ user['email'] }} раз в неделю письмо с шагом недели и ссылкой на «пульс» (30 секунд). Письма отправляет сервис Brevo. Отписаться можно по ссылке в письме или здесь.</span></span></label>
+    <button class="btn btn-quiet btn-sm" type="submit">Сохранить</button>
+  </form>
+  <form method="post" action="{{ url_for('engage.delete_pulses') }}" class="settings-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <p class="muted">Недельные отметки самочувствия («пульс») хранятся в кабинете и показываются на графике.</p>
+    <button class="btn btn-quiet btn-sm" type="submit">Удалить все недельные отметки</button>
+  </form>
+</section>
+
 <section class="settings-section" id="plus">
   <h2>Del Health Plus</h2>
   {% if is_plus %}

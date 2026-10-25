@@ -172,8 +172,10 @@ def register():
             errors["email"] = "Этот e-mail уже зарегистрирован — войдите."
         if not errors:
             cur = db.execute(
-                "INSERT INTO users (email, name, password_hash, policy_version, terms_version) VALUES (?, ?, ?, ?, ?)",
-                (email, name, hash_password(password), POLICY_VERSION, TERMS_VERSION))
+                "INSERT INTO users (email, name, password_hash, policy_version, terms_version, weekly_opt_in)"
+                " VALUES (?, ?, ?, ?, ?, ?)",
+                (email, name, hash_password(password), POLICY_VERSION, TERMS_VERSION,
+                 1 if form.get("weekly") == "on" else 0))
             user = db.execute("SELECT * FROM users WHERE id = ?", (cur.lastrowid,)).fetchone()
             login_user(user)
             db.commit()
@@ -207,6 +209,8 @@ def login():
             if ok:
                 login_user(user)
                 db.commit()
+                from .engage import record
+                record(user["id"], "cabinet")
                 log_event("account_login")
                 return redirect(next_url or url_for("account.dashboard"))
             error = "Неверный e-mail или пароль."

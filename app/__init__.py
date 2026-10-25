@@ -37,7 +37,7 @@ def create_app(config=None):
         if analytics_allowed() and "visitor_id" not in session:
             assign_visitor_id()
 
-    from . import account, admin, auth, health_sync, plus, routes
+    from . import account, admin, auth, engage, health_sync, plus, routes
 
     @app.before_request
     def load_user():
@@ -64,6 +64,8 @@ def create_app(config=None):
     app.register_blueprint(admin.bp)
     app.register_blueprint(plus.bp)
     app.cli.add_command(plus.send_reminders_command)
+    app.register_blueprint(engage.bp)
+    app.cli.add_command(engage.send_weekly_command)
     app.register_blueprint(health_sync.bp)
 
     return app

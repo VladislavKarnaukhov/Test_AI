@@ -118,6 +118,9 @@ def toggle_step(result_id, idx):
     cur = db.execute("DELETE FROM plan_steps WHERE result_id = ? AND idx = ? AND user_id = ?", (result_id, idx, g.user["id"]))
     if not cur.rowcount:
         db.execute("INSERT INTO plan_steps (result_id, idx, user_id) VALUES (?, ?, ?)", (result_id, idx, g.user["id"]))
+        db.commit()
+        from .engage import record
+        record(g.user["id"], "step")
     db.commit()
     return redirect(url_for("account.dashboard") + "#plus")
 
@@ -150,7 +153,7 @@ def unsubscribe(token):
         user_id = _serializer().loads(token)["u"]
     except (BadSignature, KeyError, TypeError):
         abort(404)
-    get_db().execute("UPDATE users SET reminders_opt_in = 0 WHERE id = ?", (user_id,))
+    get_db().execute("UPDATE users SET reminders_opt_in = 0, weekly_opt_in = 0 WHERE id = ?", (user_id,))
     get_db().commit()
     return render_template("account/unsubscribed.html")
 
@@ -174,7 +177,7 @@ def due_reminders(now=None):
     now = now or _now()
     db = get_db()
     out = []
-    users = db.execute("SELECT id, email, name FROM users WHERE reminders_opt_in = 1 AND plus_until > ?",
+    users = db.execute("SELECT id, email, name FROM users WHERE reminders_opt_in = 1 AND weekly_opt_in = 0 AND plus_until > ?",
                        (now.strftime(FMT),)).fetchall()
     for u in users:
         last = db.execute("SELECT id, total, created_at FROM score_results WHERE user_id = ? AND method_version = '2.0' "
