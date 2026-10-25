@@ -84,7 +84,8 @@
 </section>
 
 <section class="apanel"><h2>Откуда приходят</h2>
-<div class="atable-wrap"><table class="atable"><thead><tr><th>Источник</th><th>Посетители</th><th>Анкеты</th><th>Конв.</th><th>Заявки</th></tr></thead><tbody>{% for s in d.sources %}<tr><td>{{ s.name }}</td><td>{{ s.visitors }}</td><td>{{ s.scores }}</td><td>{{ s.conv }}%</td><td>{{ s.leads }}</td></tr>{% else %}<tr><td colspan="5" class="muted">Данных пока нет</td></tr>{% endfor %}</tbody></table></div>
+<div class="atable-wrap"><table class="atable"><thead><tr><th>Источник</th><th>Посетители</th><th>Получили результат</th><th>Конв. в результат</th><th>Анкет всего</th><th>Оставили заявку</th></tr></thead><tbody>{% for s in d.sources %}<tr><td>{{ s.name }}</td><td>{{ s.visitors }}</td><td>{{ s.people }}</td><td>{{ s.conv }}%</td><td>{{ s.scores }}</td><td>{{ s.leads }}</td></tr>{% else %}<tr><td colspan="6" class="muted">Данных пока нет</td></tr>{% endfor %}</tbody></table></div>
+<p class="muted">Конверсия — доля посетителей источника, получивших хотя бы один результат (не больше 100%). «Анкет всего» — все расчёты этих людей: один человек мог пройти анкету несколько раз.</p>
 <h3>UTM-кампании</h3>{{ bars(d.campaigns, 'n', 'campaign') }}
 </section>
 
