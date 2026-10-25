@@ -1,15 +1,15 @@
 # Изображения
 
-Все фотографии — Unsplash с бесплатной лицензией (Unsplash License: бесплатное использование, в том числе коммерческое, атрибуция не обязательна, но указана в подвале). Снимки категории «Unsplash+» не использовались: они платные.
+Все фотографии — Unsplash с бесплатной лицензией (Unsplash License: бесплатное использование, в том числе коммерческое, атрибуция не обязательна, но указана в подвале). Снимки категории «Unsplash+» не использовались: они платные. Подбор: тёплый золотой свет, без людей в кадре, единая гамма с золотым акцентом.
 
 | Файлы | Где | Автор | Страница |
 |---|---|---|---|
-| `run-*.webp` | первый экран | McCarthy Beckan | https://unsplash.com/photos/a6FHROHuQ9o |
-| `sleep-*.webp` | глава «Сон» | Amel Majanovic | https://unsplash.com/photos/-y_E0mXHibI |
-| `walk-*.webp` | глава «Движение» | Emma Simpson | https://unsplash.com/photos/mNGaaLeWEp0 |
-| `food-*.webp` | глава «Питание» | Merri J | https://unsplash.com/photos/uqurOQficP4 |
-| `calm-*.webp` | глава «Психологическое состояние» | Aliona Zahrai | https://unsplash.com/photos/eFHL2TIVHsQ |
+| `run-*.webp` | первый экран | yashzucced | https://unsplash.com/photos/LKnzC12vLtI |
+| `sleep-*.webp` | глава «Сон» | donguyenkhanhs | https://unsplash.com/photos/a0DsMMo1nF8 |
+| `walk-*.webp` | глава «Движение» | visualsbying | https://unsplash.com/photos/R9tPheZuGnA |
+| `food-*.webp` | глава «Питание» | alef_visuals | https://unsplash.com/photos/3GuSZatyqos |
+| `calm-*.webp` | глава «Психологическое состояние» | jsnapshots | https://unsplash.com/photos/57MT_6onqLs |
 
-Обработка: масштаб до 900/1600/2400 px по ширине, WebP, качество 74. Первое фото отзеркалено в CSS (`scaleX(-1)`), чтобы человек оказался справа от текста.
-Фотографии, присланные владельцем ранее, заменены этими; при желании их можно вернуть, подтвердив лицензии.
+Имена файлов остались прежними (run, sleep, walk, food, calm) — на них ссылаются шаблоны.
+Обработка: масштаб до 900/1600/2400 px по ширине (главы — 700/1100 и 800/1400), кадрирование под раскладку (сон и покой 2:3, питание 16:9), WebP, качество 74. Первое фото больше не отзеркаливается.
 Шрифт Inter — SIL OFL 1.1 (`app/static/fonts/OFL-Inter.txt`).
