@@ -7,7 +7,7 @@
 | `run-*.webp` | первый экран | yashzucced | https://unsplash.com/photos/LKnzC12vLtI |
 | `sleep-*.webp` | глава «Сон» | lvphotos | https://unsplash.com/photos/pl3sj3DigxM |
 | `walk-*.webp` | глава «Движение» | visualsbying | https://unsplash.com/photos/R9tPheZuGnA |
-| `food-*.webp` | глава «Питание» | studiostephaniesarlos | https://unsplash.com/photos/aij4cIYifUs |
+| `food-*.webp` | глава «Питание» | natashamakhija6 | https://unsplash.com/photos/jkwmE5N9Gb0 |
 | `calm-*.webp` | глава «Психологическое состояние» | sixteenmilesout | https://unsplash.com/photos/smk9EcNiGxE |
 
 Имена файлов остались прежними (run, sleep, walk, food, calm) — на них ссылаются шаблоны.
