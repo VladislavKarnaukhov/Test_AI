@@ -9,7 +9,7 @@ from .consent import (CONSENT_ALL, CONSENT_CHOICES, CONSENT_COOKIE, CONSENT_MAX_
 from .account import to_msk
 from .db import get_db, log_event, to_json
 from .results import SELECT_COLUMNS, present
-from . import scoring
+from . import engage, scoring
 from .consent import TERMS_VERSION
 from .scoring import ScoringError, calculate_score
 from .visitor import classify_source, guess_country, parse_user_agent, referrer_domain
@@ -120,7 +120,7 @@ def privacy():
 @bp.get("/methodology")
 def methodology():
     log_event("page_view")
-    return render_template("methodology.html", s=scoring)
+    return render_template("methodology.html", s=scoring, pulse_items=engage.PULSE_ITEMS, pulse_version=engage.PULSE_VERSION)
 
 
 @bp.get("/terms")

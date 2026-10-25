@@ -197,3 +197,19 @@ def test_privacy_mentions_pulse_and_weekly_mail(client):
     html = client.get("/privacy").get_data(as_text=True)
     assert "пульс" in html and "недельное письмо" in html
     assert 'id="pulse"' in client.get("/consent/health").get_data(as_text=True)
+
+
+def test_pulse_items_are_complete_and_shown(app):
+    assert [i["key"] for i in engage.PULSE_ITEMS] == ["sleep", "activity", "nutrition", "mood"]
+    assert all(len(i["options"]) == 5 and i["question"] for i in engage.PULSE_ITEMS)
+    c = _with_score(app)
+    html = c.get("/account").get_data(as_text=True)
+    for i in engage.PULSE_ITEMS:
+        assert i["question"] in html
+    c.post("/account/pulse", data={"csrf_token": _tok(c), "pulse_consent": "on", **PULSE})
+    assert "Хорошее" in c.get("/account").get_data(as_text=True)         # сон 4 → подпись варианта
+
+
+def test_methodology_page_describes_pulse(client):
+    html = client.get("/methodology").get_data(as_text=True)
+    assert 'id="pulse-method"' in html and "Consensus Sleep Diary" in html and "ВОЗ-5" in html
