@@ -29,11 +29,11 @@
     {% if week.streak >= 2 %}<p class="week-streak"><b>{{ week.streak }}</b> {{ week.streak | plural('неделя', 'недели', 'недель') }} подряд</p>{% endif %}
   </div>
   <div class="week-grid">
-    <div class="week-card">
+    <div class="week-card week-step">
       <h3>Шаг недели</h3>
       {% if week.step %}
-      <p class="week-step-title{% if week.done %} is-done{% endif %}">{{ week.step.title }}</p>
-      <p class="muted">{{ week.step.text }}</p>
+      <div class="week-step-body"><p class="week-step-title{% if week.done %} is-done{% endif %}">{{ week.step.title }}</p>
+      <p class="muted">{{ week.step.text }}</p></div>
       <form method="post" action="{{ url_for('engage.toggle_week_step') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn {{ 'btn-quiet' if week.done else 'btn-primary' }} btn-sm" aria-pressed="{{ 'true' if week.done else 'false' }}" data-metric="week_step_toggle">{{ 'Сделано. Снять отметку' if week.done else 'Отметить: сделал' }}</button>
@@ -41,8 +41,8 @@
       {% else %}<p class="muted">Шаг недели появится после анкеты.</p>{% endif %}
     </div>
     <div class="week-card">
-      <h3>Пульс недели · 30 секунд</h3>
-      <p class="muted">Четыре вопроса о последних 7 днях по открытым шкалам (<a href="{{ url_for('main.methodology') }}#pulse-method">откуда они</a>). Это самооценка для вас: она не входит в индекс и не меняет расчёт.</p>
+      <div class="week-pulse-head"><h3>Пульс недели · 30 секунд</h3>
+      <p class="muted">Четыре вопроса о последних 7 днях по открытым шкалам (<a href="{{ url_for('main.methodology') }}#pulse-method">откуда они</a>). Это самооценка для вас: она не входит в индекс и не меняет расчёт.</p></div>
       {% if week.pulse %}
       <p class="pulse-done"><b>{{ week.pulse.score }}</b><span>из 100 · отмечено на этой неделе</span></p>
       <ul class="pulse-summary">{% for v in week.pulse['values'] %}<li><span>{{ v.name }}</span><b>{{ v.value }}</b> <small>{{ v.word }}</small></li>{% endfor %}</ul>
