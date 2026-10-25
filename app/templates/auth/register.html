@@ -19,6 +19,7 @@
 {% if errors.terms %}<p class="field-error">{{ errors.terms }}</p>{% endif %}
 <label class="consent"><input type="checkbox" name="consent"{% if form.get('consent') == 'on' %} checked{% endif %}><span>Я соглашаюсь на <a href="{{ url_for('main.privacy') }}" target="_blank" rel="noopener">обработку персональных данных</a> в соответствии с политикой Del Health</span></label>
 {% if errors.consent %}<p class="field-error">{{ errors.consent }}</p>{% endif %}
+<label class="consent"><input type="checkbox" name="weekly"{% if form.get('weekly') == 'on' %} checked{% endif %}><span>Присылать раз в неделю письмо с шагом недели (необязательно; письма отправляет сервис Brevo, отписаться можно в любой момент)</span></label>
 <button class="btn btn-primary" type="submit">Создать кабинет</button>
 <p class="auth-switch">Уже есть кабинет? <a href="{{ url_for('auth.login', next=next_url) }}">Войти</a></p>
 </form>

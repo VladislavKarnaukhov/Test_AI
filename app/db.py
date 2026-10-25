@@ -108,6 +108,36 @@ CREATE TABLE IF NOT EXISTS reminders (
     result_id INTEGER NOT NULL,
     sent_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+CREATE TABLE IF NOT EXISTS activity (
+    user_id INTEGER NOT NULL,
+    day TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    PRIMARY KEY (user_id, day, kind)
+);
+CREATE TABLE IF NOT EXISTS week_steps (
+    user_id INTEGER NOT NULL,
+    week_start TEXT NOT NULL,
+    result_id INTEGER,
+    done_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (user_id, week_start)
+);
+CREATE TABLE IF NOT EXISTS pulses (
+    user_id INTEGER NOT NULL,
+    week_start TEXT NOT NULL,
+    sleep INTEGER NOT NULL,
+    activity INTEGER NOT NULL,
+    nutrition INTEGER NOT NULL,
+    mood INTEGER NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (user_id, week_start)
+);
+CREATE TABLE IF NOT EXISTS weekly_mail (
+    user_id INTEGER NOT NULL,
+    week_start TEXT NOT NULL,
+    sent_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (user_id, week_start)
+);
+CREATE INDEX IF NOT EXISTS idx_activity_day ON activity(day);
 CREATE INDEX IF NOT EXISTS idx_plan_steps_user ON plan_steps(user_id);
 CREATE INDEX IF NOT EXISTS idx_reminders_user ON reminders(user_id, result_id);
 CREATE INDEX IF NOT EXISTS idx_login_attempts_email ON login_attempts(email, created_at);
@@ -162,7 +192,9 @@ MIGRATIONS = [
     ("score_results", "tier", "TEXT"),                  # уровень анкеты v2.0: short / medium / extended
     ("score_results", "details", "TEXT"),               # v2.0: уточнённые сферы, подробный индекс, тело, скрининги
     ("users", "terms_version", "TEXT"),
-    ("users", "plus_until", "TEXT"),                    # Del Health Plus действует до (UTC); NULL — бесплатный доступ
+    ("users", "weekly_opt_in", "INTEGER NOT NULL DEFAULT 0"),  # согласие на недельное письмо с шагом недели
+    ("users", "pulse_consent_at", "TEXT"),              # согласие на обработку недельных отметок самочувствия («пульс»)
+    ("users", "plus_until", "TEXT"),                   # Del Health Plus действует до (UTC); NULL — бесплатный доступ
     ("users", "reminders_opt_in", "INTEGER NOT NULL DEFAULT 0"),  # согласие на напоминания по e-mail (только Plus)                 # редакция пользовательского соглашения при регистрации
 ]
 

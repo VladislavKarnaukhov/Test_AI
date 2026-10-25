@@ -27,6 +27,21 @@
 {% for k in d.kpi %}<div class="akpi"><span class="akpi-label">{{ k.label }}</span><b class="akpi-value">{{ k.value }}</b><span class="akpi-hint">{{ k.hint }}</span></div>{% endfor %}
 </section>
 
+<section class="apanel" id="activity"><h2>Активность</h2>
+<p class="muted">Активен тот, кто за период вошёл в аккаунт или открыл кабинет, отметил шаг (недели или плана) или прошёл «пульс». Считаются только вошедшие пользователи; DAU — сегодня (UTC), WAU — 7 дней, MAU — 30 дней.</p>
+<section class="akpis" aria-label="DAU, WAU, MAU">
+<div class="akpi"><span class="akpi-label">DAU</span><b class="akpi-value">{{ d.activity.dau }}</b><span class="akpi-hint">за сегодня</span></div>
+<div class="akpi"><span class="akpi-label">WAU</span><b class="akpi-value">{{ d.activity.wau }}</b><span class="akpi-hint">за 7 дней</span></div>
+<div class="akpi"><span class="akpi-label">MAU</span><b class="akpi-value">{{ d.activity.mau }}</b><span class="akpi-hint">за 30 дней</span></div>
+<div class="akpi"><span class="akpi-label">Липкость</span><b class="akpi-value">{{ d.activity.wau_mau }}%</b><span class="akpi-hint">WAU / MAU; DAU / MAU {{ d.activity.dau_mau }}%</span></div>
+</section>
+<div class="agrid">
+<div><h3>Активные по дням (DAU)</h3>{{ line(d.daily.days, d.activity.dau_series, 'DAU по дням') }}</div>
+<div><h3>WAU по неделям (12 недель)</h3>{{ bars(d.activity.wau_series, 'n', 'label') }}</div>
+<div><h3>Что делали за 7 дней</h3>{{ bars(d.activity.by_kind) }}</div>
+<div><h3>Недельный ритм</h3><dl class="adl"><div><dt>Пульсов за период</dt><dd>{{ d.activity.pulses }}</dd></div><div><dt>Подписаны на недельное письмо</dt><dd>{{ d.activity.weekly_on }}</dd></div><div><dt>Недельных писем отправлено</dt><dd>{{ d.activity.weekly_sent }}</dd></div></dl></div>
+</div></section>
+
 <section class="apanel" id="plus-admin"><h2>Del Health Plus</h2>
 <dl class="adl"><div><dt>Активных подписок</dt><dd>{{ d.plus.active }}</dd></div><div><dt>С включёнными напоминаниями</dt><dd>{{ d.plus.reminders_on }}</dd></div><div><dt>Напоминаний отправлено (за период)</dt><dd>{{ d.plus.reminders_sent }}</dd></div><div><dt>Шагов плана отмечено (за период)</dt><dd>{{ d.plus.steps_done }}</dd></div></dl>
 <h3>Заявки на Plus</h3>

@@ -13,7 +13,7 @@
   </div>
 </header>
 
-<nav class="account-nav" aria-label="Разделы кабинета"><a href="#dynamics">Динамика</a><a href="#plus">Plus</a><a href="#history">История</a><a href="#recommendations">Рекомендации</a></nav>
+<nav class="account-nav" aria-label="Разделы кабинета">{% if latest %}<a href="#week">Неделя</a>{% endif %}<a href="#dynamics">Динамика</a><a href="#plus">Plus</a><a href="#history">История</a><a href="#recommendations">Советы</a></nav>
 
 {% if not latest %}
 <section class="panel empty">
@@ -22,6 +22,62 @@
   <a class="btn btn-primary" href="{{ url_for('main.index') }}#try">Пройти анкету</a>
 </section>
 {% else %}
+
+<section class="week" id="week" aria-labelledby="week-title">
+  <div class="week-head">
+    <div><p class="eyebrow">Эта неделя</p><h2 id="week-title">Шаг и пульс</h2></div>
+    {% if week.streak >= 2 %}<p class="week-streak"><b>{{ week.streak }}</b> {{ week.streak | plural('неделя', 'недели', 'недель') }} подряд</p>{% endif %}
+  </div>
+  <div class="week-grid">
+    <div class="week-card">
+      <h3>Шаг недели</h3>
+      {% if week.step %}
+      <p class="week-step-title{% if week.done %} is-done{% endif %}">{{ week.step.title }}</p>
+      <p class="muted">{{ week.step.text }}</p>
+      <form method="post" action="{{ url_for('engage.toggle_week_step') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn {{ 'btn-quiet' if week.done else 'btn-primary' }} btn-sm" aria-pressed="{{ 'true' if week.done else 'false' }}" data-metric="week_step_toggle">{{ 'Сделано. Снять отметку' if week.done else 'Отметить: сделал' }}</button>
+      </form>
+      {% else %}<p class="muted">Шаг недели появится после анкеты.</p>{% endif %}
+    </div>
+    <div class="week-card">
+      <h3>Пульс недели · 30 секунд</h3>
+      <p class="muted">Как прошли последние 7 дней? Это самооценка для вас: она не входит в индекс и не меняет расчёт.</p>
+      {% if week.pulse %}
+      <p class="pulse-done"><b>{{ week.pulse.score }}</b><span>из 100 · отмечено на этой неделе</span></p>
+      <ul class="pulse-summary">{% for v in week.pulse['values'] %}<li><span>{{ v.name }}</span><b>{{ v.value }}</b> <small>{{ v.word }}</small></li>{% endfor %}</ul>
+      {% endif %}
+      <details class="pulse-edit"{% if not week.pulse %} open{% endif %}>
+        <summary>{{ 'Изменить отметки' if week.pulse else 'Отметить неделю' }}</summary>
+        <form method="post" action="{{ url_for('engage.submit_pulse') }}" class="pulse-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          {% for key, name in week.pulse_fields %}
+          <fieldset class="pulse-row"><legend>{{ name }}</legend>
+            <div class="pulse-scale" role="radiogroup">{% for n in [1, 2, 3, 4, 5] %}<label><input type="radio" name="{{ key }}" value="{{ n }}" required><span aria-label="{{ n }} — {{ week.pulse_words[n] | lower }}">{{ n }}</span></label>{% endfor %}</div>
+            <p class="pulse-ends"><span>плохо</span><span>отлично</span></p>
+          </fieldset>
+          {% endfor %}
+          {% if not week.pulse_consent %}<label class="consent"><input type="checkbox" name="pulse_consent" required><span class="consent-text"><span>Я даю <a href="{{ url_for('main.health_consent') }}#pulse" target="_blank" rel="noopener">согласие на обработку</a> этих отметок о самочувствии: они сохраняются в кабинете и показываются на графике. Удалить их можно в настройках.</span></span></label>{% endif %}
+          <button class="btn btn-primary btn-sm" type="submit" data-metric="pulse_submit">Сохранить пульс</button>
+        </form>
+      </details>
+    </div>
+  </div>
+  {% if week.chart %}
+  {% set c = week.chart %}
+  <figure class="pulse-chart">
+    <svg viewBox="0 0 {{ c.w }} {{ c.h }}" role="img" aria-label="Пульс по неделям между месячными замерами индекса" aria-describedby="pulse-table">
+      {% for gl in c.grid %}<line class="pg" x1="{{ c.left }}" x2="{{ c.right }}" y1="{{ gl.y }}" y2="{{ gl.y }}"/><text class="pt" x="{{ c.left - 8 }}" y="{{ gl.y + 4 }}" text-anchor="end">{{ gl.v }}</text>{% endfor %}
+      {% if c.pulse_line %}<polyline class="pl" points="{{ c.pulse_line }}"/>{% endif %}
+      {% for p in c.pulse %}<circle class="pd" cx="{{ p.x }}" cy="{{ p.y }}" r="3.5"><title>{{ p.label }}: пульс {{ p.score }}</title></circle>{% endfor %}
+      {% for i in c.index %}<g class="pi"><circle cx="{{ i.x }}" cy="{{ i.y }}" r="7"/><text x="{{ i.x }}" y="{{ i.y - 12 }}" text-anchor="middle">{{ i.total }}</text><title>{{ i.label }}: индекс {{ i.total }}</title></g>{% endfor %}
+      {% for t in c.ticks %}<text class="pt" x="{{ t.x }}" y="{{ c.h - 8 }}" text-anchor="{{ 'start' if loop.first else 'end' }}">{{ t.label }}</text>{% endfor %}
+    </svg>
+    <figcaption><span class="pk pk-pulse">Пульс недели</span><span class="pk pk-index">Индекс (месячный замер)</span></figcaption>
+    <div class="visually-hidden" id="pulse-table"><table><caption>Пульс по неделям и индекс</caption><thead><tr><th scope="col">Дата</th><th scope="col">Пульс</th></tr></thead><tbody>{% for p in c.pulse %}<tr><th scope="row">{{ p.label }}</th><td>{{ p.score }}</td></tr>{% endfor %}{% for i in c.index %}<tr><th scope="row">{{ i.label }}</th><td>индекс {{ i.total }}</td></tr>{% endfor %}</tbody></table></div>
+  </figure>
+  {% endif %}
+</section>
 
 <section class="account-overview" id="dynamics">
   {% set weakest = (latest.breakdown | dictsort(by='value'))[0][0] %}
