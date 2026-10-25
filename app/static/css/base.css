@@ -267,15 +267,14 @@ dialog .btn{justify-self:start}
 @supports (animation-timeline:view()){
 .hero-photo img{animation:hero-drift linear both;animation-timeline:scroll(root);animation-range:0 80svh}
 }}
-.hero-photo{transform:scaleX(-1)}
-.hero-photo img{object-position:76% 40%}
+.hero-photo img{object-position:50% 45%}
 .hero-inner{grid-template-columns:minmax(0,1fr) auto}
 @media (max-width:960px){
 .hero-inner{grid-template-columns:minmax(0,1fr)}
 }
 @media (max-width:600px){
 .hero-photo{inset:0 0 auto 0}
-.hero-photo img{object-position:30% 28%}
+.hero-photo img{object-position:50% 40%}
 .hero-inner{gap:var(--sp-5)}
 .hero-photo{height:66svh}
 }
