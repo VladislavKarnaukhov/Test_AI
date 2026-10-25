@@ -100,12 +100,12 @@ def compare_rows(results):
     cur = [r for r in results if r["current"]]
     if len(cur) < 2:
         return None
-    def row(name, getter):
+    def row(key, name, getter):
         vals = [getter(r) for r in cur]
-        return {"name": name, "first": vals[0], "prev": vals[-2], "now": vals[-1], "best": max(vals),
+        return {"key": key, "name": name, "first": vals[0], "prev": vals[-2], "now": vals[-1], "best": max(vals),
                 "delta": vals[-1] - vals[-2]}
-    rows = [row("Итог", lambda r: r["total"])]
-    rows += [row(DOMAIN_SHORT[k], lambda r, k=k: r["breakdown"].get(k, 0)) for k in CORE_DOMAINS]
+    rows = [row("total", "Итог", lambda r: r["total"])]
+    rows += [row(k, DOMAIN_SHORT[k], lambda r, k=k: r["breakdown"].get(k, 0)) for k in CORE_DOMAINS]
     return rows
 
 

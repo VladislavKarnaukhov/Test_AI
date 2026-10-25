@@ -157,7 +157,7 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="plan-check" aria-pressed="{{ 'true' if s.done else 'false' }}" aria-label="{{ 'Снять отметку' if s.done else 'Отметить выполненным' }}: {{ s.title }}"></button>
       </form>
-      <div><p class="plan-sphere">{{ s.sphere_name }}{% if s.level_name %} · {{ s.level_name }}{% endif %}</p><h3>{{ s.title }}</h3><p>{{ s.text }}</p></div>
+      <div class="plan-body"><p class="plan-sphere"><i aria-hidden="true" style="--c:var(--s-{{ s.sphere }})"></i>{{ s.sphere_name }}{% if s.level_name %} · {{ s.level_name }}{% endif %}</p><h3>{{ s.title }}</h3><p>{{ s.text }}</p></div>
       {% if s.score is not none %}<p class="plan-score" style="--v:{{ s.score }};--c:var(--s-{{ s.sphere }})"><b>{{ s.score }}</b><span>балл сферы</span><i aria-hidden="true"></i></p>{% endif %}
     </li>{% endfor %}
   </ol>
@@ -168,10 +168,28 @@
   </a>
   <h2 class="plus-sub">Сравнение по сферам</h2>
   {% if compare %}
-  <div class="atable-wrap"><table class="compare">
-    <caption class="visually-hidden">Сравнение баллов: первая, прошлая, последняя и лучшая оценка</caption>
+  {% set tot = compare[0] %}{% set sp = compare[1:] %}
+  {% set gain = (sp | sort(attribute='delta') | last) %}{% set weak = (sp | sort(attribute='now') | first) %}
+  <div class="cmp-summary">
+    <p class="cmp-lead"><b>{{ tot.prev }} → {{ tot.now }}</b> <span class="chip {{ 'up' if tot.delta > 0 else 'down' if tot.delta < 0 else '' }}">{{ '%+d' % tot.delta if tot.delta else '±0' }}</span> <span class="muted">итог по сравнению с прошлой оценкой</span></p>
+    <ul class="cmp-notes">
+      {% if gain.delta > 0 %}<li>Сильнее всего выросла сфера «{{ gain.name }}»: <b class="up">{{ '%+d' % gain.delta }}</b></li>{% endif %}
+      <li>Больше всего резерва: «{{ weak.name }}», сейчас {{ weak.now }}</li>
+    </ul>
+  </div>
+  <ul class="cmp" aria-hidden="true">
+    {% for r in compare %}<li class="cmp-row{{ ' cmp-total' if loop.first }}" style="--c:var(--s-{{ r.key }});--now:{{ r.now }};--first:{{ r.first }};--best:{{ r.best }}">
+      <span class="cmp-name">{{ r.name }}</span>
+      <span class="cmp-track"><i class="cmp-fill"></i>{% if r.best != r.now %}<i class="cmp-best"></i>{% endif %}<i class="cmp-first"></i><i class="cmp-now"></i></span>
+      <span class="cmp-vals"><b>{{ r.now }}</b><em class="chip {{ 'up' if r.delta > 0 else 'down' if r.delta < 0 else '' }}">{{ '%+d' % r.delta if r.delta else '±0' }}</em></span>
+      <span class="cmp-meta">первая {{ r.first }} · прошлая {{ r.prev }} · лучшая {{ r.best }}</span>
+    </li>{% endfor %}
+  </ul>
+  <p class="cmp-legend" aria-hidden="true"><span><i class="k-now"></i>сейчас</span><span><i class="k-first"></i>первая оценка</span><span><i class="k-best"></i>лучшая, если выше текущей</span></p>
+  <div class="visually-hidden"><table class="compare">
+    <caption>Сравнение баллов: первая, прошлая, последняя и лучшая оценка</caption>
     <thead><tr><th scope="col">Сфера</th><th scope="col">Первая</th><th scope="col">Прошлая</th><th scope="col">Сейчас</th><th scope="col">К прошлой</th><th scope="col">Лучшая</th></tr></thead>
-    <tbody>{% for r in compare %}<tr><th scope="row">{{ r.name }}</th><td data-l="Первая">{{ r.first }}</td><td data-l="Прошлая">{{ r.prev }}</td><td data-l="Сейчас"><b>{{ r.now }}</b></td><td data-l="К прошлой" class="{{ 'up' if r.delta > 0 else 'down' if r.delta < 0 else '' }}">{{ '%+d' % r.delta if r.delta else '±0' }}</td><td data-l="Лучшая">{{ r.best }}</td></tr>{% endfor %}</tbody>
+    <tbody>{% for r in compare %}<tr><th scope="row">{{ r.name }}</th><td>{{ r.first }}</td><td>{{ r.prev }}</td><td><b>{{ r.now }}</b></td><td>{{ '%+d' % r.delta if r.delta else '±0' }}</td><td>{{ r.best }}</td></tr>{% endfor %}</tbody>
   </table></div>
   {% else %}<p class="muted">Нужно хотя бы две оценки по действующей методике.</p>{% endif %}
   <p class="muted"><a class="text-link" href="{{ url_for('account.settings') }}#plus">Напоминания по e-mail</a></p>
