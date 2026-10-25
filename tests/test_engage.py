@@ -266,3 +266,16 @@ def test_plan_puts_filler_steps_last():
             {"sphere": "sleep", "level": "mid", "item": "sl1", "title": "Раньше спать", "text": "t"},
             {"sphere": "activity", "level": "high", "item": "aerobic", "title": "Прогулки", "text": "t"}]
     assert [s["title"] for s in build_plan(recs)] == ["Раньше спать", "Прогулки", "Поддерживайте"]
+
+
+def test_compare_is_visual_with_summary_and_accessible_table(app):
+    c = _with_score(app)
+    c.post("/api/score", json=VALID)
+    _make_plus_user(app)
+    conn = sqlite3.connect(app.config["DATABASE_PATH"])
+    conn.execute("UPDATE score_results SET created_at = datetime('now', '-40 days') WHERE id = 1")
+    conn.commit()
+    conn.close()
+    html = c.get("/account").get_data(as_text=True)
+    assert 'class="cmp-summary"' in html and 'class="cmp"' in html and "Больше всего резерва" in html
+    assert '<th scope="row">Итог</th>' in html and 'class="visually-hidden"><table class="compare"' in html
