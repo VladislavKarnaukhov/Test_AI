@@ -183,35 +183,47 @@
 }
 .account-overview{display:block}
 .account-overview .account-score{padding:clamp(1.5rem,4vw,3.5rem)}
-.week{margin-block:var(--sp-6);display:grid;gap:var(--sp-5)}
+.week{margin-block:var(--sp-7);display:grid;gap:var(--sp-5)}
 .week-head{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:var(--sp-3)}
-.week-head h2{margin:0}
-.week-streak{margin:0;font-size:var(--fs-sm);color:var(--ink-2)}
-.week-streak b{font-size:var(--fs-lg);font-weight:500;color:var(--accent);margin-right:.25em}
-.week-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,19rem),1fr));gap:var(--sp-5)}
-.week-card{display:flex;flex-direction:column;gap:var(--sp-3);padding:var(--sp-5);background:var(--sheet);border:1px solid var(--line);border-radius:var(--r-lg)}
-.week-card h3{margin:0;font-size:var(--fs-md);font-weight:500}
+.week-head .eyebrow{margin:0 0 var(--sp-1)}
+.week-head h2{margin:0;font-size:var(--fs-xl);letter-spacing:-.03em;line-height:1.1}
+.week-streak{margin:0;padding:var(--sp-1) var(--sp-4);border-radius:var(--r-pill);background:var(--accent-soft);font-size:var(--fs-sm);color:var(--ink)}
+.week-streak b{font-weight:600;color:var(--accent);margin-right:.25em}
+.week-grid{display:grid;gap:var(--sp-4)}
+.week-card{display:grid;gap:var(--sp-3);padding:clamp(1.25rem,3vw,2rem);background:var(--sheet);border:1px solid var(--line);border-radius:var(--r-lg)}
+.week-card h3{margin:0;font-size:var(--fs-xs);font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
 .week-card p{margin:0}
-.week-card form{margin-top:auto}
+.week-step{grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:var(--sp-6)}
+.week-step h3{grid-column:1/-1}
+.week-step-body{display:grid;gap:var(--sp-2);max-width:40rem}
+.week-step form{margin:0}
 .week-step-title{font-size:var(--fs-lg);font-weight:500;letter-spacing:-.02em;line-height:1.25}
 .week-step-title.is-done{color:var(--accent)}
+.week-pulse-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:var(--sp-2) var(--sp-5)}
+.week-pulse-head .muted{max-width:38rem;font-size:var(--fs-sm)}
 .pulse-done{display:flex;align-items:baseline;gap:var(--sp-2);color:var(--ink-3);font-size:var(--fs-sm)}
-.pulse-done b{font-size:var(--fs-2xl);font-weight:500;letter-spacing:-.04em;color:var(--ink)}
-.pulse-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sp-2) var(--sp-4);margin:0;padding:0;list-style:none;font-size:var(--fs-sm)}
-.pulse-summary li{display:flex;flex-wrap:wrap;align-items:baseline;gap:var(--sp-1) var(--sp-2)}
-.pulse-summary li>span{color:var(--ink-3)}
-.pulse-summary small{color:var(--ink-3)}
-.pulse-edit summary{display:inline-flex;align-items:center;min-height:2.75rem;cursor:pointer;color:var(--accent);font-size:var(--fs-sm)}
-.pulse-form{display:grid;gap:var(--sp-4);margin-top:var(--sp-3)}
-.pulse-row{margin:0;padding:0;border:0;min-width:0}
-.pulse-row legend{padding:0;margin-bottom:var(--sp-2);font-size:var(--fs-sm);font-weight:500}
-.pulse-q{margin:0 0 var(--sp-2);font-size:var(--fs-sm);color:var(--ink-2)}
-.pulse-scale{display:grid;grid-template-columns:repeat(auto-fit,minmax(6.25rem,1fr));gap:var(--sp-2)}
+.pulse-done b{font-size:var(--fs-2xl);font-weight:500;letter-spacing:-.04em;line-height:1;color:var(--ink)}
+.pulse-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));gap:var(--sp-3);margin:0;padding:0;list-style:none}
+.pulse-summary li{display:grid;gap:.125rem;padding:var(--sp-3) var(--sp-4);border-radius:var(--r-sm);background:var(--sunken)}
+.pulse-summary li>span{font-size:var(--fs-xs);color:var(--ink-3)}
+.pulse-summary li b{display:none}
+.pulse-summary small{font-size:var(--fs-sm);color:var(--ink)}
+.pulse-edit summary{display:inline-flex;align-items:center;min-height:2.75rem;cursor:pointer;color:var(--accent);font-size:var(--fs-sm);font-weight:500}
+.pulse-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,22rem),1fr));gap:var(--sp-5) var(--sp-6);margin-top:var(--sp-3)}
+.pulse-form>.consent,.pulse-form>.btn{grid-column:1/-1}
+.pulse-form>.btn{justify-self:start}
+.pulse-row{margin:0;padding:0;border:0;min-width:0;display:grid;gap:var(--sp-2);align-content:start}
+.pulse-row legend{float:left;width:100%;padding:0;font-size:var(--fs-md);font-weight:500}
+.pulse-row legend+*{clear:both}
+.pulse-q{margin:0;font-size:var(--fs-sm);line-height:1.45;color:var(--ink-3)}
+.pulse-scale{display:grid;grid-template-columns:repeat(auto-fit,minmax(5.5rem,1fr));gap:var(--sp-2);margin-top:var(--sp-1)}
 .pulse-scale label{position:relative;display:block}
 .pulse-scale input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
-.pulse-scale span{display:flex;align-items:center;justify-content:center;height:100%;min-height:2.75rem;padding:var(--sp-2) var(--sp-3);text-align:center;border:1px solid var(--line-strong);border-radius:var(--r-sm);background:var(--sheet);font-size:var(--fs-sm);line-height:1.3;transition:background-color var(--dur-1) var(--ease-out),border-color var(--dur-1) var(--ease-out),color var(--dur-1) var(--ease-out)}
+.pulse-scale span{display:flex;align-items:center;justify-content:center;height:100%;min-height:2.75rem;padding:var(--sp-2);text-align:center;border:1px solid var(--line-strong);border-radius:var(--r-sm);background:var(--sheet);font-size:var(--fs-xs);line-height:1.25;transition:background-color var(--dur-1) var(--ease-out),border-color var(--dur-1) var(--ease-out),color var(--dur-1) var(--ease-out)}
 .pulse-scale input:checked+span{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .pulse-scale input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+@media (hover:hover) and (pointer:fine){.pulse-scale input:not(:checked):hover+span{border-color:var(--accent);background:var(--accent-soft)}}
+@media (max-width:640px){.week-step{grid-template-columns:minmax(0,1fr)}.week-step form .btn{width:100%}}
 .pulse-chart{margin:0;padding:var(--sp-5);background:var(--sheet);border:1px solid var(--line);border-radius:var(--r-lg)}
 .pulse-chart svg{display:block;width:100%;height:auto;overflow:visible}
 .pulse-chart .pg{stroke:var(--line);stroke-width:1}
