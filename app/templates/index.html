@@ -55,6 +55,17 @@
 <h2 id="score-title">Один балл. <span class="soft">И один шаг на неделю.</span></h2>
 <p class="lead">Шесть сфер сводятся в число от 0 до 100. Вы видите, где находитесь, и получаете один понятный шаг, а не список из тридцати советов.</p>
 </div>
+{% if latest %}
+<figure class="score-demo" aria-label="Ваш индекс: {{ latest.total }} из 100, {{ latest.level_name | lower }}">
+<div class="ring-score big" style="--v:{{ latest.total }}"><b>{{ latest.total }}</b></div>
+<figcaption>
+<span class="peek-label">Ваш последний результат · {{ latest.created_at | msk }}</span>
+<span class="score-demo-level">{{ latest.level_name }}</span>
+<span class="score-demo-note">{{ latest.summary | replace(latest.level_name ~ '. ', '') }}</span>
+</figcaption>
+{% if latest.focus %}<p class="score-demo-step"><b>{{ latest.focus.title if latest.focus.title.startswith('Фокус недели') else 'Шаг на неделю: ' ~ latest.focus.title }}.</b> {{ latest.focus.text }}</p>{% endif %}
+</figure>
+{% else %}
 <figure class="score-demo" aria-label="Пример: индекс 82, высокий уровень">
 <div class="ring-score big" style="--v:82"><b>82</b></div>
 <figcaption>
@@ -64,6 +75,7 @@
 </figcaption>
 <p class="score-demo-step"><b>Шаг на неделю:</b> добавьте порцию овощей или фруктов к одному приёму пищи.</p>
 </figure>
+{% endif %}
 </div>
 </section>
 
