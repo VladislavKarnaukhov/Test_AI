@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Отчёт месяца — Del Health{% endblock %}
+{% block content %}
+{% include "_header.html" %}
+<main id="main" tabindex="-1" class="wrap report-page ym-hide-content ym-disable-keys">
+<p class="settings-back no-print"><a class="text-link" href="{{ url_for('account.dashboard') }}#plus">Личный кабинет</a></p>
+{% if not r %}
+<section class="panel empty">
+  <h1>Отчёт месяца</h1>
+  <p>Отчёт строится по оценкам по действующей методике. Пройдите анкету, пока вы вошли в кабинет.</p>
+  <a class="btn btn-primary" href="{{ url_for('main.index') }}#try">Пройти анкету</a>
+</section>
+{% else %}
+{% set total_delta = r.delta_prev %}
+<header class="report-head">
+  <div>
+    <p class="eyebrow">Del Health Plus · отчёт месяца</p>
+    <h1>{{ user.name }}</h1>
+    <p class="muted">Сформирован {{ today }}. Оценок по методике v{{ method_version }}: {{ r.count }}. Последняя: {{ r.now.date }}.</p>
+  </div>
+  <button type="button" class="btn btn-primary btn-sm no-print" data-print>Сохранить в PDF</button>
+</header>
+
+<section class="report-summary" aria-labelledby="rs-title">
+  <h2 id="rs-title" class="visually-hidden">Итог</h2>
+  <div class="report-total"><b>{{ r.now.total }}</b><span>из 100 · {{ r.now.level_name | lower }}</span></div>
+  <dl class="report-deltas">
+    <div><dt>К прошлой оценке</dt><dd class="{{ 'up' if r.delta_prev and r.delta_prev > 0 else 'down' if r.delta_prev and r.delta_prev < 0 else '' }}">{% if r.delta_prev is none %}—{% else %}{{ '%+d' % r.delta_prev if r.delta_prev else '±0' }}{% endif %}</dd></div>
+    <div><dt>С первой оценки</dt><dd class="{{ 'up' if r.delta_first and r.delta_first > 0 else 'down' if r.delta_first and r.delta_first < 0 else '' }}">{% if r.delta_first is none %}—{% else %}{{ '%+d' % r.delta_first if r.delta_first else '±0' }}{% endif %}</dd></div>
+    <div><dt>Шагов плана выполнено</dt><dd>{{ r.plan_done }} из {{ r.plan | length }}</dd></div>
+    <div><dt>Пульс недели</dt><dd>{% if r.pulses %}{{ r.pulses[-1] }}{% if r.pulse_delta is not none %} <small class="{{ 'up' if r.pulse_delta > 0 else 'down' if r.pulse_delta < 0 else '' }}">{{ '%+d' % r.pulse_delta if r.pulse_delta else '±0' }}</small>{% endif %}{% else %}—{% endif %}</dd></div>
+  </dl>
+</section>
+
+<section class="report-block" aria-labelledby="rsp-title">
+  <h2 id="rsp-title">Сферы</h2>
+  <ul class="report-spheres">
+    {% for s in r.spheres %}<li>
+      <span class="rs-name">{{ s.name }}</span>
+      <span class="rs-bar" aria-hidden="true"><i style="--w:{{ s.now }}%;--c:var(--s-{{ s.key }})"></i></span>
+      <b class="rs-val">{{ s.now }}</b>
+      <span class="rs-d {{ 'up' if s.delta_prev and s.delta_prev > 0 else 'down' if s.delta_prev and s.delta_prev < 0 else '' }}">{% if s.delta_prev is none %}—{% else %}{{ '%+d' % s.delta_prev if s.delta_prev else '±0' }}{% endif %}</span>
+    </li>{% endfor %}
+  </ul>
+  <p class="muted report-legend">Баллы от 0 до 100. Справа: изменение к прошлой оценке.</p>
+</section>
+
+{% if r.plan %}
+<section class="report-block" aria-labelledby="rpl-title">
+  <h2 id="rpl-title">План на месяц</h2>
+  <ul class="report-plan">
+    {% for s in r.plan %}<li class="{{ 'is-done' if s.done else '' }}"><span class="rp-mark" aria-hidden="true">{{ '✓' if s.done else '' }}</span><div><b>{{ s.title }}</b><small>{{ s.sphere_name }}{% if s.level_name %} · {{ s.level_name }}{% endif %}, {{ 'выполнено' if s.done else 'в работе' }}</small></div></li>{% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if r.flags %}
+<section class="report-block" aria-labelledby="rfl-title">
+  <h2 id="rfl-title">Что стоит обсудить со специалистом</h2>
+  <ul class="report-flags">{% for f in r.flags %}<li><b>{{ f.title }}</b> <span>{{ f.text }}</span></li>{% endfor %}</ul>
+</section>
+{% endif %}
+
+<p class="report-foot muted">Del Health — образовательный индекс, а не диагноз и не медицинская услуга. Отчёт построен по вашим ответам и не заменяет консультацию врача.</p>
+{% endif %}
+</main>
+{% endblock %}
+{% block scripts %}<script src="{{ static_url('js/report.js') }}"></script>{% endblock %}

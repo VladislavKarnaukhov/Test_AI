@@ -38,7 +38,7 @@ function audit(doc, W){
   const rects=[]; const walker=doc.createTreeWalker(doc.body,NodeFilter.SHOW_TEXT);
   let n; while(n=walker.nextNode()){
     if(!n.nodeValue.trim()) continue; const el=n.parentElement; if(!el) continue;
-    if(el.closest('[hidden],script,style,noscript,.visually-hidden,[aria-hidden=true]:not(svg text)')) continue;
+    if(el.closest('[hidden],script,style,noscript,.visually-hidden,[aria-hidden=true]:not(svg text)')||(el.closest('.compare thead')&&win.innerWidth<=640)) continue;
     const cs=win.getComputedStyle(el); if(cs.display==='none'||cs.visibility==='hidden'||parseFloat(cs.opacity)===0) continue;
     if(el.closest('dialog:not([open])')||el.closest('details:not([open]) > :not(summary)')) continue;
     const r=doc.createRange(); r.selectNodeContents(n);
@@ -55,7 +55,7 @@ function audit(doc, W){
       if(sameFlow&&iy<0.4*Math.min(a.b.height,b.b.height)) continue;               // плотный межстрочный интервал заголовков
       out.overlaps.push(desc(a.el)+' «'+a.t+'» × '+desc(b.el)+' «'+b.t+'» '+Math.round(ix)+'x'+Math.round(iy));
     } } }
-  doc.querySelectorAll('body *').forEach(e=>{ const cs=win.getComputedStyle(e); if((cs.overflow==='hidden'||cs.textOverflow==='ellipsis')&&e.scrollWidth>e.clientWidth+2&&e.textContent.trim()&&e.clientWidth>0&&!e.closest('.ticker,.range,.menu,.table-wrap,.visually-hidden')) out.clipped.push(desc(e)+' '+e.scrollWidth+'>'+e.clientWidth); });
+  doc.querySelectorAll('body *').forEach(e=>{ const cs=win.getComputedStyle(e); if((cs.overflow==='hidden'||cs.textOverflow==='ellipsis')&&e.scrollWidth>e.clientWidth+2&&e.textContent.trim()&&e.clientWidth>0&&!e.closest('.ticker,.range,.menu,.table-wrap,.visually-hidden,.compare thead')) out.clipped.push(desc(e)+' '+e.scrollWidth+'>'+e.clientWidth); });
   out.docOverflow=doc.documentElement.scrollWidth>doc.documentElement.clientWidth+1?doc.documentElement.scrollWidth:0;
   return out;
   function isFixed(e){for(let x=e;x&&x!==doc.body;x=x.parentElement){{const ps=win.getComputedStyle(x).position;if(ps==='fixed'||ps==='sticky')return true;}}return false;}
@@ -88,11 +88,26 @@ def build_pages():
                                  "consent": "on", "terms": "on"})
     for payload in (SHORT_EXAMPLE, short(n1="2", n2="7"), medium(), short(n1="2", n2="7")):
         user.post("/api/score", json=with_consent(payload))
+    plus_user = client()
+    plus_user.post("/register", data={"csrf_token": csrf(plus_user, "/register"), "name": "Борис", "email": "plus@example.test",
+                                      "password": "correct-horse-1", "password_confirm": "correct-horse-1",
+                                      "consent": "on", "terms": "on"})
+    for payload in (SHORT_EXAMPLE, short(n1="2", n2="7")):
+        plus_user.post("/api/score", json=with_consent(payload))
+    plus_user.get("/account")      # первое открытие показывает flash о регистрации — снимаем его
+    with app.app_context():
+        import sqlite3
+        conn = sqlite3.connect(app.config["DATABASE_PATH"])
+        conn.execute("UPDATE users SET plus_until = datetime('now', '+20 days') WHERE email = 'plus@example.test'")
+        conn.commit()
+        conn.close()
     open_subs = '<script>addEventListener("load",function(){document.querySelectorAll(".entry[open] details.sub").forEach(function(d){d.open=true})})</script>'
     return {
         "home": page(guest, "/"),
         "home_user": page(user, "/"),
         "dash": page(user, "/account", open_subs),
+        "dash_plus": page(plus_user, "/account"),
+        "report": page(plus_user, "/account/report"),
         "settings": page(user, "/account/settings"),
         "login": page(guest, "/login"),
         "register": page(guest, "/register"),

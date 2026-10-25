@@ -213,3 +213,56 @@ def test_pulse_items_are_complete_and_shown(app):
 def test_methodology_page_describes_pulse(client):
     html = client.get("/methodology").get_data(as_text=True)
     assert 'id="pulse-method"' in html and "Consensus Sleep Diary" in html and "ВОЗ-5" in html
+
+
+# ---------- Plus: отчёт месяца и превью ----------
+
+def _make_plus_user(app, email="anna@example.com"):
+    conn = sqlite3.connect(app.config["DATABASE_PATH"])
+    conn.execute("UPDATE users SET plus_until = datetime('now', '+20 days') WHERE email = ?", (email,))
+    conn.commit()
+    conn.close()
+
+
+def test_report_requires_plus(app):
+    c = _with_score(app)
+    r = c.get("/account/report")
+    assert r.status_code == 302 and "#plus" in r.headers["Location"]
+    assert app.test_client().get("/account/report").status_code == 302          # без входа — на вход
+
+
+def test_report_shows_own_scores_plan_and_pulse(app, query):
+    c = _with_score(app)
+    c.post("/api/score", json=VALID)
+    _make_plus_user(app)
+    c.post("/account/pulse", data={"csrf_token": _tok(c), "pulse_consent": "on", **PULSE})
+    html = c.get("/account/report").get_data(as_text=True)
+    assert "Отчёт месяца" in html and "data-print" in html and 'class="report-spheres"' in html
+    assert "Шагов плана выполнено" in html and "Сохранить в PDF" in html
+    other = app.test_client()
+    register(other, email="boris@example.com", name="Борис")
+    _make_plus_user(app, "boris@example.com")
+    page = other.get("/account/report").get_data(as_text=True)
+    assert "Пройдите анкету" in page and "Анна" not in page                      # чужие данные не попадают
+
+
+def test_locked_preview_shows_first_step_but_hides_the_rest(app):
+    c = _with_score(app)
+    html = c.get("/account").get_data(as_text=True)
+    assert "plus-preview" in html and html.count('class="skeleton"') == 2 and "Откроется в Plus" in html
+    assert "plan-check" not in html
+
+
+def test_plan_steps_show_sphere_score(app):
+    c = _with_score(app)
+    _make_plus_user(app)
+    html = c.get("/account").get_data(as_text=True)
+    assert 'class="plan-score"' in html
+
+
+def test_plan_puts_filler_steps_last():
+    from app.plus import build_plan
+    recs = [{"sphere": "nicotine", "level": "mid", "item": None, "title": "Поддерживайте", "text": "t"},
+            {"sphere": "sleep", "level": "mid", "item": "sl1", "title": "Раньше спать", "text": "t"},
+            {"sphere": "activity", "level": "high", "item": "aerobic", "title": "Прогулки", "text": "t"}]
+    assert [s["title"] for s in build_plan(recs)] == ["Раньше спать", "Прогулки", "Поддерживайте"]
