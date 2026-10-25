@@ -782,3 +782,17 @@ def test_home_shows_free_and_plus_plans(client, user_client=None):
     assert "Start" not in html and "Balance" not in html
     res = client.post("/api/lead", json={"email": "a@b.co", "plan": "Start", "consent": True})
     assert res.status_code == 400                                              # старые тарифы больше не принимаются
+
+
+def test_index_block_shows_users_result_or_example(user_client, app):
+    html = app.test_client().get("/").get_data(as_text=True)
+    assert "Пример результата" in html and 'aria-label="Пример: индекс 82' in html          # гостю — пример
+    assert "Пример результата" in user_client.get("/").get_data(as_text=True)              # вошёл, но оценок нет — пример
+    user_client.post("/api/score", json=VALID)                                              # 69
+    html = user_client.get("/").get_data(as_text=True)
+    block = html[html.index('class="score-story"'):html.index('id="how"') if 'id="how"' in html else None]
+    assert 'aria-label="Ваш индекс: 69 из 100' in block and "Ваш последний результат" in block
+    assert "Пример результата" not in block and '<div class="ring-score big" style="--v:69"><b>69</b></div>' in block
+    other = app.test_client()
+    register(other, email="boris@example.com", name="Борис")
+    assert "Ваш последний результат" not in other.get("/").get_data(as_text=True)          # чужой результат не показывается
