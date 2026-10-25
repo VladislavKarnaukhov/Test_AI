@@ -4,7 +4,7 @@
 
 | Файлы | Где | Автор | Страница |
 |---|---|---|---|
-| `run-*.webp` | первый экран | yashzucced | https://unsplash.com/photos/LKnzC12vLtI |
+| `run-*.webp` | первый экран | godisopensource | https://unsplash.com/photos/FS2EMsx8zWU |
 | `sleep-*.webp` | глава «Сон» | lvphotos | https://unsplash.com/photos/pl3sj3DigxM |
 | `walk-*.webp` | глава «Движение» | visualsbying | https://unsplash.com/photos/R9tPheZuGnA |
 | `food-*.webp` | глава «Питание» | natashamakhija6 | https://unsplash.com/photos/jkwmE5N9Gb0 |

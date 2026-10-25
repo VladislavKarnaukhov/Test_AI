@@ -82,10 +82,10 @@
 .hero h1{font-size:clamp(2.375rem,10.4vw,3rem)}
 .hero .score-peek{gap:var(--sp-3)}
 }
-.hero::after{background:linear-gradient(90deg,rgba(24,14,2,.62) 0,rgba(24,14,2,.2) 52%,rgba(24,14,2,0) 78%),linear-gradient(0deg,rgba(24,14,2,.7) 0,rgba(24,14,2,0) 52%),linear-gradient(180deg,rgba(24,14,2,.4) 0,rgba(24,14,2,0) 22%)}
+.hero::after{background:linear-gradient(90deg,rgba(24,14,2,.78) 0,rgba(24,14,2,.46) 50%,rgba(24,14,2,0) 80%),linear-gradient(0deg,rgba(24,14,2,.78) 0,rgba(24,14,2,0) 56%),linear-gradient(180deg,rgba(24,14,2,.4) 0,rgba(24,14,2,0) 22%)}
 .hero h1{font-size:clamp(2.5rem,6.2vw,5.5rem);max-width:8em}
 @media (max-width:960px){
-.hero::after{background:linear-gradient(0deg,rgba(24,14,2,.85) 0,rgba(24,14,2,.45) 52%,rgba(24,14,2,0) 80%),linear-gradient(180deg,rgba(24,14,2,.45) 0,rgba(24,14,2,0) 22%)}
+.hero::after{background:linear-gradient(0deg,rgba(24,14,2,.88) 0,rgba(24,14,2,.56) 52%,rgba(24,14,2,0) 82%),linear-gradient(180deg,rgba(24,14,2,.45) 0,rgba(24,14,2,0) 22%)}
 }
 @media (max-width:600px){
 .hero{min-height:0;display:block;padding:calc(58svh + env(safe-area-inset-top)) 0 var(--sp-6);background:#1a1105}
