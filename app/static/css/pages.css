@@ -436,7 +436,7 @@
 .chapter-pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(1.5rem,4vw,3rem);margin-top:clamp(3rem,7vw,6rem);align-items:start}
 .chapter-pair .chapter{display:block;margin-top:0}
 .chapter-pair .chapter-photo img{height:clamp(16rem,30vw,26rem);aspect-ratio:auto}
-.chapter-calm .chapter-photo img{object-position:50% 22%}
+.chapter-calm .chapter-photo img{object-position:50% 50%}
 .chapter-pair .chapter-text{margin-top:var(--sp-5)}
 .chapter-value{font-weight:400;letter-spacing:-.045em}
 @media (max-width:860px){
