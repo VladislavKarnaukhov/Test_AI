@@ -68,9 +68,11 @@ def plus_required(view):
 # ---------- План на месяц ----------
 
 def build_plan(recommendations):
-    """3 шага по приоритету: по одному на сферу, начиная с самой слабой; сферы «поддерживайте» — в последнюю очередь."""
+    """3 шага по приоритету: по одному на сферу, начиная с самой слабой; «поддерживайте» и пустые шаги — в последнюю очередь."""
     seen, steps = set(), []
-    ordered = [r for r in recommendations if r.get("level") != "high"] + [r for r in recommendations if r.get("level") == "high"]
+    def filler(r):          # «Поддерживайте» без конкретного шага (item = None) — только если больше нечего предложить
+        return "item" in r and r["item"] is None
+    ordered = sorted(recommendations, key=lambda r: (filler(r), r.get("level") == "high"))
     for rec in ordered:
         if rec["sphere"] in seen:
             continue
@@ -87,8 +89,9 @@ def plan_for(user_id, result):
     steps = build_plan(result["recommendations"])
     done = {r["idx"] for r in get_db().execute(
         "SELECT idx FROM plan_steps WHERE result_id = ? AND user_id = ?", (result["id"], user_id)).fetchall()}
+    scores = result.get("breakdown") or {}
     for i, s in enumerate(steps):
-        s["idx"], s["done"] = i, i in done
+        s["idx"], s["done"], s["score"] = i, i in done, scores.get(s["sphere"])
     return steps
 
 

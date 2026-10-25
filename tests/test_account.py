@@ -643,7 +643,7 @@ def _make_plus(app, query, email="anna@example.com", days=30):
 def test_free_user_sees_locked_plus_and_cannot_use_it(user_client):
     user_client.post("/api/score", json=VALID)
     html = user_client.get("/account").get_data(as_text=True)
-    assert "plus-locked" in html and "План на месяц" in html and "plan-steps" not in html
+    assert "plus-offer" in html and "Ваш план на месяц" in html and "plan-steps" not in html
     r = user_client.post("/account/plan/1/0", data={"csrf_token": csrf(user_client, "/account")})
     assert r.status_code == 302 and "#plus" in r.headers["Location"]          # платная функция закрыта
     r = user_client.post("/account/reminders", data={"csrf_token": csrf(user_client, "/account"), "reminders": "on"})
@@ -655,8 +655,8 @@ def test_plus_user_gets_plan_with_toggle_and_compare(user_client, app, query):
     user_client.post("/api/score", json=BETTER)
     _make_plus(app, query)
     html = user_client.get("/account").get_data(as_text=True)
-    assert "План на месяц" in html and html.count('<li class="plan-step') == 3 and "Сравнение оценок" in html
-    assert "plus-locked" not in html and "<th scope=\"row\">Итог</th>" in html
+    assert "Ваш месяц" in html and html.count('<li class="plan-step') == 3 and "Сравнение по сферам" in html
+    assert "plus-offer" not in html and "<th scope=\"row\">Итог</th>" in html
     rid = int(re.search(r'/account/plan/(\d+)/0', html).group(1))
     token = csrf(user_client, "/account")
     user_client.post(f"/account/plan/{rid}/0", data={"csrf_token": token})
@@ -683,7 +683,7 @@ def test_plan_steps_are_per_user_and_removed_with_result(user_client, app, query
 def test_plus_expired_is_free_again(user_client, app, query):
     user_client.post("/api/score", json=VALID)
     _make_plus(app, query, days=-1)
-    assert "plus-locked" in user_client.get("/account").get_data(as_text=True)
+    assert "plus-offer" in user_client.get("/account").get_data(as_text=True)
 
 
 def test_admin_grants_and_revokes_plus(app, query, monkeypatch):

@@ -11,6 +11,7 @@ from . import plus
 from .db import get_db
 from .results import SELECT_COLUMNS, present
 from .scoring import CORE_DOMAINS, DOMAIN_SHORT, METHOD_VERSION
+from .plus import plus_required
 
 bp = Blueprint("account", __name__, url_prefix="/account")
 
@@ -95,6 +96,49 @@ def history_stats(results):
             "change": totals[-1] - totals[0] if len(totals) > 1 else None}
 
 
+def _preview_delta(results):
+    """Для превью Plus: изменение итога и самой выросшей сферы между двумя последними оценками v2.0."""
+    cur = [r for r in results if r["current"]]
+    if len(cur) < 2:
+        return None
+    a, b = cur[-2], cur[-1]
+    best = max(CORE_DOMAINS, key=lambda k: b["breakdown"].get(k, 0) - a["breakdown"].get(k, 0))
+    return {"total": b["total"] - a["total"], "sphere": DOMAIN_SHORT[best],
+            "sphere_delta": b["breakdown"].get(best, 0) - a["breakdown"].get(best, 0)}
+
+
+def report_data(user, results):
+    """Отчёт месяца по оценкам v2.0: итог, сферы, выполненные шаги, пульс и красные флаги. Только данные пользователя."""
+    cur = [r for r in results if r["current"]]
+    if not cur:
+        return None
+    now, first = cur[-1], cur[0]
+    prev = cur[-2] if len(cur) > 1 else None
+    spheres = []
+    for k in CORE_DOMAINS:
+        v = now["breakdown"].get(k, 0)
+        spheres.append({"key": k, "name": DOMAIN_SHORT[k], "now": v,
+                        "delta_prev": None if prev is None else v - prev["breakdown"].get(k, v),
+                        "delta_first": None if len(cur) < 2 else v - first["breakdown"].get(k, v)})
+    plan = plus.plan_for(user["id"], now)
+    pulses = [engage.pulse_score(r) for r in get_db().execute(
+        "SELECT * FROM pulses WHERE user_id = ? ORDER BY week_start DESC LIMIT 8", (user["id"],)).fetchall()][::-1]
+    return {"now": now, "prev": prev, "first": first, "count": len(cur),
+            "delta_prev": None if prev is None else now["total"] - prev["total"],
+            "delta_first": None if len(cur) < 2 else now["total"] - first["total"],
+            "spheres": spheres, "plan": plan, "plan_done": sum(1 for s in plan if s["done"]),
+            "pulses": pulses, "pulse_delta": pulses[-1] - pulses[0] if len(pulses) > 1 else None,
+            "flags": now["flags"]}
+
+
+@bp.get("/report")
+@plus_required
+def report():
+    data = report_data(g.user, _load_results(g.user["id"]))
+    return render_template("account/report.html", user=g.user, r=data, method_version=METHOD_VERSION,
+                           today=(datetime.utcnow() + MSK).strftime("%d.%m.%Y"))
+
+
 @bp.before_request
 def protect_forms():
     if request.method == "POST":
@@ -117,6 +161,8 @@ def dashboard():
               "pulse_consent": bool(user["pulse_consent_at"]),
               "chart": engage.pulse_chart(user["id"], results)},
         plan=plus.plan_for(user["id"], latest) if plus_on and latest and latest["current"] else [],
+        preview=plus.build_plan(latest["recommendations"]) if not plus_on and latest and latest["current"] else [],
+        preview_delta=_preview_delta(results) if not plus_on else None,
         compare=plus.compare_rows(results) if plus_on else None,
         plus_until=to_msk(user["plus_until"]) if plus_on else None,
         user=user,
