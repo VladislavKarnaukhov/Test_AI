@@ -207,8 +207,8 @@ def pulse_chart(user_id, results, now=None):
     """Линия «пульса» между месячными замерами индекса. Чисто серверный SVG: → словарь для шаблона или None."""
     rows = get_db().execute("SELECT * FROM pulses WHERE user_id = ? ORDER BY week_start DESC LIMIT ?",
                             (user_id, CHART_WEEKS)).fetchall()
-    if not rows:
-        return None
+    if len(rows) < 2:
+        return None          # одна точка линии не образует: график появляется со второй отметки
     rows = list(reversed(rows))
     pulses = [{"d": datetime.strptime(r["week_start"], "%Y-%m-%d").date() + timedelta(days=3), "score": pulse_score(r),
                "words": ", ".join(f"{n.lower()} {r[k]}" for k, n in PULSE_FIELDS)} for r in rows]
@@ -225,20 +225,25 @@ def pulse_chart(user_id, results, now=None):
     hi = max([today, pulses[-1]["d"]] + [i["d"] for i in index])
     if (hi - lo).days < 28:
         lo = hi - timedelta(days=28)
-    W, H, L, R, T, B = 640, 200, 34, 16, 14, 30
+    W, H, L, R, T, B = 640, 180, 34, 16, 22, 28
     span = max((hi - lo).days, 1)
+    vals = [p["score"] for p in pulses] + [i["total"] for i in index]
+    vmin = max(0, (min(vals) - 10) // 10 * 10)           # шкала по данным, а не 0–100: линия не прижата к краю
+    vmax = min(100, -(-(max(vals) + 10) // 10) * 10)
+    if vmax - vmin < 40:
+        vmin, vmax = max(0, vmax - 40), max(vmax, 40)
 
     def x(d):
         return round(L + (W - L - R) * (d - lo).days / span, 1)
 
     def y(v):
-        return round(T + (H - T - B) * (100 - v) / 100, 1)
+        return round(T + (H - T - B) * (vmax - v) / (vmax - vmin), 1)
 
     p_pts = [{"x": x(p["d"]), "y": y(p["score"]), "score": p["score"], "label": p["d"].strftime("%d.%m"),
               "words": p["words"]} for p in pulses]
     i_pts = [{"x": x(i["d"]), "y": y(i["total"]), "total": i["total"], "label": i["d"].strftime("%d.%m")} for i in index]
     return {"w": W, "h": H, "left": L, "right": W - R, "top": T, "bottom": H - B,
-            "grid": [{"y": y(v), "v": v} for v in (0, 50, 100)],
+            "grid": [{"y": y(v), "v": v} for v in (vmin, (vmin + vmax) // 2, vmax)],
             "pulse_line": " ".join(f"{p['x']},{p['y']}" for p in p_pts) if len(p_pts) > 1 else "",
             "pulse": p_pts, "index": i_pts,
             "ticks": [{"x": x(lo), "label": lo.strftime("%d.%m")}, {"x": x(hi), "label": hi.strftime("%d.%m")}]}

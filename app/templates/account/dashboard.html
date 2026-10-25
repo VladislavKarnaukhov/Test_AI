@@ -66,16 +66,18 @@
   {% if week.chart %}
   {% set c = week.chart %}
   <figure class="pulse-chart">
+    <p class="pulse-chart-title">Пульс между замерами индекса</p>
     <svg viewBox="0 0 {{ c.w }} {{ c.h }}" role="img" aria-label="Пульс по неделям между месячными замерами индекса" aria-describedby="pulse-table">
       {% for gl in c.grid %}<line class="pg" x1="{{ c.left }}" x2="{{ c.right }}" y1="{{ gl.y }}" y2="{{ gl.y }}"/><text class="pt" x="{{ c.left - 8 }}" y="{{ gl.y + 4 }}" text-anchor="end">{{ gl.v }}</text>{% endfor %}
       {% if c.pulse_line %}<polyline class="pl" points="{{ c.pulse_line }}"/>{% endif %}
-      {% for p in c.pulse %}<circle class="pd" cx="{{ p.x }}" cy="{{ p.y }}" r="3.5"><title>{{ p.label }}: пульс {{ p.score }}</title></circle>{% endfor %}
+      {% for p in c.pulse %}<circle class="pd" cx="{{ p.x }}" cy="{{ p.y }}" r="3.5"><title>{{ p.label }}: пульс {{ p.score }}</title></circle>{% if c.pulse | length <= 8 %}<text class="pv" x="{{ p.x }}" y="{{ p.y - 10 }}" text-anchor="middle">{{ p.score }}</text>{% endif %}{% endfor %}
       {% for i in c.index %}<g class="pi"><circle cx="{{ i.x }}" cy="{{ i.y }}" r="7"/><text x="{{ i.x }}" y="{{ i.y - 12 }}" text-anchor="middle">{{ i.total }}</text><title>{{ i.label }}: индекс {{ i.total }}</title></g>{% endfor %}
       {% for t in c.ticks %}<text class="pt" x="{{ t.x }}" y="{{ c.h - 8 }}" text-anchor="{{ 'start' if loop.first else 'end' }}">{{ t.label }}</text>{% endfor %}
     </svg>
     <figcaption><span class="pk pk-pulse">Пульс недели</span><span class="pk pk-index">Индекс (месячный замер)</span></figcaption>
     <div class="visually-hidden" id="pulse-table"><table><caption>Пульс по неделям и индекс</caption><thead><tr><th scope="col">Дата</th><th scope="col">Пульс</th></tr></thead><tbody>{% for p in c.pulse %}<tr><th scope="row">{{ p.label }}</th><td>{{ p.score }}</td></tr>{% endfor %}{% for i in c.index %}<tr><th scope="row">{{ i.label }}</th><td>индекс {{ i.total }}</td></tr>{% endfor %}</tbody></table></div>
   </figure>
+  {% elif week.pulse %}<p class="pulse-hint">Линия пульса между замерами индекса появится после второй недельной отметки.</p>
   {% endif %}
 </section>
 

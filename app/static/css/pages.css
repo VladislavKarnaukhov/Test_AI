@@ -224,9 +224,12 @@
 .pulse-scale input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
 @media (hover:hover) and (pointer:fine){.pulse-scale input:not(:checked):hover+span{border-color:var(--accent);background:var(--accent-soft)}}
 @media (max-width:640px){.week-step{grid-template-columns:minmax(0,1fr)}.week-step form .btn{width:100%}}
+.pulse-chart-title{margin:0 0 var(--sp-3);font-size:var(--fs-xs);font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.pulse-hint{margin:0;font-size:var(--fs-sm);color:var(--ink-3)}
 .pulse-chart{margin:0;padding:var(--sp-5);background:var(--sheet);border:1px solid var(--line);border-radius:var(--r-lg)}
 .pulse-chart svg{display:block;width:100%;height:auto;overflow:visible}
-.pulse-chart .pg{stroke:var(--line);stroke-width:1}
+.pulse-chart .pg{stroke:var(--line);stroke-width:1;stroke-dasharray:2 4}
+.pulse-chart .pv{fill:var(--ink-3);font-size:11px;font-family:var(--font)}
 .pulse-chart .pt{fill:var(--ink-3);font-size:11px;font-family:var(--font)}
 .pulse-chart .pl{fill:none;stroke:var(--accent);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
 .pulse-chart .pd{fill:var(--sheet);stroke:var(--accent);stroke-width:2}
