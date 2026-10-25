@@ -42,7 +42,7 @@
     </div>
     <div class="week-card">
       <h3>Пульс недели · 30 секунд</h3>
-      <p class="muted">Как прошли последние 7 дней? Это самооценка для вас: она не входит в индекс и не меняет расчёт.</p>
+      <p class="muted">Четыре вопроса о последних 7 днях по открытым шкалам (<a href="{{ url_for('main.methodology') }}#pulse-method">откуда они</a>). Это самооценка для вас: она не входит в индекс и не меняет расчёт.</p>
       {% if week.pulse %}
       <p class="pulse-done"><b>{{ week.pulse.score }}</b><span>из 100 · отмечено на этой неделе</span></p>
       <ul class="pulse-summary">{% for v in week.pulse['values'] %}<li><span>{{ v.name }}</span><b>{{ v.value }}</b> <small>{{ v.word }}</small></li>{% endfor %}</ul>
@@ -51,10 +51,10 @@
         <summary>{{ 'Изменить отметки' if week.pulse else 'Отметить неделю' }}</summary>
         <form method="post" action="{{ url_for('engage.submit_pulse') }}" class="pulse-form">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          {% for key, name in week.pulse_fields %}
-          <fieldset class="pulse-row"><legend>{{ name }}</legend>
-            <div class="pulse-scale" role="radiogroup">{% for n in [1, 2, 3, 4, 5] %}<label><input type="radio" name="{{ key }}" value="{{ n }}" required><span aria-label="{{ n }} — {{ week.pulse_words[n] | lower }}">{{ n }}</span></label>{% endfor %}</div>
-            <p class="pulse-ends"><span>плохо</span><span>отлично</span></p>
+          {% for item in week.pulse_items %}
+          <fieldset class="pulse-row"><legend>{{ item.name }}</legend>
+            <p class="pulse-q">{{ item.question }}</p>
+            <div class="pulse-scale" role="radiogroup">{% for opt in item.options %}<label><input type="radio" name="{{ item.key }}" value="{{ loop.index }}" required><span>{{ opt }}</span></label>{% endfor %}</div>
           </fieldset>
           {% endfor %}
           {% if not week.pulse_consent %}<label class="consent"><input type="checkbox" name="pulse_consent" required><span class="consent-text"><span>Я даю <a href="{{ url_for('main.health_consent') }}#pulse" target="_blank" rel="noopener">согласие на обработку</a> этих отметок о самочувствии: они сохраняются в кабинете и показываются на графике. Удалить их можно в настройках.</span></span></label>{% endif %}

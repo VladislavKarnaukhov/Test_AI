@@ -113,8 +113,8 @@ def dashboard():
     return render_template(
         "account/dashboard.html",
         week={"step": step, "done": engage.week_step_done(user["id"]), "streak": engage.streak(user["id"]),
-              "pulse": engage.this_week_pulse(user["id"]), "pulse_fields": engage.PULSE_FIELDS,
-              "pulse_words": engage.PULSE_WORDS, "pulse_consent": bool(user["pulse_consent_at"]),
+              "pulse": engage.this_week_pulse(user["id"]), "pulse_items": engage.PULSE_ITEMS,
+              "pulse_consent": bool(user["pulse_consent_at"]),
               "chart": engage.pulse_chart(user["id"], results)},
         plan=plus.plan_for(user["id"], latest) if plus_on and latest and latest["current"] else [],
         compare=plus.compare_rows(results) if plus_on else None,

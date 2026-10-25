@@ -22,8 +22,25 @@ bp = Blueprint("engage", __name__)
 
 KINDS = ("cabinet", "step", "pulse")
 KIND_LABELS = {"cabinet": "Открыли кабинет", "step": "Отметили шаг", "pulse": "Прошли пульс"}
-PULSE_FIELDS = (("sleep", "Сон"), ("activity", "Движение"), ("nutrition", "Питание"), ("mood", "Настроение"))
-PULSE_WORDS = {1: "Плохо", 2: "Так себе", 3: "Нормально", 4: "Хорошо", 5: "Отлично"}
+PULSE_VERSION = "1.0"
+# Четыре пункта, по одному на сферу. Формулировки и шкалы — по открытым инструментам (docs/methodology-pulse.md);
+# в базе хранится номер варианта 1–5, чем больше, тем лучше.
+PULSE_ITEMS = (
+    {"key": "sleep", "name": "Сон",
+     "question": "Как вы оцениваете качество своего сна за последние 7 ночей?",
+     "options": ("Очень плохое", "Плохое", "Среднее", "Хорошее", "Очень хорошее")},
+    {"key": "activity", "name": "Движение",
+     "question": "В скольких из последних 7 дней вы двигались с умеренной нагрузкой (быстрая ходьба, велосипед, тренировка) не меньше 30 минут?",
+     "options": ("Ни в одном", "1–2 дня", "3–4 дня", "5–6 дней", "Каждый день")},
+    {"key": "nutrition", "name": "Питание",
+     "question": "В скольких из последних 7 дней овощи или фрукты были как минимум в двух приёмах пищи?",
+     "options": ("0–1 день", "2–3 дня", "4–5 дней", "6 дней", "Каждый день")},
+    {"key": "mood", "name": "Настроение",
+     "question": "«Я чувствовал(а) себя бодрым(ой) и в хорошем настроении» — как часто это было за последние 7 дней?",
+     "options": ("Ни разу", "Иногда", "Меньше половины времени", "Больше половины времени", "Почти всё время")},
+)
+PULSE_FIELDS = tuple((i["key"], i["name"]) for i in PULSE_ITEMS)
+_PULSE_OPTIONS = {i["key"]: i["options"] for i in PULSE_ITEMS}
 CHART_WEEKS = 26
 REPEAT_ANKETA_DAYS = 21
 MSK = timedelta(hours=3)
@@ -125,7 +142,7 @@ def this_week_pulse(user_id, now=None):
                            (user_id, week_start(now))).fetchone()
     if row is None:
         return None
-    return {"values": [{"key": k, "name": n, "value": row[k], "word": PULSE_WORDS[row[k]]} for k, n in PULSE_FIELDS],
+    return {"values": [{"key": k, "name": n, "value": row[k], "word": _PULSE_OPTIONS[k][row[k] - 1]} for k, n in PULSE_FIELDS],
             "score": pulse_score(row)}
 
 
