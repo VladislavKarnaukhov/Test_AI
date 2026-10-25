@@ -279,3 +279,18 @@ def test_compare_is_visual_with_summary_and_accessible_table(app):
     html = c.get("/account").get_data(as_text=True)
     assert 'class="cmp-summary"' in html and 'class="cmp"' in html and "Больше всего резерва" in html
     assert '<th scope="row">Итог</th>' in html and 'class="visually-hidden"><table class="compare"' in html
+
+
+def test_source_conversion_counts_people_not_anketas(app):
+    from app import admin
+    conn = sqlite3.connect(app.config["DATABASE_PATH"])
+    conn.execute("INSERT INTO visitors (visitor_id, source) VALUES ('v1', 'direct'), ('v2', 'direct')")
+    for _ in range(3):      # один человек прошёл анкету три раза
+        conn.execute("INSERT INTO score_results (visitor_id, answers, total, breakdown) VALUES ('v1', '{}', 50, '{}')")
+    conn.execute("INSERT INTO leads (visitor_id, email, plan) VALUES ('v1', 'a@example.com', 'Plus'), ('v1', 'a@example.com', 'Plus')")
+    conn.commit()
+    conn.close()
+    with app.app_context():
+        row = [s for s in admin.collect("all")["sources"] if s["name"] == "direct"][0]
+    assert (row["visitors"], row["people"], row["scores"], row["leads"]) == (2, 1, 3, 1)
+    assert row["conv"] == 50.0                   # раньше было 150%

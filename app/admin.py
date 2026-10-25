@@ -179,13 +179,16 @@ def collect(period):
     # ---- трафик
     def top_visitors(col, limit=8, label="—"):
         return _rows(f"SELECT coalesce(nullif({col},''), ?) name, count(*) n FROM visitors WHERE 1=1{fv} GROUP BY 1 ORDER BY n DESC LIMIT {limit}", (label,) + a)
+    # конверсия считается по людям, а не по анкетам: доля посетителей источника, получивших хотя бы один результат
     sources = _rows(
         f"SELECT coalesce(nullif(v.source,''),'—') name, count(DISTINCT v.visitor_id) visitors, "
-        f"count(DISTINCT s.id) scores, count(DISTINCT l.id) leads FROM visitors v "
+        f"count(DISTINCT CASE WHEN s.id IS NOT NULL THEN v.visitor_id END) people, "
+        f"count(DISTINCT s.id) scores, "
+        f"count(DISTINCT CASE WHEN l.id IS NOT NULL THEN v.visitor_id END) leads FROM visitors v "
         f"LEFT JOIN score_results s ON s.visitor_id=v.visitor_id LEFT JOIN leads l ON l.visitor_id=v.visitor_id "
         f"WHERE 1=1{fv.replace('first_seen','v.first_seen')} GROUP BY 1 ORDER BY visitors DESC LIMIT 10", a)
     for s in sources:
-        s["conv"] = _pct(s["scores"], s["visitors"])
+        s["conv"] = _pct(s["people"], s["visitors"])
     campaigns = _rows(
         f"SELECT coalesce(utm_campaign,'—') campaign, coalesce(utm_source,'—') source, count(*) n FROM visitors "
         f"WHERE utm_source IS NOT NULL{fv} GROUP BY 1,2 ORDER BY n DESC LIMIT 8", a)
