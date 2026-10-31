@@ -377,3 +377,84 @@ def test_report_mail_toggle_is_plus_only(app, query):
     c = _with_score(app)
     r = c.post("/account/report-mail", data={"csrf_token": _tok(c), "report": "on"})
     assert r.status_code == 302 and query("SELECT report_opt_in FROM users")[0]["report_opt_in"] == 0
+
+
+# ---------- Приглашение друга ----------
+
+def _code(query, email="anna@example.com"):
+    from app import referral
+    return query("SELECT ref_code FROM users WHERE email = ?", email)[0]["ref_code"]
+
+
+def test_dashboard_has_invite_link_and_code_is_stable(app, query):
+    c = _with_score(app)
+    html = c.get("/account").get_data(as_text=True)
+    code = _code(query)
+    assert code and len(code) == 8 and f"/r/{code}" in html and "data-invite-copy" in html
+    c.get("/account")
+    assert _code(query) == code                                                     # код не меняется
+
+
+def test_invite_flow_rewards_both_after_first_result(app, query):
+    inviter = _with_score(app)
+    inviter.get("/account")
+    code = _code(query)
+    friend = app.test_client()
+    assert friend.get("/r/" + code).status_code == 302
+    assert "Вас пригласил друг" in friend.get("/register").get_data(as_text=True)
+    register(friend, email="boris@example.com", name="Борис")
+    assert query("SELECT referrer_id, rewarded_at FROM referrals") == [{"referrer_id": 1, "rewarded_at": None}]
+    friend.get("/account")                                                          # оценки ещё нет — награды нет
+    assert query("SELECT plus_until FROM users WHERE email = 'boris@example.com'")[0]["plus_until"] is None
+    friend.post("/api/score", json=VALID)
+    friend.get("/account")
+    friend.get("/account")                                                          # повторно не начисляется
+    for email in ("boris@example.com", "anna@example.com"):
+        until = query("SELECT plus_until FROM users WHERE email = ?", email)[0]["plus_until"]
+        assert until and until > (datetime.utcnow() + timedelta(days=28)).strftime("%Y-%m-%d %H:%M:%S")
+    assert query("SELECT rewarded_at FROM referrals")[0]["rewarded_at"]
+
+
+def test_invite_edge_cases(app, query):
+    from app import referral
+    assert app.test_client().get("/r/unknown1").status_code == 404
+    c = _with_score(app)
+    c.get("/account")
+    code = _code(query)
+    me = app.test_client()                                                          # приглашает сам себя: уже вошёл
+    me.post("/login", data={"csrf_token": csrf(me), "email": "anna@example.com", "password": "correct-horse-1"})
+    me.get("/r/" + code)
+    assert query("SELECT count(*) AS n FROM referrals")[0]["n"] == 0
+    with app.test_request_context():
+        referral.session["ref"] = code
+        assert referral.attach(1) is False                                          # свой код к своему аккаунту не привязывается
+
+
+def test_inviter_reward_is_capped_but_friend_still_gets_gift(app, query):
+    from app import referral
+    inviter = _with_score(app)
+    inviter.get("/account")
+    code = _code(query)
+    conn = sqlite3.connect(app.config["DATABASE_PATH"])
+    for i in range(referral.MAX_REWARDS):
+        conn.execute("INSERT INTO referrals (referred_id, referrer_id, rewarded_at) VALUES (?, 1, datetime('now'))", (1000 + i,))
+    conn.commit()
+    conn.close()
+    before = query("SELECT plus_until FROM users WHERE id = 1")[0]["plus_until"]
+    friend = app.test_client()
+    friend.get("/r/" + code)
+    register(friend, email="boris@example.com", name="Борис")
+    friend.post("/api/score", json=VALID)
+    friend.get("/account")
+    assert query("SELECT plus_until FROM users WHERE email = 'boris@example.com'")[0]["plus_until"]
+    assert query("SELECT plus_until FROM users WHERE id = 1")[0]["plus_until"] == before
+
+
+def test_delete_account_removes_referral_links(app, query):
+    inviter = _with_score(app)
+    inviter.get("/account")
+    friend = app.test_client()
+    friend.get("/r/" + _code(query))
+    register(friend, email="boris@example.com", name="Борис")
+    friend.post("/account/delete", data={"csrf_token": csrf(friend, "/account/settings"), "password": "correct-horse-1"})
+    assert query("SELECT count(*) AS n FROM referrals")[0]["n"] == 0

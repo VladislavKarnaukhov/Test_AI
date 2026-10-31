@@ -216,6 +216,8 @@ def collect(period):
         r["state"] = ("Plus активен" if r["plus_until"] and r["plus_until"] > now else "нет аккаунта" if r["uid"] is None else "ждёт доступа")
     activity = engage.activity_block(days)
     activity["pulses"] = _one(f"SELECT count(*) FROM pulses WHERE 1=1{f}", a)
+    activity["referrals"] = _one(f"SELECT count(*) FROM referrals WHERE 1=1{f}", a), _one(f"SELECT count(*) FROM referrals WHERE rewarded_at IS NOT NULL{f.replace('created_at','rewarded_at')}", a)
+    activity["trials"] = _one(f"SELECT count(*) FROM users WHERE trial_used_at IS NOT NULL{f.replace('created_at','trial_used_at')}", a)
     activity["weekly_on"] = _one("SELECT count(*) FROM users WHERE weekly_opt_in = 1")
     activity["weekly_sent"] = _one(f"SELECT count(*) FROM weekly_mail WHERE 1=1{f.replace('created_at','sent_at')}", a)
     return {

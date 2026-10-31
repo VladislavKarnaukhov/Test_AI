@@ -179,6 +179,8 @@ def register():
             user = db.execute("SELECT * FROM users WHERE id = ?", (cur.lastrowid,)).fetchone()
             login_user(user)
             db.commit()
+            from .referral import attach
+            attach(user["id"])
             log_event("account_registered")
             if next_url:
                 flash("Кабинет создан. Пройдите анкету — теперь результат сохранится в кабинете.")

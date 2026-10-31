@@ -5,6 +5,7 @@
 <main id="main" tabindex="-1" class="wrap auth-page ym-hide-content ym-disable-keys">
 <form class="sheet auth-card" method="post" action="{{ url_for('auth.register') }}" novalidate>
 <h1>Создайте кабинет</h1>
+{% if session.get('ref') %}<p class="auth-note invite-note">Вас пригласил друг. После первой анкеты в кабинете вам откроется Plus на 30 дней в подарок.</p>{% endif %}
 <p class="auth-note">В кабинете сохраняются анкеты, пройденные после входа: динамика оценок, все рекомендации и ваши данные.</p>
 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}

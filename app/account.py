@@ -6,7 +6,7 @@ from werkzeug.security import check_password_hash
 
 from .auth import (NAME_MAX, check_csrf, hash_password, login_user, login_required, logout_user,
                    validate_password)
-from . import engage, health_sync
+from . import engage, health_sync, referral
 from . import plus
 from .db import get_db
 from .results import SELECT_COLUMNS, present
@@ -153,6 +153,10 @@ def dashboard():
     latest = results[-1] if results else None
     plus_on = plus.is_plus(user)
     engage.record(user["id"], "cabinet")
+    if latest and referral.reward_if_due(user["id"]):
+        flash(f"Спасибо, что пришли по приглашению: мы подарили вам {referral.REWARD_DAYS} дней Plus.")
+        user = get_db().execute("SELECT * FROM users WHERE id = ?", (user["id"],)).fetchone()
+        plus_on = plus.is_plus(user)
     step = (latest["focus"] or (latest["recommendations"][0] if latest["recommendations"] else None)) if latest else None
     return render_template(
         "account/dashboard.html",
@@ -165,6 +169,7 @@ def dashboard():
         preview_delta=_preview_delta(results) if not plus_on else None,
         compare=plus.compare_rows(results) if plus_on else None,
         plus_until=to_msk(user["plus_until"]) if plus_on else None,
+        ref=referral.overview(user["id"]),
         trial=bool(user["plus_is_trial"]) and plus_on,
         trial_over=bool(user["trial_used_at"]) and not plus_on,
         trial_days=plus.TRIAL_DAYS,
@@ -248,6 +253,7 @@ def delete_account():
     db.execute("DELETE FROM leads WHERE user_id = ?", (user["id"],))
     for table in ("plan_steps", "reminders", "activity", "week_steps", "pulses", "weekly_mail", "monthly_mail"):
         db.execute(f"DELETE FROM {table} WHERE user_id = ?", (user["id"],))
+    db.execute("DELETE FROM referrals WHERE referred_id = ? OR referrer_id = ?", (user["id"], user["id"]))
     db.execute("DELETE FROM health_sync_days WHERE user_id = ?", (user["id"],))
     db.execute("DELETE FROM health_connections WHERE user_id = ?", (user["id"],))
     db.execute("DELETE FROM login_attempts WHERE email = ?", (user["email"],))
