@@ -14,7 +14,7 @@ from . import mailer
 from .account import _load_results, report_data
 from .auth import check_csrf
 from .db import get_db
-from .plus import FMT, plus_required, unsubscribe_token
+from .plus import FMT, plus_required, report_required, unsubscribe_token
 
 bp = Blueprint("monthly", __name__)
 
@@ -38,6 +38,41 @@ def set_report_mail():
     get_db().commit()
     flash("Отчёт месяца будет приходить на e-mail." if on else "Рассылка отчёта месяца выключена.")
     return redirect(url_for("account.dashboard") + "#plus")
+
+
+SEND_LIMIT_PER_DAY = 3
+
+
+@bp.post("/account/report/send")
+@report_required
+def send_report_now():
+    """Отправить отчёт на e-mail аккаунта по кнопке. Адрес берётся только из аккаунта; не больше SEND_LIMIT_PER_DAY в сутки."""
+    check_csrf()
+    back = redirect(request.form.get("back") if (request.form.get("back") or "").startswith("/account") else url_for("account.report"))
+    if not mailer.configured():
+        flash("Отправка писем пока не настроена. Отчёт можно сохранить в PDF.", "error")
+        return back
+    db = get_db()
+    sent_today = db.execute("SELECT count(*) FROM report_sends WHERE user_id = ? AND sent_at > datetime('now', '-1 day')",
+                            (g.user["id"],)).fetchone()[0]
+    if sent_today >= SEND_LIMIT_PER_DAY:
+        flash("Сегодня вы уже отправляли отчёт несколько раз. Попробуйте завтра.", "error")
+        return back
+    data = report_data(g.user, _load_results(g.user["id"]))
+    if data is None:
+        flash("Отчёт появится после первой оценки по действующей методике.", "error")
+        return back
+    unsub = url_for("plus.unsubscribe", token=unsubscribe_token(g.user["id"]), _external=True)
+    page, text = _email(g.user["name"], data, request.url_root, unsub)
+    ok, info = mailer.send_email(g.user["email"], g.user["name"], "Ваш отчёт — Del Health", page, text, unsubscribe_url=unsub)
+    if not ok:
+        current_app.logger.warning("report not sent (user %s): %s", g.user["id"], info)
+        flash("Не удалось отправить письмо. Попробуйте позже или сохраните отчёт в PDF.", "error")
+        return back
+    db.execute("INSERT INTO report_sends (user_id) VALUES (?)", (g.user["id"],))
+    db.commit()
+    flash(f"Отчёт отправлен на {g.user['email']}.")
+    return back
 
 
 def due_monthly(now=None):

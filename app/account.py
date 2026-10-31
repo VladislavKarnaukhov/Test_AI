@@ -252,7 +252,7 @@ def delete_account():
     db = get_db()
     db.execute("DELETE FROM score_results WHERE user_id = ?", (user["id"],))
     db.execute("DELETE FROM leads WHERE user_id = ?", (user["id"],))
-    for table in ("plan_steps", "reminders", "activity", "week_steps", "pulses", "weekly_mail", "monthly_mail", "orders"):
+    for table in ("plan_steps", "reminders", "activity", "week_steps", "pulses", "weekly_mail", "monthly_mail", "orders", "report_sends"):
         db.execute(f"DELETE FROM {table} WHERE user_id = ?", (user["id"],))
     db.execute("DELETE FROM referrals WHERE referred_id = ? OR referrer_id = ?", (user["id"], user["id"]))
     db.execute("DELETE FROM health_sync_days WHERE user_id = ?", (user["id"],))

@@ -542,3 +542,47 @@ def test_delete_account_removes_orders(app, query):
     c.post("/account/buy/report", data={"csrf_token": _tok(c)})
     c.post("/account/delete", data={"csrf_token": csrf(c, "/account/settings"), "password": "correct-horse-1"})
     assert query("SELECT count(*) AS n FROM orders")[0]["n"] == 0
+
+
+# ---------- Отчёт на почту по кнопке ----------
+
+def test_send_report_button_emails_own_address_with_limit(app, query, monkeypatch):
+    from app import mailer
+    sent = []
+    monkeypatch.setattr(mailer, "configured", lambda: True)
+    monkeypatch.setattr(mailer, "send_email", lambda to, name, subj, html, text, unsubscribe_url=None, timeout=10: (sent.append((to, text)) or (True, "id")))
+    c = _with_score(app)
+    assert c.post("/account/report/send", data={"csrf_token": _tok(c)}).status_code == 302
+    assert sent == [] and query("SELECT count(*) AS n FROM report_sends")[0]["n"] == 0        # без доступа к отчёту — письма нет
+    _make_plus_user(app)
+    html = c.get("/account/report").get_data(as_text=True)
+    assert "Отправить на anna@example.com" in html
+    for _ in range(3):
+        c.post("/account/report/send", data={"csrf_token": _tok(c)})
+    c.post("/account/report/send", data={"csrf_token": _tok(c)})                              # четвёртое за сутки — отказ
+    assert len(sent) == 3 and sent[0][0] == "anna@example.com" and "Итог:" in sent[0][1]
+    assert c.post("/account/report/send").status_code == 400                                  # без CSRF
+
+
+def test_send_report_reports_failures_and_missing_mail_setup(app, query, monkeypatch):
+    from app import mailer
+    c = _with_score(app)
+    _make_plus_user(app)
+    monkeypatch.setattr(mailer, "configured", lambda: False)
+    r = c.post("/account/report/send", data={"csrf_token": _tok(c)}, follow_redirects=True)
+    assert "не настроена" in r.get_data(as_text=True) and query("SELECT count(*) AS n FROM report_sends")[0]["n"] == 0
+    monkeypatch.setattr(mailer, "configured", lambda: True)
+    monkeypatch.setattr(mailer, "send_email", lambda *a, **k: (False, "boom"))
+    r = c.post("/account/report/send", data={"csrf_token": _tok(c)}, follow_redirects=True)
+    assert "Не удалось отправить" in r.get_data(as_text=True) and query("SELECT count(*) AS n FROM report_sends")[0]["n"] == 0
+
+
+def test_send_report_back_link_is_limited_to_cabinet(app, monkeypatch):
+    from app import mailer
+    monkeypatch.setattr(mailer, "configured", lambda: False)
+    c = _with_score(app)
+    _make_plus_user(app)
+    r = c.post("/account/report/send", data={"csrf_token": _tok(c), "back": "https://evil.example/"})
+    assert r.headers["Location"].endswith("/account/report")
+    r = c.post("/account/report/send", data={"csrf_token": _tok(c), "back": "/account#plus"})
+    assert r.headers["Location"].endswith("/account#plus")

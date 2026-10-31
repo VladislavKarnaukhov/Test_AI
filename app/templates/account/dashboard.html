@@ -172,6 +172,10 @@
     <label class="consent"><input type="checkbox" name="report" {% if user['report_opt_in'] %}checked{% endif %}><span class="consent-text"><span>Присылать отчёт месяца на {{ user['email'] }} в начале каждого месяца. Письма отправляет сервис Brevo, отписаться можно в письме или здесь.</span></span></label>
     <button class="btn btn-quiet btn-sm" type="submit">Сохранить</button>
   </form>
+  <form method="post" action="{{ url_for('monthly.send_report_now') }}" class="plus-mail">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="back" value="/account#plus">
+    <button class="btn btn-quiet btn-sm" type="submit" data-metric="report_send_cabinet">Отправить отчёт на почту сейчас</button>
+  </form>
   <h2 class="plus-sub">Сравнение по сферам</h2>
   {% if compare %}
   {% set tot = compare[0] %}{% set sp = compare[1:] %}

@@ -143,6 +143,11 @@ CREATE TABLE IF NOT EXISTS monthly_mail (
     sent_at TEXT NOT NULL DEFAULT (datetime('now')),
     PRIMARY KEY (user_id, month)
 );
+CREATE TABLE IF NOT EXISTS report_sends (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    sent_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 CREATE TABLE IF NOT EXISTS orders (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
@@ -234,6 +239,7 @@ def _migrate(conn):
     conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_ref_code ON users(ref_code)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_referrals_referrer ON referrals(referrer_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_orders_user ON orders(user_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_report_sends_user ON report_sends(user_id, sent_at)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_leads_user ON leads(user_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_score_results_user ON score_results(user_id, created_at)")
 
