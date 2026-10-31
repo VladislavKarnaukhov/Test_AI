@@ -183,6 +183,15 @@
 }
 .account-overview{display:block}
 .account-overview .account-score{padding:clamp(1.5rem,4vw,3.5rem)}
+.invite{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--sp-5) var(--sp-7);align-items:center}
+.invite h2{margin:.25rem 0 var(--sp-2);font-size:clamp(1.375rem,2.4vw,1.875rem);font-weight:500;letter-spacing:-.03em;line-height:1.15}
+.invite .muted{margin:0;max-width:34rem}
+.invite-box{display:flex;flex-wrap:wrap;gap:var(--sp-2);align-items:center}
+.invite-box [hidden]{display:none}
+.invite-box input{flex:1 1 14rem;min-width:0;min-height:2.75rem;padding:0 var(--sp-4);border:1px solid var(--line-strong);border-radius:var(--r-pill);background:var(--sheet);color:var(--ink);font:inherit;font-size:var(--fs-sm)}
+.invite-box [data-invite-status]{flex-basis:100%;margin:0;min-height:1.25em;font-size:var(--fs-xs);color:var(--accent)}
+.invite-note{padding:var(--sp-3) var(--sp-4);border-radius:var(--r-sm);background:var(--accent-soft);color:var(--ink)}
+@media (max-width:860px){.invite{grid-template-columns:minmax(0,1fr)}}
 .report-page{max-width:52rem;padding-bottom:var(--sp-8)}
 .report-head{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:var(--sp-4);margin-bottom:var(--sp-6)}
 .report-head h1{margin:.25rem 0 var(--sp-2);font-size:var(--fs-2xl);letter-spacing:-.04em;font-weight:500}

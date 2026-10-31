@@ -39,7 +39,7 @@
 <div><h3>Активные по дням (DAU)</h3>{{ line(d.daily.days, d.activity.dau_series, 'DAU по дням') }}</div>
 <div><h3>WAU по неделям (12 недель)</h3>{{ bars(d.activity.wau_series, 'n', 'label') }}</div>
 <div><h3>Что делали за 7 дней</h3>{{ bars(d.activity.by_kind) }}</div>
-<div><h3>Недельный ритм</h3><dl class="adl"><div><dt>Пульсов за период</dt><dd>{{ d.activity.pulses }}</dd></div><div><dt>Подписаны на недельное письмо</dt><dd>{{ d.activity.weekly_on }}</dd></div><div><dt>Недельных писем отправлено</dt><dd>{{ d.activity.weekly_sent }}</dd></div></dl></div>
+<div><h3>Недельный ритм</h3><dl class="adl"><div><dt>Пульсов за период</dt><dd>{{ d.activity.pulses }}</dd></div><div><dt>Подписаны на недельное письмо</dt><dd>{{ d.activity.weekly_on }}</dd></div><div><dt>Недельных писем отправлено</dt><dd>{{ d.activity.weekly_sent }}</dd></div><div><dt>Пробных периодов выдано</dt><dd>{{ d.activity.trials }}</dd></div><div><dt>Приглашено друзей / наград выдано</dt><dd>{{ d.activity.referrals[0] }} / {{ d.activity.referrals[1] }}</dd></div></dl></div>
 </div></section>
 
 <section class="apanel" id="plus-admin"><h2>Del Health Plus</h2>

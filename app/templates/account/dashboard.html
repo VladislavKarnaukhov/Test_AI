@@ -235,6 +235,20 @@
   {% endif %}
 </section>
 
+<section class="panel invite" id="invite" aria-labelledby="invite-title">
+  <div class="invite-copy">
+    <p class="eyebrow">Приглашение</p>
+    <h2 id="invite-title">Подарите друзьям и себе по {{ ref.days }} дней Plus</h2>
+    <p class="muted">Друг регистрируется по вашей ссылке и проходит первую анкету: вам обоим откроется Plus.{% if ref.invited %} Приглашено: {{ ref.invited }}, наград выдано: {{ ref.rewarded }} из {{ ref.max }}.{% endif %}</p>
+  </div>
+  <div class="invite-box">
+    <input type="text" readonly id="invite-link" value="{{ url_for('referral.invite', code=ref.code, _external=True) }}" aria-label="Ваша ссылка-приглашение" data-invite-link>
+    <button type="button" class="btn btn-primary btn-sm" data-invite-copy data-metric="invite_copy">Скопировать</button>
+    <button type="button" class="btn btn-quiet btn-sm" data-invite-share hidden data-metric="invite_share">Поделиться</button>
+    <p class="muted" role="status" data-invite-status></p>
+  </div>
+</section>
+
 <section class="panel" id="history">
   <div class="history-head">
     <div>
@@ -319,4 +333,4 @@
 
 </main>
 {% endblock %}
-{% block scripts %}<script src="{{ static_url('js/account.js') }}"></script>{% endblock %}
+{% block scripts %}<script src="{{ static_url('js/account.js') }}"></script><script src="{{ static_url('js/invite.js') }}"></script>{% endblock %}
