@@ -207,6 +207,15 @@ def streak(user_id, now=None):
     return n
 
 
+def _spread_labels(points, min_dx):
+    """Подпись показываем, только если она не налезает на предыдущую подписанную точку (по горизонтали)."""
+    last = None
+    for p in points:
+        p["show"] = last is None or p["x"] - last >= min_dx
+        if p["show"]:
+            last = p["x"]
+
+
 def pulse_chart(user_id, results, now=None):
     """Линия «пульса» между месячными замерами индекса. Чисто серверный SVG: → словарь для шаблона или None."""
     rows = get_db().execute("SELECT * FROM pulses WHERE user_id = ? ORDER BY week_start DESC LIMIT ?",
@@ -223,7 +232,10 @@ def pulse_chart(user_id, results, now=None):
             continue
         d = (datetime.strptime(r["created_at"], FMT) + MSK).date()
         if d >= first - timedelta(days=14):
-            index.append({"d": d, "total": r["total"]})
+            if index and index[-1]["d"] == d:
+                index[-1]["total"] = r["total"]       # несколько оценок за день: на графике последняя, иначе точки слипаются
+            else:
+                index.append({"d": d, "total": r["total"]})
     today = ((now or _utcnow()) + MSK).date()
     lo = min([first] + [i["d"] for i in index])
     hi = max([today, pulses[-1]["d"]] + [i["d"] for i in index])
@@ -246,6 +258,8 @@ def pulse_chart(user_id, results, now=None):
     p_pts = [{"x": x(p["d"]), "y": y(p["score"]), "score": p["score"], "label": p["d"].strftime("%d.%m"),
               "words": p["words"]} for p in pulses]
     i_pts = [{"x": x(i["d"]), "y": y(i["total"]), "total": i["total"], "label": i["d"].strftime("%d.%m")} for i in index]
+    _spread_labels(p_pts, 30)
+    _spread_labels(i_pts, 30)
     return {"w": W, "h": H, "left": L, "right": W - R, "top": T, "bottom": H - B,
             "grid": [{"y": y(v), "v": v} for v in (vmin, (vmin + vmax) // 2, vmax)],
             "pulse_line": " ".join(f"{p['x']},{p['y']}" for p in p_pts) if len(p_pts) > 1 else "",

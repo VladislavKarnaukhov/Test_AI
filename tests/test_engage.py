@@ -586,3 +586,24 @@ def test_send_report_back_link_is_limited_to_cabinet(app, monkeypatch):
     assert r.headers["Location"].endswith("/account/report")
     r = c.post("/account/report/send", data={"csrf_token": _tok(c), "back": "/account#plus"})
     assert r.headers["Location"].endswith("/account#plus")
+
+
+def test_pulse_chart_merges_same_day_results_and_spreads_labels(app):
+    c = _with_score(app)
+    now = datetime.utcnow()
+    with app.app_context():
+        db = engage.get_db()
+        for w, v in (("2026-10-05", 2), ("2026-10-12", 3), ("2026-10-19", 4)):
+            db.execute("INSERT INTO pulses (user_id, week_start, sleep, activity, nutrition, mood) VALUES (1, ?, ?, ?, ?, ?)",
+                       (w, v, v, v, v))
+        for total in (61, 64, 70):               # три оценки в один день
+            db.execute("INSERT INTO score_results (user_id, answers, total, breakdown, method_version, created_at) "
+                       "VALUES (1, '{}', ?, '{}', '2.0', ?)", (total, now.strftime("%Y-%m-%d %H:%M:%S")))
+        db.commit()
+        from app.account import _load_results
+        chart = engage.pulse_chart(1, _load_results(1), now)
+    days = [p["label"] for p in chart["index"]]
+    assert len(days) == len(set(days))                                     # по одной точке на день
+    assert chart["index"][-1]["total"] == 70                               # из трёх за день взята последняя
+    shown = [p["x"] for p in chart["index"] if p["show"]]
+    assert all(b - a >= 30 for a, b in zip(shown, shown[1:]))              # подписи не налезают друг на друга
