@@ -15,7 +15,7 @@ from flask import Blueprint, current_app, flash, g, redirect, request, url_for
 from . import mailer
 from .auth import check_csrf, login_required
 from .db import get_db
-from .plus import unsubscribe_token
+from .plus import grant_trial, unsubscribe_token
 from .results import SELECT_COLUMNS, present
 
 bp = Blueprint("engage", __name__)
@@ -41,6 +41,7 @@ PULSE_ITEMS = (
 )
 PULSE_FIELDS = tuple((i["key"], i["name"]) for i in PULSE_ITEMS)
 _PULSE_OPTIONS = {i["key"]: i["options"] for i in PULSE_ITEMS}
+TRIAL_DAYS_TEXT = "7 дней"
 CHART_WEEKS = 26
 REPEAT_ANKETA_DAYS = 21
 MSK = timedelta(hours=3)
@@ -174,6 +175,9 @@ def submit_pulse():
     db.commit()
     record(g.user["id"], "pulse")
     flash("Пульс недели сохранён.")
+    until = grant_trial(g.user["id"])
+    if until:
+        flash(f"Мы открыли Plus на {TRIAL_DAYS_TEXT}: план на месяц и отчёт месяца. Пробный период действует до {until[:10]}.")
     return redirect(url_for("account.dashboard") + "#week")
 
 

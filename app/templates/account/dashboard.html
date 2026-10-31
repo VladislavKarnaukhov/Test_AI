@@ -147,9 +147,10 @@
   {% if is_plus %}
   {% set done_n = plan | selectattr('done') | list | length %}
   <div class="plus-head">
-    <div><p class="eyebrow">Del Health Plus · до {{ plus_until }}</p><h2>Ваш месяц</h2><p class="muted">Три шага по приоритету из вашей последней оценки. Отмечайте сделанное: прогресс попадёт в отчёт месяца.</p></div>
+    <div><p class="eyebrow">Del Health Plus · {% if trial %}пробный период до {{ plus_until }}{% else %}до {{ plus_until }}{% endif %}</p><h2>Ваш месяц</h2><p class="muted">Три шага по приоритету из вашей последней оценки. Отмечайте сделанное: прогресс попадёт в отчёт месяца.</p></div>
     {% if plan %}<div class="plus-progress" role="img" aria-label="Выполнено {{ done_n }} из {{ plan | length }}" style="--p:{{ (100 * done_n / (plan | length)) | round | int }}"><b>{{ done_n }}</b><span>из {{ plan | length }}</span></div>{% endif %}
   </div>
+  {% if trial %}<p class="plus-trial">Это пробный период. Чтобы план, отчёт и сравнение остались после {{ plus_until }}, <a class="text-link" href="{{ url_for('main.index') }}#plans" data-metric="trial_upgrade">оформите Plus за {{ plus_price }} ₽</a>.</p>{% endif %}
   {% if plan %}
   <ol class="plan-steps">
     {% for s in plan %}<li class="plan-step{% if s.done %} is-done{% endif %}">
@@ -166,6 +167,11 @@
     <span><b>Отчёт месяца</b><small>Итог, сферы, шаги и пульс на одной странице. Сохраните в PDF и покажите терапевту.</small></span>
     <span class="plus-report-go" aria-hidden="true">Открыть</span>
   </a>
+  <form method="post" action="{{ url_for('monthly.set_report_mail') }}" class="plus-mail">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label class="consent"><input type="checkbox" name="report" {% if user['report_opt_in'] %}checked{% endif %}><span class="consent-text"><span>Присылать отчёт месяца на {{ user['email'] }} в начале каждого месяца. Письма отправляет сервис Brevo, отписаться можно в письме или здесь.</span></span></label>
+    <button class="btn btn-quiet btn-sm" type="submit">Сохранить</button>
+  </form>
   <h2 class="plus-sub">Сравнение по сферам</h2>
   {% if compare %}
   {% set tot = compare[0] %}{% set sp = compare[1:] %}
@@ -197,7 +203,7 @@
   <div class="plus-offer">
     <div class="plus-offer-copy">
       <p class="eyebrow">Del Health Plus · {{ plus_price }} ₽ в месяц</p>
-      <h2>Цифра — это начало. Plus помогает её изменить</h2>
+      <h2>{% if trial_over %}Пробный период закончился. Оставьте план и отчёт{% else %}Цифра — это начало. Plus помогает её изменить{% endif %}</h2>
       <ul class="ticks">
         <li><b>План на месяц</b> из ваших слабых сфер: шаг за шагом, с отметками</li>
         <li><b>Отчёт месяца</b>: что изменилось, сколько сделано, тренд пульса, в PDF</li>
@@ -205,6 +211,7 @@
         <li><b>Напоминание</b> по e-mail, когда пора повторить анкету</li>
       </ul>
       <a class="btn btn-primary" href="{{ url_for('main.index') }}#plans" data-metric="account_plus_cta">Подключить Plus</a>
+      {% if not trial_over %}<p class="plus-try"><b>Попробуйте бесплатно {{ trial_days }} дней.</b> Заполните «пульс недели» выше (это 30 секунд), и мы сами откроем Plus.</p>{% endif %}
       <p class="plus-note">{{ plus_price }} ₽ за месяц. Доступ открываем после оплаты вручную, онлайн-оплату подключаем.</p>
     </div>
     <div class="plus-preview" aria-label="Пример вашего плана на месяц">

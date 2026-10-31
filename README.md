@@ -199,6 +199,11 @@ cd ~/Test_AI && flask --app run send-reminders
 ```
 Проверка без отправки: `flask --app run send-reminders --dry-run`. Нужны `SITE_URL`, `BREVO_API_KEY`, `BREVO_SENDER_EMAIL` (в консоли задайте через `export`, а для расписания — в самой команде: `SITE_URL=... BREVO_API_KEY=... flask --app run send-reminders`).
 
+## Автоматизация Plus
+
+- **Пробный период.** Первая отметка «пульса недели» автоматически открывает Plus на 7 дней (один раз на аккаунт, и только тем, у кого Plus ещё нет). Флаги: `users.trial_used_at`, `users.plus_is_trial`; оплаченная выдача (`plus.grant`) снимает метку пробного периода.
+- **Отчёт месяца по e-mail.** Подписчик Plus включает рассылку в кабинете (`users.report_opt_in`, по умолчанию выключена). Раз в сутки в Scheduled tasks: `cd ~/Test_AI && flask --app run send-monthly` (письмо уходит один раз за календарный месяц, `--dry-run` — только посчитать). Нужны `SITE_URL`, `BREVO_API_KEY`, `BREVO_SENDER_EMAIL`.
+
 ## Недельный ритм (бесплатно)
 
 В кабинете, блок «Шаг и пульс» (`app/engage.py`):

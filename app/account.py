@@ -165,6 +165,9 @@ def dashboard():
         preview_delta=_preview_delta(results) if not plus_on else None,
         compare=plus.compare_rows(results) if plus_on else None,
         plus_until=to_msk(user["plus_until"]) if plus_on else None,
+        trial=bool(user["plus_is_trial"]) and plus_on,
+        trial_over=bool(user["trial_used_at"]) and not plus_on,
+        trial_days=plus.TRIAL_DAYS,
         user=user,
         results=list(reversed(results)),
         latest=latest,
@@ -243,7 +246,7 @@ def delete_account():
     db = get_db()
     db.execute("DELETE FROM score_results WHERE user_id = ?", (user["id"],))
     db.execute("DELETE FROM leads WHERE user_id = ?", (user["id"],))
-    for table in ("plan_steps", "reminders", "activity", "week_steps", "pulses", "weekly_mail"):
+    for table in ("plan_steps", "reminders", "activity", "week_steps", "pulses", "weekly_mail", "monthly_mail"):
         db.execute(f"DELETE FROM {table} WHERE user_id = ?", (user["id"],))
     db.execute("DELETE FROM health_sync_days WHERE user_id = ?", (user["id"],))
     db.execute("DELETE FROM health_connections WHERE user_id = ?", (user["id"],))
