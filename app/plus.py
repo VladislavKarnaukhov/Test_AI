@@ -38,6 +38,26 @@ def is_plus(user):
     return bool(until) and datetime.strptime(until, FMT) > _now()
 
 
+def report_allowed(user):
+    """Отчёт месяца доступен подписчикам Plus и тем, кто купил его разово."""
+    if is_plus(user):
+        return True
+    until = user["report_until"] if user is not None and "report_until" in user.keys() else None
+    return bool(until) and datetime.strptime(until, FMT) > _now()
+
+
+def grant_report(user_id, days=30):
+    """Разовый доступ к отчёту: продлевается от текущего конца срока, если он ещё идёт."""
+    row = get_db().execute("SELECT report_until FROM users WHERE id = ?", (user_id,)).fetchone()
+    start = _now()
+    if row and row["report_until"]:
+        start = max(start, datetime.strptime(row["report_until"], FMT))
+    until = (start + timedelta(days=days)).strftime(FMT)
+    get_db().execute("UPDATE users SET report_until = ? WHERE id = ?", (until, user_id))
+    get_db().commit()
+    return until
+
+
 def grant(user_id, days=30):
     """Продлевает Plus: от текущего конца срока (если он ещё идёт) или от сейчас."""
     row = get_db().execute("SELECT plus_until FROM users WHERE id = ?", (user_id,)).fetchone()
@@ -74,6 +94,17 @@ def plus_required(view):
     def wrapped(*args, **kwargs):
         if not is_plus(g.user):
             flash("Эта функция входит в Del Health Plus.", "error")
+            return redirect(url_for("account.dashboard") + "#plus")
+        return view(*args, **kwargs)
+    return wrapped
+
+
+def report_required(view):
+    @wraps(view)
+    @login_required
+    def wrapped(*args, **kwargs):
+        if not report_allowed(g.user):
+            flash("Отчёт месяца входит в Del Health Plus или покупается разово.", "error")
             return redirect(url_for("account.dashboard") + "#plus")
         return view(*args, **kwargs)
     return wrapped

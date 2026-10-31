@@ -458,3 +458,87 @@ def test_delete_account_removes_referral_links(app, query):
     register(friend, email="boris@example.com", name="Борис")
     friend.post("/account/delete", data={"csrf_token": csrf(friend, "/account/settings"), "password": "correct-horse-1"})
     assert query("SELECT count(*) AS n FROM referrals")[0]["n"] == 0
+
+
+# ---------- Покупки: заказ, вебхук, разовый отчёт ----------
+
+import hashlib as _hl
+import hmac as _hm
+import json as _json
+
+
+def _sign(body, secret="s3cret"):
+    return _hm.new(secret.encode(), body, _hl.sha256).hexdigest()
+
+
+def _hook(client, payload, secret="s3cret", sig=None):
+    body = _json.dumps(payload).encode()
+    return client.post("/billing/webhook", data=body, content_type="application/json",
+                       headers={"X-Signature": sig if sig is not None else _sign(body, secret)})
+
+
+def test_buy_without_provider_records_order_and_lead(app, query):
+    c = _with_score(app)
+    r = c.post("/account/buy/report", data={"csrf_token": _tok(c)})
+    assert r.status_code == 302 and "#plus" in r.headers["Location"]
+    assert query("SELECT product, amount, status FROM orders") == [{"product": "report", "amount": 149, "status": "pending"}]
+    assert query("SELECT plan FROM leads")[0]["plan"] == "Отчёт месяца, разово"
+    assert c.post("/account/buy/nope", data={"csrf_token": _tok(c)}).status_code == 404
+    assert c.post("/account/buy/plus").status_code == 400                          # без CSRF
+    assert app.test_client().post("/account/buy/plus").status_code in (302, 400)   # без входа
+
+
+def test_buy_with_provider_redirects_to_payment_page(app, query, monkeypatch):
+    monkeypatch.setenv("PAYMENT_URL_PLUS", "https://pay.example/checkout?order={order}&amount={amount}")
+    c = _with_score(app)
+    r = c.post("/account/buy/plus", data={"csrf_token": _tok(c)})
+    assert r.status_code == 302 and r.headers["Location"] == "https://pay.example/checkout?order=1&amount=99"
+    assert query("SELECT count(*) AS n FROM leads")[0]["n"] == 0                   # заявка вручную не нужна
+
+
+def test_webhook_needs_secret_and_valid_signature(app, monkeypatch):
+    c = app.test_client()
+    assert _hook(c, {"order_id": 1, "status": "paid"}).status_code == 404          # секрет не задан — приём выключен
+    monkeypatch.setenv("BILLING_WEBHOOK_SECRET", "s3cret")
+    assert _hook(c, {"order_id": 1, "status": "paid"}, sig="bad").status_code == 403
+    body = b"not json"
+    assert c.post("/billing/webhook", data=body, headers={"X-Signature": _sign(body)}).status_code == 400
+
+
+def test_paid_report_order_unlocks_report_once(app, query, monkeypatch):
+    monkeypatch.setenv("BILLING_WEBHOOK_SECRET", "s3cret")
+    c = _with_score(app)
+    assert c.get("/account/report").status_code == 302                              # без покупки закрыт
+    c.post("/account/buy/report", data={"csrf_token": _tok(c)})
+    assert _hook(app.test_client(), {"order_id": 1, "status": "paid", "amount": 99}).get_json()["changed"] is False  # неверная сумма
+    assert query("SELECT report_until FROM users")[0]["report_until"] is None
+    r = _hook(app.test_client(), {"order_id": 1, "status": "paid", "amount": 149, "provider_ref": "p-1"})
+    assert r.get_json() == {"ok": True, "changed": True}
+    first = query("SELECT report_until FROM users")[0]["report_until"]
+    assert first and query("SELECT status, provider_ref FROM orders")[0] == {"status": "paid", "provider_ref": "p-1"}
+    assert _hook(app.test_client(), {"order_id": 1, "status": "paid", "amount": 149}).get_json()["changed"] is False
+    assert query("SELECT report_until FROM users")[0]["report_until"] == first      # повторный вебхук срок не продлевает
+    assert c.get("/account/report").status_code == 200
+    html = c.get("/account").get_data(as_text=True)
+    assert "Ваш отчёт месяца" in html and "plan-check" not in html                  # план и сравнение остались платными
+
+
+def test_paid_plus_order_grants_plus_and_expired_report_closes(app, query, monkeypatch):
+    monkeypatch.setenv("BILLING_WEBHOOK_SECRET", "s3cret")
+    c = _with_score(app)
+    c.post("/account/buy/plus", data={"csrf_token": _tok(c)})
+    _hook(app.test_client(), {"order_id": 1, "status": "paid", "amount": 99})
+    u = query("SELECT plus_until, plus_is_trial FROM users")[0]
+    assert u["plus_until"] > (datetime.utcnow() + timedelta(days=28)).strftime("%Y-%m-%d %H:%M:%S") and u["plus_is_trial"] == 0
+    conn = sqlite3.connect(app.config["DATABASE_PATH"])
+    conn.execute("UPDATE users SET plus_until = NULL, report_until = datetime('now', '-1 day')")
+    conn.commit()
+    conn.close()
+    assert c.get("/account/report").status_code == 302                              # срок вышел
+
+
+def test_delete_account_removes_orders(app, query):
+    c = _with_score(app)
+    c.post("/account/buy/report", data={"csrf_token": _tok(c)})
+    c.post("/account/delete", data={"csrf_token": csrf(c, "/account/settings"), "password": "correct-horse-1"})
+    assert query("SELECT count(*) AS n FROM orders")[0]["n"] == 0

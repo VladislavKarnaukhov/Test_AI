@@ -143,6 +143,16 @@ CREATE TABLE IF NOT EXISTS monthly_mail (
     sent_at TEXT NOT NULL DEFAULT (datetime('now')),
     PRIMARY KEY (user_id, month)
 );
+CREATE TABLE IF NOT EXISTS orders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    product TEXT NOT NULL,
+    amount INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    provider_ref TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    paid_at TEXT
+);
 CREATE TABLE IF NOT EXISTS referrals (
     referred_id INTEGER PRIMARY KEY,
     referrer_id INTEGER NOT NULL,
@@ -210,6 +220,7 @@ MIGRATIONS = [
     ("users", "plus_is_trial", "INTEGER NOT NULL DEFAULT 0"),  # текущий доступ Plus — пробный, а не оплаченный
     ("users", "report_opt_in", "INTEGER NOT NULL DEFAULT 0"),  # согласие на ежемесячный отчёт по e-mail
     ("users", "ref_code", "TEXT"),                      # личный код приглашения: ссылка /r/<код>
+    ("users", "report_until", "TEXT"),                  # разовый доступ к отчёту месяца (UTC), без остального Plus
     ("users", "plus_until", "TEXT"),                   # Del Health Plus действует до (UTC); NULL — бесплатный доступ
     ("users", "reminders_opt_in", "INTEGER NOT NULL DEFAULT 0"),  # согласие на напоминания по e-mail (только Plus)                 # редакция пользовательского соглашения при регистрации
 ]
@@ -222,6 +233,7 @@ def _migrate(conn):
             conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {decl}")
     conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_ref_code ON users(ref_code)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_referrals_referrer ON referrals(referrer_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_orders_user ON orders(user_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_leads_user ON leads(user_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_score_results_user ON score_results(user_id, created_at)")
 

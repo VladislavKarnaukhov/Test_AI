@@ -37,7 +37,7 @@ def create_app(config=None):
         if analytics_allowed() and "visitor_id" not in session:
             assign_visitor_id()
 
-    from . import account, admin, auth, engage, health_sync, monthly, plus, referral, routes
+    from . import account, admin, auth, billing, engage, health_sync, monthly, plus, referral, routes
 
     @app.before_request
     def load_user():
@@ -54,7 +54,7 @@ def create_app(config=None):
     @app.context_processor
     def inject_globals():
         return {"policy_version": POLICY_VERSION, "current_user": g.get("user"),
-                "csrf_token": auth.csrf_token, "is_admin": admin.is_admin(g.get("user")), "is_plus": plus.is_plus(g.get("user")), "plus_price": plus.PRICE_RUB, "static_url": static_url, "method_version": METHOD_VERSION}
+                "csrf_token": auth.csrf_token, "is_admin": admin.is_admin(g.get("user")), "is_plus": plus.is_plus(g.get("user")), "plus_price": plus.PRICE_RUB, "report_price": billing.REPORT_PRICE_RUB, "payments_on": bool(os.environ.get("PAYMENT_URL_PLUS", "").strip()), "static_url": static_url, "method_version": METHOD_VERSION}
 
     app.add_template_filter(account.to_msk, "msk")
     app.add_template_filter(account.plural, "plural")
@@ -68,6 +68,7 @@ def create_app(config=None):
     app.cli.add_command(engage.send_weekly_command)
     app.register_blueprint(monthly.bp)
     app.register_blueprint(referral.bp)
+    app.register_blueprint(billing.bp)
     app.cli.add_command(monthly.send_monthly_command)
     app.register_blueprint(health_sync.bp)
 

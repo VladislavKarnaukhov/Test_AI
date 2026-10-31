@@ -207,6 +207,9 @@ def collect(period):
         "active": _one("SELECT count(*) FROM users WHERE plus_until > ?", (now,)),
         "reminders_on": _one("SELECT count(*) FROM users WHERE plus_until > ? AND reminders_opt_in = 1", (now,)),
         "reminders_sent": _one(f"SELECT count(*) FROM reminders WHERE 1=1{f.replace('created_at','sent_at')}", a),
+        "orders_paid": _one(f"SELECT count(*) FROM orders WHERE status = 'paid'{f.replace('created_at','paid_at')}", a),
+        "revenue": _one(f"SELECT sum(amount) FROM orders WHERE status = 'paid'{f.replace('created_at','paid_at')}", a),
+        "orders_pending": _one(f"SELECT count(*) FROM orders WHERE status = 'pending'{f}", a),
         "steps_done": _one(f"SELECT count(*) FROM plan_steps WHERE 1=1{f.replace('created_at','done_at')}", a),
     }
     requests = _rows(
