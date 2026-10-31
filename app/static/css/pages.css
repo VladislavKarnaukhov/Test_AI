@@ -194,6 +194,8 @@
 @media (max-width:860px){.invite{grid-template-columns:minmax(0,1fr)}}
 .report-page{max-width:52rem;padding-bottom:var(--sp-8)}
 .report-head{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:var(--sp-4);margin-bottom:var(--sp-6)}
+.report-actions{display:flex;flex-wrap:wrap;gap:var(--sp-2)}
+.report-actions form{margin:0}
 .report-head h1{margin:.25rem 0 var(--sp-2);font-size:var(--fs-2xl);letter-spacing:-.04em;font-weight:500}
 .report-head .muted{margin:0;max-width:34rem}
 .report-summary{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--sp-6);align-items:center;padding:clamp(1.25rem,3vw,2rem);border-radius:var(--r-lg);background:var(--sheet);border:1px solid var(--line)}

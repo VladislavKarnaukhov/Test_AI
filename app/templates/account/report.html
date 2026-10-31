@@ -18,7 +18,13 @@
     <h1>{{ user.name }}</h1>
     <p class="muted">Сформирован {{ today }}. Оценок по методике v{{ method_version }}: {{ r.count }}. Последняя: {{ r.now.date }}.</p>
   </div>
-  <button type="button" class="btn btn-primary btn-sm no-print" data-print>Сохранить в PDF</button>
+  <div class="report-actions no-print">
+    <button type="button" class="btn btn-primary btn-sm" data-print>Сохранить в PDF</button>
+    <form method="post" action="{{ url_for('monthly.send_report_now') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-quiet btn-sm" type="submit" data-metric="report_send">Отправить на {{ user.email }}</button>
+    </form>
+  </div>
 </header>
 
 <section class="report-summary" aria-labelledby="rs-title">
