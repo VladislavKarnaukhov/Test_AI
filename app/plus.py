@@ -21,6 +21,7 @@ from .scoring import CORE_DOMAINS, DOMAIN_SHORT
 bp = Blueprint("plus", __name__)
 
 PRICE_RUB = 99
+TRIAL_DAYS = 7
 PLAN_SIZE = 3
 REMIND_AFTER_DAYS = 21      # первое напоминание: столько дней после последней оценки
 REMIND_REPEAT_DAYS = 14     # повтор, если человек так и не вернулся
@@ -44,13 +45,26 @@ def grant(user_id, days=30):
     if row and row["plus_until"]:
         start = max(start, datetime.strptime(row["plus_until"], FMT))
     until = (start + timedelta(days=days)).strftime(FMT)
-    get_db().execute("UPDATE users SET plus_until = ? WHERE id = ?", (until, user_id))
+    get_db().execute("UPDATE users SET plus_until = ?, plus_is_trial = 0 WHERE id = ?", (until, user_id))
     get_db().commit()
     return until
 
 
+def grant_trial(user_id, days=TRIAL_DAYS):
+    """Пробный период: один раз на аккаунт и только тем, у кого сейчас нет Plus. → дата окончания или None."""
+    db = get_db()
+    row = db.execute("SELECT plus_until, trial_used_at FROM users WHERE id = ?", (user_id,)).fetchone()
+    if row is None or row["trial_used_at"] or is_plus(row):
+        return None
+    until = (_now() + timedelta(days=days)).strftime(FMT)
+    db.execute("UPDATE users SET plus_until = ?, plus_is_trial = 1, trial_used_at = ? WHERE id = ?",
+               (until, _now().strftime(FMT), user_id))
+    db.commit()
+    return until
+
+
 def revoke(user_id):
-    get_db().execute("UPDATE users SET plus_until = NULL, reminders_opt_in = 0 WHERE id = ?", (user_id,))
+    get_db().execute("UPDATE users SET plus_until = NULL, plus_is_trial = 0, reminders_opt_in = 0, report_opt_in = 0 WHERE id = ?", (user_id,))
     get_db().commit()
 
 
@@ -156,7 +170,7 @@ def unsubscribe(token):
         user_id = _serializer().loads(token)["u"]
     except (BadSignature, KeyError, TypeError):
         abort(404)
-    get_db().execute("UPDATE users SET reminders_opt_in = 0, weekly_opt_in = 0 WHERE id = ?", (user_id,))
+    get_db().execute("UPDATE users SET reminders_opt_in = 0, weekly_opt_in = 0, report_opt_in = 0 WHERE id = ?", (user_id,))
     get_db().commit()
     return render_template("account/unsubscribed.html")
 

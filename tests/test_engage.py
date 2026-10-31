@@ -294,3 +294,86 @@ def test_source_conversion_counts_people_not_anketas(app):
         row = [s for s in admin.collect("all")["sources"] if s["name"] == "direct"][0]
     assert (row["visitors"], row["people"], row["scores"], row["leads"]) == (2, 1, 3, 1)
     assert row["conv"] == 50.0                   # раньше было 150%
+
+
+# ---------- Автоматический пробный период и отчёт месяца по e-mail ----------
+
+def test_first_pulse_opens_trial_once(app, query):
+    c = _with_score(app)
+    assert "Попробуйте бесплатно" in c.get("/account").get_data(as_text=True)
+    c.post("/account/pulse", data={"csrf_token": _tok(c), "pulse_consent": "on", **PULSE})
+    u = query("SELECT plus_until, plus_is_trial, trial_used_at FROM users")[0]
+    assert u["plus_until"] and u["plus_is_trial"] == 1 and u["trial_used_at"]
+    html = c.get("/account").get_data(as_text=True)
+    assert "пробный период до" in html and "plus-trial" in html
+    # повторный пульс (правка отметки) пробный период не продлевает
+    c.post("/account/pulse", data={"csrf_token": _tok(c), **{**PULSE, "mood": "1"}})
+    assert query("SELECT plus_until FROM users")[0]["plus_until"] == u["plus_until"]
+
+
+def test_trial_is_not_given_to_paying_user_or_twice(app, query):
+    from app import plus
+    c = _with_score(app)
+    _make_plus_user(app)                                                       # у человека уже оплаченный Plus
+    c.post("/account/pulse", data={"csrf_token": _tok(c), "pulse_consent": "on", **PULSE})
+    assert query("SELECT plus_is_trial, trial_used_at FROM users")[0] == {"plus_is_trial": 0, "trial_used_at": None}
+    conn = sqlite3.connect(app.config["DATABASE_PATH"])
+    conn.execute("UPDATE users SET plus_until = datetime('now', '-1 day'), trial_used_at = datetime('now', '-20 days')")
+    conn.commit()
+    conn.close()
+    with app.app_context():
+        assert plus.grant_trial(1) is None                                     # второй раз не выдаём
+    assert "Пробный период закончился" in c.get("/account").get_data(as_text=True)
+
+
+def test_paid_grant_replaces_trial_flag(app, query):
+    from app import plus
+    c = _with_score(app)
+    c.post("/account/pulse", data={"csrf_token": _tok(c), "pulse_consent": "on", **PULSE})
+    with app.app_context():
+        plus.grant(1, 30)
+    assert query("SELECT plus_is_trial FROM users")[0]["plus_is_trial"] == 0
+
+
+def test_report_mail_requires_opt_in_and_is_sent_once_a_month(app, query):
+    from app import monthly
+    c = _with_score(app)
+    _make_plus_user(app)
+    sent = []
+
+    def fake(to, name, subject, html, text, unsubscribe_url=None):
+        sent.append((to, text, unsubscribe_url))
+        return True, "id"
+
+    with app.test_request_context(base_url="https://example.test"):
+        assert monthly.send_monthly("https://example.test", send=fake) == (0, 0, 0)       # согласия нет — писем нет
+        c.post("/account/report-mail", data={"csrf_token": _tok(c), "report": "on"})
+        assert monthly.send_monthly("https://example.test", send=fake, dry_run=True) == (0, 0, 1)
+        assert monthly.send_monthly("https://example.test", send=fake) == (1, 0, 0)
+        assert monthly.send_monthly("https://example.test", send=fake) == (0, 0, 0)       # в этом месяце уже отправлено
+        nxt = datetime.utcnow() + timedelta(days=35)
+        conn = sqlite3.connect(app.config["DATABASE_PATH"])
+        conn.execute("UPDATE users SET plus_until = datetime('now', '+90 days')")
+        conn.commit()
+        conn.close()
+        assert monthly.send_monthly("https://example.test", send=fake, now=nxt) == (1, 0, 0)  # следующий месяц
+    assert "Итог:" in sent[0][1] and "/account/report" in sent[0][1] and "/unsubscribe/" in sent[0][2]
+
+
+def test_failed_monthly_send_is_retried_and_unsubscribe_works(app, query):
+    from app import monthly, plus
+    c = _with_score(app)
+    _make_plus_user(app)
+    c.post("/account/report-mail", data={"csrf_token": _tok(c), "report": "on"})
+    with app.test_request_context(base_url="https://example.test"):
+        assert monthly.send_monthly("https://example.test", send=lambda *a, **k: (False, "boom")) == (0, 1, 0)
+        assert query("SELECT count(*) AS n FROM monthly_mail")[0]["n"] == 0
+        token = plus.unsubscribe_token(1)
+    assert app.test_client().get(f"/unsubscribe/{token}").status_code == 200
+    assert query("SELECT report_opt_in FROM users")[0]["report_opt_in"] == 0
+
+
+def test_report_mail_toggle_is_plus_only(app, query):
+    c = _with_score(app)
+    r = c.post("/account/report-mail", data={"csrf_token": _tok(c), "report": "on"})
+    assert r.status_code == 302 and query("SELECT report_opt_in FROM users")[0]["report_opt_in"] == 0

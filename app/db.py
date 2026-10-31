@@ -137,6 +137,12 @@ CREATE TABLE IF NOT EXISTS weekly_mail (
     sent_at TEXT NOT NULL DEFAULT (datetime('now')),
     PRIMARY KEY (user_id, week_start)
 );
+CREATE TABLE IF NOT EXISTS monthly_mail (
+    user_id INTEGER NOT NULL,
+    month TEXT NOT NULL,
+    sent_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (user_id, month)
+);
 CREATE INDEX IF NOT EXISTS idx_activity_day ON activity(day);
 CREATE INDEX IF NOT EXISTS idx_plan_steps_user ON plan_steps(user_id);
 CREATE INDEX IF NOT EXISTS idx_reminders_user ON reminders(user_id, result_id);
@@ -194,6 +200,9 @@ MIGRATIONS = [
     ("users", "terms_version", "TEXT"),
     ("users", "weekly_opt_in", "INTEGER NOT NULL DEFAULT 0"),  # согласие на недельное письмо с шагом недели
     ("users", "pulse_consent_at", "TEXT"),              # согласие на обработку недельных отметок самочувствия («пульс»)
+    ("users", "trial_used_at", "TEXT"),                 # когда выдан пробный период Plus (один раз на аккаунт)
+    ("users", "plus_is_trial", "INTEGER NOT NULL DEFAULT 0"),  # текущий доступ Plus — пробный, а не оплаченный
+    ("users", "report_opt_in", "INTEGER NOT NULL DEFAULT 0"),  # согласие на ежемесячный отчёт по e-mail
     ("users", "plus_until", "TEXT"),                   # Del Health Plus действует до (UTC); NULL — бесплатный доступ
     ("users", "reminders_opt_in", "INTEGER NOT NULL DEFAULT 0"),  # согласие на напоминания по e-mail (только Plus)                 # редакция пользовательского соглашения при регистрации
 ]
