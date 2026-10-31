@@ -11,7 +11,7 @@ from . import plus
 from .db import get_db
 from .results import SELECT_COLUMNS, present
 from .scoring import CORE_DOMAINS, DOMAIN_SHORT, METHOD_VERSION
-from .plus import plus_required
+from .plus import report_required
 
 bp = Blueprint("account", __name__, url_prefix="/account")
 
@@ -132,7 +132,7 @@ def report_data(user, results):
 
 
 @bp.get("/report")
-@plus_required
+@report_required
 def report():
     data = report_data(g.user, _load_results(g.user["id"]))
     return render_template("account/report.html", user=g.user, r=data, method_version=METHOD_VERSION,
@@ -170,6 +170,7 @@ def dashboard():
         compare=plus.compare_rows(results) if plus_on else None,
         plus_until=to_msk(user["plus_until"]) if plus_on else None,
         ref=referral.overview(user["id"]),
+        report_ok=plus.report_allowed(user), report_until=to_msk(user["report_until"]) if user["report_until"] else None,
         trial=bool(user["plus_is_trial"]) and plus_on,
         trial_over=bool(user["trial_used_at"]) and not plus_on,
         trial_days=plus.TRIAL_DAYS,
@@ -251,7 +252,7 @@ def delete_account():
     db = get_db()
     db.execute("DELETE FROM score_results WHERE user_id = ?", (user["id"],))
     db.execute("DELETE FROM leads WHERE user_id = ?", (user["id"],))
-    for table in ("plan_steps", "reminders", "activity", "week_steps", "pulses", "weekly_mail", "monthly_mail"):
+    for table in ("plan_steps", "reminders", "activity", "week_steps", "pulses", "weekly_mail", "monthly_mail", "orders"):
         db.execute(f"DELETE FROM {table} WHERE user_id = ?", (user["id"],))
     db.execute("DELETE FROM referrals WHERE referred_id = ? OR referrer_id = ?", (user["id"], user["id"]))
     db.execute("DELETE FROM health_sync_days WHERE user_id = ?", (user["id"],))
