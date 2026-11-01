@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 from functools import wraps
 
 import click
+from flask.cli import with_appcontext
 from flask import Blueprint, abort, current_app, flash, g, redirect, render_template, request, url_for
 from itsdangerous import BadSignature, URLSafeSerializer
 
@@ -273,6 +274,7 @@ def send_due_reminders(site_url, send=None, dry_run=False, now=None):
 
 
 @click.command("send-reminders")
+@with_appcontext
 @click.option("--dry-run", is_flag=True, help="Только посчитать, письма не отправлять.")
 def send_reminders_command(dry_run):
     """Отправить напоминания пользователям Plus (запускать по расписанию раз в сутки)."""

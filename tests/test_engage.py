@@ -649,3 +649,56 @@ def test_retake_context_is_private_and_absent_for_guests(app):
     register(other, email="boris@example.com", name="Борис")
     html = other.get("/").get_data(as_text=True)                           # у нового пользователя оценок нет
     assert "data-profile-confirm" not in html and _tag(html, "age") == []
+
+
+# ---------- Настройка почты: проверка, тест, одна команда для планировщика ----------
+
+def test_mail_check_reports_each_problem_without_leaking_the_key(monkeypatch):
+    from app import mailer
+    monkeypatch.delenv("BREVO_API_KEY", raising=False)
+    monkeypatch.delenv("BREVO_SENDER_EMAIL", raising=False)
+    res = mailer.check()
+    assert [s for s, _ in res] == ["fail", "fail"]
+    monkeypatch.setenv("BREVO_API_KEY", "xkeysib-SECRET")
+    monkeypatch.setenv("BREVO_SENDER_EMAIL", "me@example.com")
+    calls = {"/account": {"email": "owner@example.com"}, "/senders": {"senders": [{"email": "ME@example.com", "active": True}]}}
+    monkeypatch.setattr(mailer, "_get", lambda path, timeout=10: calls[path])
+    res = mailer.check()
+    assert [s for s, _ in res] == ["ok", "ok", "ok", "ok"] and "SECRET" not in " ".join(t for _, t in res)
+    calls["/senders"] = {"senders": [{"email": "me@example.com", "active": False}]}
+    assert mailer.check()[-1][0] == "fail" and "не подтверждён" in mailer.check()[-1][1]
+    calls["/senders"] = {"senders": []}
+    assert "не добавлен" in mailer.check()[-1][1]
+
+
+def test_mail_check_command_exit_code(app, monkeypatch):
+    from app import mailer
+    monkeypatch.setenv("SITE_URL", "https://example.test")
+    monkeypatch.setattr(mailer, "check", lambda timeout=10: [("ok", "всё хорошо")])
+    r = app.test_cli_runner().invoke(args=["mail-check"])
+    assert r.exit_code == 0 and "SITE_URL задан" in r.output
+    monkeypatch.setattr(mailer, "check", lambda timeout=10: [("fail", "ключ не принят")])
+    assert app.test_cli_runner().invoke(args=["mail-check"]).exit_code == 1
+    monkeypatch.delenv("SITE_URL")
+    monkeypatch.setattr(mailer, "check", lambda timeout=10: [("ok", "ok")])
+    assert app.test_cli_runner().invoke(args=["mail-check"]).exit_code == 1
+
+
+def test_mail_test_command_sends_one_message(app, monkeypatch):
+    from app import mailer
+    sent = []
+    monkeypatch.setattr(mailer, "send_email", lambda to, name, subj, html, text, unsubscribe_url=None, timeout=10: (sent.append(to) or (True, "id-1")))
+    r = app.test_cli_runner().invoke(args=["mail-test", "--to", "me@example.com"])
+    assert r.exit_code == 0 and sent == ["me@example.com"] and "id-1" in r.output
+
+
+def test_send_all_runs_every_mailing_and_needs_setup(app, monkeypatch):
+    from app import mailer
+    runner = app.test_cli_runner()
+    monkeypatch.delenv("SITE_URL", raising=False)
+    assert runner.invoke(args=["send-all", "--dry-run"]).exit_code == 1
+    monkeypatch.setenv("SITE_URL", "https://example.test")
+    r = runner.invoke(args=["send-all", "--dry-run"])
+    assert r.exit_code == 0 and all(w in r.output for w in ("напоминания", "недельное письмо", "отчёт месяца"))
+    monkeypatch.setattr(mailer, "configured", lambda: False)
+    assert runner.invoke(args=["send-all"]).exit_code == 1                       # без ключей не запускается
