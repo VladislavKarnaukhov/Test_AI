@@ -604,7 +604,8 @@ def test_prefill_nicotine_and_alcohol_from_previous_result(user_client, app):
     assert _checked(html, "nic1") == ["former"] and _checked(html, "nic2") == ["1_5"]
     assert _checked(html, "a1") == ["2"] and _checked(html, "a2") == ["1"] and _checked(html, "a3") == ["0"]
     assert "Из вашей анкеты от" in html and html.count("data-prefilled") >= 7
-    assert _checked(html, "sl1") == [] and _checked(html, "age") == []        # остальные вопросы не трогаем
+    assert _checked(html, "sl1") == [] and _checked(html, "n1") == []        # привычки сна и питания выбираются заново
+    assert _checked(html, "age") == ["18_39"] and _checked(html, "sex") == ["male"]   # постоянный профиль подставлен
     guest = app.test_client().get("/").get_data(as_text=True)
     assert "data-prefilled" not in guest and _checked(guest, "nic1") == []    # гость — без подстановки
     other = app.test_client()

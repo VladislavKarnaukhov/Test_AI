@@ -607,3 +607,45 @@ def test_pulse_chart_merges_same_day_results_and_spreads_labels(app):
     assert chart["index"][-1]["total"] == 70                               # из трёх за день взята последняя
     shown = [p["x"] for p in chart["index"] if p["show"]]
     assert all(b - a >= 30 for a, b in zip(shown, shown[1:]))              # подписи не налезают друг на друга
+
+
+# ---------- Повторное прохождение анкеты вошедшим ----------
+
+def _tag(html, name):
+    import re as _re
+    return _re.findall(rf'name="{name}" value="([^"]+)" checked', html)
+
+
+def test_retake_prefills_profile_hides_nothing_without_js_and_hints_previous(app):
+    from tests.answers import extended, with_consent as wc
+    c = _with_score(app)
+    html = c.get("/").get_data(as_text=True)
+    for field, val in (("age", "18_39"), ("sex", "male"), ("restriction", "no")):
+        assert _tag(html, field) == [val]                                  # профиль подставлен
+    assert html.count("data-confirmable") == 3 and "data-profile-confirm" in html and "data-profile-edit" in html
+    assert _tag(html, "sl1") == [] and _tag(html, "n1") == [] and _tag(html, "p1") == []   # привычки выбираются заново
+    assert 'class="q-prev"' in html and "В прошлый раз:" in html
+    assert _tag(html, "tier") == ["short"]
+
+
+def test_retake_uses_last_tier_and_height_from_extended_result(app):
+    from tests.answers import extended, with_consent as wc
+    c = _with_score(app)
+    r = c.post("/api/score", json=wc(extended()))
+    assert r.status_code == 200
+    html = c.get("/").get_data(as_text=True)
+    assert _tag(html, "tier") == ["extended"]                              # уровень как в прошлый раз
+    import re as _re
+    assert _re.search(r'name="height"[^>]*value="\d+', html)               # рост подставлен
+    assert "В прошлый раз: " in html
+
+
+def test_retake_context_is_private_and_absent_for_guests(app):
+    c = _with_score(app)
+    guest = app.test_client()
+    html = guest.get("/").get_data(as_text=True)
+    assert "data-profile-confirm" not in html and 'class="q-prev"' not in html and _tag(html, "sex") == []
+    other = app.test_client()
+    register(other, email="boris@example.com", name="Борис")
+    html = other.get("/").get_data(as_text=True)                           # у нового пользователя оценок нет
+    assert "data-profile-confirm" not in html and _tag(html, "age") == []

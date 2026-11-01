@@ -223,18 +223,20 @@
 {% if loop.first %}
 <div class="q tier-pick" data-q="tier" data-tier="short">
 <p class="q-text" id="q-tier">Насколько подробно?</p>
-<div class="choices tiers" role="radiogroup" aria-labelledby="q-tier">{% for t in tiers %}<label class="choice tier-choice"><input type="radio" name="tier" value="{{ t }}"{% if loop.first %} checked{% endif %}><span><b>{{ tier_names[t] }}</b><small>{{ tier_info[t] }}</small></span></label>{% endfor %}</div>
+<div class="choices tiers" role="radiogroup" aria-labelledby="q-tier">{% for t in tiers %}<label class="choice tier-choice"><input type="radio" name="tier" value="{{ t }}"{% if t == (retake.tier or tiers[0]) %} checked{% endif %}><span><b>{{ tier_names[t] }}</b><small>{{ tier_info[t] }}</small></span></label>{% endfor %}</div>
 <p class="q-hint">Каждый следующий уровень включает все вопросы предыдущего, поэтому баллы ядра сравнимы при любом выборе.</p>
 </div>
+{% if retake.summary %}<div class="profile-confirm" data-profile-confirm><p><span>Ваш профиль из анкеты от {{ prefill_dates['sex'] }}</span><b>{{ retake.summary | join(' · ') }}</b></p><button type="button" class="text-button" data-profile-edit>Изменить</button></div>{% endif %}
 {% endif %}
 {% for q in step.questions %}
 {% set maxlen = (q.options | map('last') | map('length') | max) if q.options else 0 %}
 {% set labels = (q.options | map('last') | list) if q.options else [] %}
 {% set yesno = labels | length == 2 and 'Да' in labels and 'Нет' in labels %}
-<div class="q{% if q.kind == 'number' %} q-number{% endif %}" data-q="{{ q.id }}"{% if prefill.get(q.id) is not none %} data-prefilled{% endif %} data-tier="{{ q.tier }}" data-kind="{{ q.kind }}"{% if q.optional %} data-optional{% endif %}{% if q.cond %} data-cond='{{ q.cond | tojson }}'{% endif %}>
+<div class="q{% if q.kind == 'number' %} q-number{% endif %}" data-q="{{ q.id }}"{% if prefill.get(q.id) is not none %} data-prefilled{% endif %}{% if retake.summary and q.id in ('age', 'sex', 'restriction') %} data-confirmable{% endif %} data-tier="{{ q.tier }}" data-kind="{{ q.kind }}"{% if q.optional %} data-optional{% endif %}{% if q.cond %} data-cond='{{ q.cond | tojson }}'{% endif %}>
 {% if q.kind == 'number' %}<label class="q-text" for="q-{{ q.id }}">{{ q.text }}{% if q.optional %} <em>необязательно</em>{% endif %}</label>
-<div class="number-field"><input id="q-{{ q.id }}" type="number" name="{{ q.id }}" inputmode="decimal" min="{{ q.min }}" max="{{ q.max }}" step="{{ q.step }}"><span>{{ q.unit }}</span></div>
-{% else %}<p class="q-text" id="q-{{ q.id }}">{{ q.text }}{% if q.optional %} <em>необязательно</em>{% endif %}</p>{% if q.hint %}<p class="q-hint">{{ q.hint }}</p>{% endif %}{% if prefill.get(q.id) is not none %}<p class="q-prefill">Из вашей анкеты от {{ prefill_dates[q.id] }}. Если что-то изменилось — выберите другой ответ.</p>{% endif %}
+<div class="number-field"><input id="q-{{ q.id }}" type="number" name="{{ q.id }}" inputmode="decimal" min="{{ q.min }}" max="{{ q.max }}" step="{{ q.step }}"{% if prefill.get(q.id) is not none %} value="{{ prefill[q.id] }}"{% endif %}><span>{{ q.unit }}</span></div>
+{% if prefill.get(q.id) is not none %}<p class="q-prefill">Из вашей анкеты от {{ prefill_dates[q.id] }}. Если что-то изменилось — поправьте.</p>{% elif retake.prev.get(q.id) %}<p class="q-prev">В прошлый раз: {{ retake.prev[q.id] }}</p>{% endif %}
+{% else %}<p class="q-text" id="q-{{ q.id }}">{{ q.text }}{% if q.optional %} <em>необязательно</em>{% endif %}</p>{% if q.hint %}<p class="q-hint">{{ q.hint }}</p>{% endif %}{% if prefill.get(q.id) is not none %}<p class="q-prefill">Из вашей анкеты от {{ prefill_dates[q.id] }}. Если что-то изменилось — выберите другой ответ.</p>{% elif retake.prev.get(q.id) %}<p class="q-prev">В прошлый раз: {{ retake.prev[q.id] }}</p>{% endif %}
 {% set n = labels | length %}<div class="choices {{ 'yesno' if yesno else 'chips-short' if maxlen <= 3 else ('chips-mid ' ~ ('opts-pair' if n == 2 else 'opts-stack' if n == 3 else 'opts-scale')) if maxlen <= 16 else 'chips-long' }}" style="--rows:{{ (n + 1) // 2 }}" role="radiogroup" aria-labelledby="q-{{ q.id }}">{% for value, label in (q.options | sort(attribute='1') if yesno else q.options) %}<label class="choice"><input type="radio" name="{{ q.id }}" value="{{ value }}"{% if prefill.get(q.id) == value %} checked{% endif %}><span>{{ label }}</span></label>{% endfor %}</div>
 {% endif %}
 </div>

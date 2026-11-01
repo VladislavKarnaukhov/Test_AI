@@ -334,7 +334,7 @@ dialog .intro{margin:var(--sp-3) 0 var(--sp-5);color:var(--ink-2);font-size:var(
 .field-error{margin-top:.25rem;color:var(--danger);font-size:var(--fs-sm);font-weight:600}
 
 /* flashes */
-.flashes{position:fixed;top:var(--sp-4);left:50%;z-index:60;display:grid;gap:var(--sp-2);width:min(32rem,100% - 2rem);transform:translateX(-50%);transition:opacity .4s ease}
+.flashes{position:fixed;top:calc(4.75rem + env(safe-area-inset-top));left:50%;z-index:70;display:grid;gap:var(--sp-2);width:min(32rem,100% - 2rem);transform:translateX(-50%);transition:opacity .4s ease}
 .flashes.gone{opacity:0;pointer-events:none}
 
 /* flash */
