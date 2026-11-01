@@ -199,6 +199,18 @@ cd ~/Test_AI && flask --app run send-reminders
 ```
 Проверка без отправки: `flask --app run send-reminders --dry-run`. Нужны `SITE_URL`, `BREVO_API_KEY`, `BREVO_SENDER_EMAIL` (в консоли задайте через `export`, а для расписания — в самой команде: `SITE_URL=... BREVO_API_KEY=... flask --app run send-reminders`).
 
+## Настройка почты (Brevo), пошагово
+
+Ключи нигде в коде не хранятся: их задаёте только вы, в переменных окружения сервера (в чат и в репозиторий не вставлять).
+
+1. **Brevo → Senders, domains & dedicated IPs → Senders**: добавьте адрес отправителя и подтвердите его по письму. Для хорошей доставляемости (иначе письма уходят в спам) лучше отправлять с адреса на своём домене и подключить его в **Domains**: Brevo покажет записи SPF/DKIM/DMARC, их нужно добавить у регистратора домена. Отправка с gmail-адреса работает хуже: у почтовиков строгий DMARC.
+2. **Brevo → SMTP & API → API Keys**: создайте ключ (Generate a new API key).
+3. **PythonAnywhere → Web → файл `/var/www/<логин>_pythonanywhere_com_wsgi.py`**: перед `from app import create_app` добавьте строки `os.environ["BREVO_API_KEY"] = "…"`, `os.environ["BREVO_SENDER_EMAIL"] = "…"`, `os.environ["BREVO_SENDER_NAME"] = "Del Health"`, `os.environ["SITE_URL"] = "https://<логин>.pythonanywhere.com"` (нужен `import os`). Затем **Reload** сайта.
+4. **Проверка** в консоли Bash (те же переменные задайте через `export`): `cd ~/Test_AI && flask --app run mail-check` показывает по пунктам: ключ принят Brevo, отправитель подтверждён, `SITE_URL` задан. `flask --app run mail-test --to вы@example.com` отправит тестовое письмо. Статус виден и в админке (`/admin` → «Активность»: «Почта (Brevo)», «SITE_URL»).
+5. **Расписание** (Tasks → Scheduled, раз в сутки, лучше утром по Москве): `cd ~/Test_AI && SITE_URL=... BREVO_API_KEY=... BREVO_SENDER_EMAIL=... flask --app run send-all`. Одна команда запускает напоминания Plus, недельное письмо и отчёт месяца, а на бесплатном тарифе PythonAnywhere как раз одна запланированная задача. `--dry-run` только считает получателей.
+
+Лимиты и поведение: бесплатный план Brevo — до 300 писем в сутки; письмо каждому уходит не чаще одного раза за свой период (неделя, месяц), неудачная отправка повторится при следующем запуске; в каждом письме ссылка отписки.
+
 ## Автоматизация Plus
 
 - **Пробный период.** Первая отметка «пульса недели» автоматически открывает Plus на 7 дней (один раз на аккаунт, и только тем, у кого Plus ещё нет). Флаги: `users.trial_used_at`, `users.plus_is_trial`; оплаченная выдача (`plus.grant`) снимает метку пробного периода.

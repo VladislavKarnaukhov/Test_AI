@@ -10,6 +10,7 @@ import os
 from datetime import datetime, timedelta, timezone
 
 import click
+from flask.cli import with_appcontext
 from flask import Blueprint, current_app, flash, g, redirect, request, url_for
 
 from . import mailer
@@ -351,6 +352,7 @@ def send_weekly(site_url, send=None, dry_run=False, now=None):
 
 
 @click.command("send-weekly")
+@with_appcontext
 @click.option("--dry-run", is_flag=True, help="Только посчитать, письма не отправлять.")
 def send_weekly_command(dry_run):
     """Отправить недельные письма с шагом недели (запускать по расписанию раз в сутки; письмо уходит один раз за неделю)."""

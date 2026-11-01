@@ -37,7 +37,7 @@ def create_app(config=None):
         if analytics_allowed() and "visitor_id" not in session:
             assign_visitor_id()
 
-    from . import account, admin, auth, billing, engage, health_sync, monthly, plus, referral, routes
+    from . import account, admin, auth, billing, engage, health_sync, mailops, monthly, plus, referral, routes
 
     @app.before_request
     def load_user():
@@ -69,6 +69,9 @@ def create_app(config=None):
     app.register_blueprint(monthly.bp)
     app.register_blueprint(referral.bp)
     app.register_blueprint(billing.bp)
+    app.cli.add_command(mailops.mail_check_command)
+    app.cli.add_command(mailops.mail_test_command)
+    app.cli.add_command(mailops.send_all_command)
     app.cli.add_command(monthly.send_monthly_command)
     app.register_blueprint(health_sync.bp)
 

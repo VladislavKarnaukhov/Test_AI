@@ -8,6 +8,7 @@ import os
 from datetime import datetime, timedelta, timezone
 
 import click
+from flask.cli import with_appcontext
 from flask import Blueprint, current_app, flash, g, redirect, request, url_for
 
 from . import mailer
@@ -149,6 +150,7 @@ def send_monthly(site_url, send=None, dry_run=False, now=None):
 
 
 @click.command("send-monthly")
+@with_appcontext
 @click.option("--dry-run", is_flag=True, help="Только посчитать, письма не отправлять.")
 def send_monthly_command(dry_run):
     """Отправить отчёт месяца подписчикам Plus (запускать раз в сутки; письмо уходит один раз за календарный месяц)."""

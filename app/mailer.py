@@ -40,3 +40,44 @@ def send_email(to_email, to_name, subject, html, text, unsubscribe_url=None, tim
         return False, f"Brevo HTTP {e.code}"
     except (urllib.error.URLError, TimeoutError, ValueError) as e:
         return False, f"Brevo недоступен: {type(e).__name__}"
+
+
+def _get(path, timeout=10):
+    req = urllib.request.Request("https://api.brevo.com/v3" + path, method="GET",
+                                 headers={"api-key": os.environ["BREVO_API_KEY"], "accept": "application/json"})
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return json.loads(resp.read().decode("utf-8") or "{}")
+
+
+def check(timeout=10):
+    """Проверка настройки без отправки писем: ключ принят Brevo, отправитель подтверждён.
+
+    → список (статус, текст), статус: "ok" | "fail" | "warn". Значения ключа не возвращаются и не логируются."""
+    out = []
+    key, sender = os.environ.get("BREVO_API_KEY"), os.environ.get("BREVO_SENDER_EMAIL")
+    out.append(("ok" if key else "fail", "BREVO_API_KEY задан" if key else "BREVO_API_KEY не задан"))
+    out.append(("ok" if sender else "fail", f"BREVO_SENDER_EMAIL задан ({sender})" if sender else "BREVO_SENDER_EMAIL не задан"))
+    if not (key and sender):
+        return out
+    try:
+        account = _get("/account", timeout)
+        out.append(("ok", f"Ключ принят Brevo, аккаунт {account.get('email', '?')}"))
+    except urllib.error.HTTPError as e:
+        out.append(("fail", "Brevo не принял ключ (HTTP 401): проверьте BREVO_API_KEY" if e.code == 401 else f"Brevo HTTP {e.code}"))
+        return out
+    except (urllib.error.URLError, TimeoutError, ValueError) as e:
+        out.append(("fail", f"Brevo недоступен: {type(e).__name__}"))
+        return out
+    try:
+        senders = _get("/senders", timeout).get("senders", [])
+        mine = [x for x in senders if str(x.get("email", "")).lower() == sender.lower()]
+        if not mine:
+            out.append(("fail", f"Отправитель {sender} не добавлен в Brevo (Senders & IP → Senders)"))
+        elif not mine[0].get("active", False):
+            out.append(("fail", f"Отправитель {sender} не подтверждён: откройте письмо от Brevo и подтвердите адрес"))
+        else:
+            out.append(("ok", f"Отправитель {sender} подтверждён"))
+    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, ValueError) as e:
+        out.append(("warn", f"Список отправителей получить не удалось: {type(e).__name__}"))
+    return out
+
