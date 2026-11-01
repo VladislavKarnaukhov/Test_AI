@@ -269,6 +269,10 @@
     const resultCard = document.querySelector('.score-card');
     const TIER_RANK = { short: 0, medium: 1, extended: 2 };
     let current = 0;
+    // вошедшему с профилем из прошлой анкеты (пол, возраст, ограничение нагрузки) не задаём эти вопросы заново:
+    // они скрыты, значения подставлены и уходят в расчёт; «Изменить» возвращает вопросы
+    const profileCard = quizForm.querySelector('[data-profile-confirm]');
+    if (profileCard) quizForm.querySelectorAll('.q[data-confirmable]').forEach(function (q) { q.dataset.confirmed = '1'; });
 
     function value(name) {
       const field = quizForm.querySelector('[name="' + name + '"]');
@@ -300,7 +304,7 @@
       quizForm.querySelectorAll('.q[data-q]').forEach(function (q) {
         if (q.dataset.q === 'tier') return;
         const cond = q.dataset.cond ? JSON.parse(q.dataset.cond) : null;
-        const hide = TIER_RANK[q.dataset.tier] > rank || !conditionMet(cond);
+        const hide = TIER_RANK[q.dataset.tier] > rank || !conditionMet(cond) || q.dataset.confirmed === '1';
         if (reveal && q.hidden && !hide && !q.closest('.quiz-step').hidden) {
           q.classList.add('q-enter');
           q.addEventListener('animationend', function () { q.classList.remove('q-enter'); }, { once: true });
@@ -554,7 +558,7 @@
       const payload = { health_consent: consent.checked, tier: tier() };
       quizForm.querySelectorAll('.q[data-q]').forEach(function (q) {
         const v = value(q.dataset.q);
-        if (q.dataset.q !== 'tier' && !q.hidden && v !== null) payload[q.dataset.q] = v;
+        if (q.dataset.q !== 'tier' && (!q.hidden || q.dataset.confirmed === '1') && v !== null) payload[q.dataset.q] = v;
       });
       quizError.textContent = '';
       const label = submitBtn.textContent;
@@ -588,6 +592,15 @@
       focusStep();
       scrollToQuiz();
     });
+
+    if (profileCard) {
+      profileCard.querySelector('[data-profile-edit]').addEventListener('click', function () {
+        quizForm.querySelectorAll('.q[data-confirmed]').forEach(function (q) { delete q.dataset.confirmed; });
+        profileCard.remove();
+        track('quiz_profile_edit');
+        showStep(current);
+      });
+    }
 
     showStep(0);
   }

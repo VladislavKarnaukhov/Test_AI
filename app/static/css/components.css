@@ -263,6 +263,11 @@ a.sheet:hover{transform:translateY(-2px)}
 .q-text:focus{outline:none}
 .q-text em{font-size:var(--fs-sm);letter-spacing:0}
 .q-prefill{margin:-.25rem 0 var(--sp-4);font-size:var(--fs-sm);color:var(--accent)}
+.q-prev{margin:-.25rem 0 var(--sp-4);font-size:var(--fs-sm);color:var(--ink-3)}
+.profile-confirm{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--sp-2) var(--sp-4);margin:var(--sp-4) 0;padding:var(--sp-3) var(--sp-4);border-radius:var(--r-sm);background:var(--accent-soft)}
+.profile-confirm p{display:grid;gap:.125rem;margin:0;font-size:var(--fs-sm)}
+.profile-confirm span{font-size:var(--fs-xs);color:var(--ink-3)}
+.profile-confirm b{font-weight:500;color:var(--ink)}
 .q-hint{margin:-.5rem 0 var(--sp-5);font-size:var(--fs-sm);color:var(--ink-3)}
 @media (prefers-reduced-motion:no-preference){
 .q:not(.q-off){animation:q-in .3s var(--ease-out)}

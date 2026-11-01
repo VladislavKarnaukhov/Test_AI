@@ -100,13 +100,75 @@ def _prefill_answers(user_id):
     return prefill, dates
 
 
+# постоянные данные о человеке: подставляются из последней анкеты, где они были (каждое поле отдельно)
+PROFILE_FIELDS = ("age", "sex", "restriction", "height", "dm")
+SUMMARY_FIELDS = ("sex", "age", "restriction")
+
+
+def _profile_phrase(field, label, value):
+    """Короткая фраза для карточки профиля: «Мужской», «18–39 лет», «без ограничений нагрузки»."""
+    if field == "age":
+        return label if "лет" in label else f"{label} лет"
+    if field == "restriction":
+        return "без ограничений нагрузки" if value == "no" else label.lower()
+    return label
+
+
+def _retake_context(user_id, quiz):
+    """Всё для повторного прохождения анкеты вошедшим: подставленные ответы, подсказки «в прошлый раз», уровень.
+
+    Подставляются только привычки про никотин/алкоголь и постоянный профиль (пол, возраст, ограничение нагрузки,
+    рост, диабет). Остальное (сон, движение, питание, настроение) меняется, поэтому показывается лишь подсказкой
+    «В прошлый раз: …» и выбирается заново. Расчёт и проверки на сервере не меняются.
+    """
+    prefill, dates = _prefill_answers(user_id)
+    rows = get_db().execute(
+        "SELECT answers, tier, created_at FROM score_results WHERE user_id = ? AND method_version = ?"
+        " ORDER BY created_at DESC, id DESC LIMIT 20", (user_id, scoring.METHOD_VERSION)).fetchall()
+    parsed = []
+    for row in rows:
+        try:
+            parsed.append((json.loads(row["answers"]), row))
+        except ValueError:
+            continue
+    for field in PROFILE_FIELDS:
+        for answers, row in parsed:
+            if field in answers:
+                prefill[field] = str(answers[field])
+                dates[field] = to_msk(row["created_at"])
+                break
+    labels, units = {}, {}
+    for step in quiz:
+        for q in step["questions"]:
+            if q.get("options"):
+                labels[q["id"]] = {str(v): label for v, label in q["options"]}
+            elif q.get("unit"):
+                units[q["id"]] = q["unit"]
+    prev = {}
+    if parsed:
+        for key, value in parsed[0][0].items():
+            if key in prefill or key == "tier":
+                continue
+            if key in labels and str(value) in labels[key]:
+                prev[key] = labels[key][str(value)]
+            elif key in units:
+                prev[key] = f"{value} {units[key]}"
+    summary = [_profile_phrase(f, labels[f][prefill[f]], prefill[f]) for f in SUMMARY_FIELDS
+               if f in prefill and prefill[f] in labels.get(f, {})]
+    return {"prefill": prefill, "dates": dates, "prev": prev, "summary": summary if len(summary) == len(SUMMARY_FIELDS) else [],
+            "tier": parsed[0][1]["tier"] if parsed and parsed[0][1]["tier"] in scoring.TIERS else None}
+
+
 @bp.get("/")
 def index():
     log_event("page_view")
     latest = _latest_score(g.user["id"]) if g.user else None
-    prefill, prefill_dates = _prefill_answers(g.user["id"]) if g.user else ({}, {})
+    quiz = scoring.public_questions()
+    retake = _retake_context(g.user["id"], quiz) if g.user else {"prefill": {}, "dates": {}, "prev": {}, "summary": [], "tier": None}
+    prefill, prefill_dates = retake["prefill"], retake["dates"]
     return render_template("index.html", latest=latest, trend=_user_trend(g.user["id"]) if g.user else [],
-                           prefill=prefill, prefill_dates=prefill_dates, quiz=scoring.public_questions(), tiers=scoring.TIERS,
+                           retake=retake,
+                           prefill=prefill, prefill_dates=prefill_dates, quiz=quiz, tiers=scoring.TIERS,
                            tier_names=scoring.TIER_NAMES, tier_info=scoring.TIER_INFO,
                            core_short={k: scoring.DOMAIN_SHORT[k] for k in scoring.CORE_DOMAINS})
 
